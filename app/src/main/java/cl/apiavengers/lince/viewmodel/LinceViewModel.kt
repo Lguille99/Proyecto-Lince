@@ -29,6 +29,15 @@ class LinceViewModel : ViewModel() {
         }
     }
 
+    // Función para actualizar los datos del usuario en memoria durante la sesión
+    fun actualizarUsuario(nuevoNombre: String, nuevoCorreo: String, nuevoIdentificador: String) {
+        usuario = usuario?.copy(
+            nombre = nuevoNombre,
+            correo = nuevoCorreo,
+            id = nuevoIdentificador
+        )
+    }
+
     fun cerrarSesion() {
         repositorio.cerrarSesion()
         usuario = null
