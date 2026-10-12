@@ -7,9 +7,9 @@ import java.time.LocalDate
 object DatosPrueba {
     const val CLAVE_DEMO = "Lince123"
     val usuarios = listOf(
-        Usuario("DRV-001", "Conductor", "conductor.demo", Rol.CONDUCTOR),
-        Usuario("GUI-002", "Guía", "guia.demo", Rol.GUIA),
-        Usuario("COO-003", "coordinador", "coordinador.demo", Rol.COORDINADOR)
+        Usuario("DRV-001", "Conductor", "conductor.demo", "conductor@gmail.com", Rol.CONDUCTOR),
+        Usuario("GUI-002", "Guía", "guia.demo", "guia@gmail.com", Rol.GUIA),
+        Usuario("COO-003", "coordinador", "coordinador.demo", "coordinador@gmail.com", Rol.COORDINADOR)
     )
 
     fun servicios(hoy: LocalDate): List<Servicio> {

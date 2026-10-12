@@ -8,6 +8,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cl.apiavengers.lince.ui.screens.LoginScreen
 import cl.apiavengers.lince.ui.screens.ServiciosScreen
+import cl.apiavengers.lince.ui.screens.InicioUserScreen
+import cl.apiavengers.lince.ui.screens.PerfilScreen
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -21,7 +23,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 onLogin = { cuenta, clave ->
                     vm.iniciarSesion(cuenta, clave)
                     if (vm.usuario != null) {
-                        navController.navigate("servicios") {
+                        navController.navigate("inicio_user") {
                             popUpTo("login") { inclusive = true }
                             launchSingleTop = true
                         }
@@ -30,19 +32,25 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
             )
         }
 
+        composable("inicio_user") {
+            InicioUserScreen(
+                vm = vm,
+                onNavigateToServicios = { navController.navigate("servicios") },
+                onNavigateToAgenda = {},
+                onNavigateToPerfil = {navController.navigate("perfil")},
+                onNavigateToHistorial = {}
+    )
+}
+
         composable("servicios") {
             val usuario = vm.usuario
             if (usuario != null) {
                 ServiciosScreen(
                     usuario = usuario,
                     servicios = vm.servicios,
-                    onCerrarSesion = {
-                        vm.cerrarSesion()
-                        navController.navigate("login") {
-                            popUpTo("servicios") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
+                    onNavigateToInicio = { navController.navigate("inicio_user") },
+                    onNavigateToAgenda = {},
+                    onNavigateToPerfil = {navController.navigate("perfil")} 
                 )
             } else {
                 LaunchedEffect(Unit) {
@@ -52,6 +60,20 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                     }
                 }
             }
+        }
+        composable("perfil") {
+            PerfilScreen(
+                vm = vm,
+                onCerrarSesion = {
+                    navController.navigate("login") {
+                        popUpTo("perfil") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToInicio = { navController.navigate("inicio_user") },
+                onNavigateToServicios = { navController.navigate("servicios") },
+                onNavigateToAgenda = {}
+            )
         }
     }
 }

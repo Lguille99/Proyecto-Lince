@@ -1,6 +1,5 @@
 package cl.apiavengers.lince.modelo
 
-// Información básica de una asignación de prueba.
 data class Servicio(
     val id: String,
     val titulo: String,
