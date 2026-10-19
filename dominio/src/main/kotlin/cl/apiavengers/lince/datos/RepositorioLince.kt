@@ -25,6 +25,28 @@ class RepositorioLince {
         }
     }
 
+    fun consultarEquipo(): List<Usuario> {
+        usuarioActual ?: throw IllegalStateException("Debes iniciar sesión.")
+        return DatosPrueba.usuarios
+    }
+
+    fun obtenerUsuarioPorId(id: String): Usuario {
+        usuarioActual ?: throw IllegalStateException("Debes iniciar sesión.")
+        return DatosPrueba.usuarios.find { it.id == id }
+            ?: throw IllegalArgumentException("Persona no encontrada: $id")
+    }
+
+    fun obtenerServicioPorId(id: String): Servicio {
+        usuarioActual ?: throw IllegalStateException("Debes iniciar sesión.")
+        return servicios.find { it.id == id }
+            ?: throw IllegalArgumentException("Servicio no encontrado: $id")
+    }
+
+    fun consultarServiciosDe(usuarioId: String): List<Servicio> {
+        usuarioActual ?: throw IllegalStateException("Debes iniciar sesión.")
+        return servicios.filter { it.asignadoA == usuarioId }
+    }
+
     fun cerrarSesion() {
         usuarioActual = null
     }

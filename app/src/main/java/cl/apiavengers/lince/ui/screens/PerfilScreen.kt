@@ -5,7 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -23,6 +23,7 @@ fun PerfilScreen(
     onCerrarSesion: () -> Unit,
     onNavigateToInicio: () -> Unit = {},
     onNavigateToServicios: () -> Unit = {},
+    onNavigateToEquipo: () -> Unit = {},
     onNavigateToAgenda: () -> Unit = {}
 ) {
     val usuario = vm.usuario
@@ -34,11 +35,11 @@ fun PerfilScreen(
     
     var mensajeGuardado by remember { mutableStateOf(false) }
 
-    val bottomItems = listOf("Inicio", "Servicios", "Agenda", "Perfil")
+    val bottomItems = listOf("Inicio", "Servicios", "Equipo", "Perfil")
     val bottomIcons = listOf(
         Icons.Default.Home,
         Icons.AutoMirrored.Filled.List,
-        Icons.Default.DateRange,
+        Icons.Default.Group,
         Icons.Default.Person
     )
 
@@ -57,7 +58,7 @@ fun PerfilScreen(
                             when (index) {
                                 0 -> onNavigateToInicio()
                                 1 -> onNavigateToServicios()
-                                2 -> onNavigateToAgenda()
+                                2 -> { onNavigateToEquipo(); onNavigateToAgenda() }
                             }
                         }
                     )

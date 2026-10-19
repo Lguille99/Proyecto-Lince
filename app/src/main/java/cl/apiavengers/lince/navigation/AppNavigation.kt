@@ -3,13 +3,18 @@ package cl.apiavengers.lince.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import cl.apiavengers.lince.ui.screens.EquipoScreen
 import cl.apiavengers.lince.ui.screens.LoginScreen
 import cl.apiavengers.lince.ui.screens.ServiciosScreen
 import cl.apiavengers.lince.ui.screens.InicioUserScreen
 import cl.apiavengers.lince.ui.screens.PerfilScreen
+import cl.apiavengers.lince.ui.screens.PersonaDetalleScreen
+import cl.apiavengers.lince.ui.screens.ServicioDetalleScreen
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -36,11 +41,12 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
             InicioUserScreen(
                 vm = vm,
                 onNavigateToServicios = { navController.navigate("servicios") },
-                onNavigateToAgenda = {},
-                onNavigateToPerfil = {navController.navigate("perfil")},
-                onNavigateToHistorial = {}
-    )
-}
+                onNavigateToEquipo = { navController.navigate("equipo") },
+                onNavigateToPerfil = { navController.navigate("perfil") },
+                onNavigateToHistorial = {},
+                onServicioClick = { id -> navController.navigate("servicio_detalle/$id") }
+            )
+        }
 
         composable("servicios") {
             val usuario = vm.usuario
@@ -49,8 +55,9 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                     usuario = usuario,
                     servicios = vm.servicios,
                     onNavigateToInicio = { navController.navigate("inicio_user") },
-                    onNavigateToAgenda = {},
-                    onNavigateToPerfil = {navController.navigate("perfil")} 
+                    onNavigateToEquipo = { navController.navigate("equipo") },
+                    onNavigateToPerfil = { navController.navigate("perfil") },
+                    onServicioClick = { id -> navController.navigate("servicio_detalle/$id") }
                 )
             } else {
                 LaunchedEffect(Unit) {
@@ -61,6 +68,50 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 }
             }
         }
+
+        composable("equipo") {
+            if (vm.usuario == null) {
+                LaunchedEffect(Unit) { navController.navigate("login") }
+            } else {
+                EquipoScreen(
+                    equipo = vm.equipo,
+                    onPersonaClick = { id -> navController.navigate("persona_detalle/$id") },
+                    onNavigateToInicio = { navController.navigate("inicio_user") },
+                    onNavigateToServicios = { navController.navigate("servicios") },
+                    onNavigateToPerfil = { navController.navigate("perfil") }
+                )
+            }
+        }
+
+        composable(
+            "persona_detalle/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStack ->
+            val userId = backStack.arguments?.getString("userId").orEmpty()
+            val persona = vm.obtenerPersona(userId)
+            PersonaDetalleScreen(
+                persona = persona,
+                serviciosAsignados = if (persona != null) vm.serviciosDe(persona.id) else emptyList(),
+                onBack = { navController.popBackStack() },
+                onServicioClick = { sid -> navController.navigate("servicio_detalle/$sid") }
+            )
+        }
+
+        composable(
+            "servicio_detalle/{servicioId}",
+            arguments = listOf(navArgument("servicioId") { type = NavType.StringType })
+        ) { backStack ->
+            val servicioId = backStack.arguments?.getString("servicioId").orEmpty()
+            val servicio = vm.obtenerServicio(servicioId)
+            val responsable = servicio?.let { vm.obtenerPersona(it.asignadoA) }
+            ServicioDetalleScreen(
+                servicio = servicio,
+                responsable = responsable,
+                onBack = { navController.popBackStack() },
+                onResponsableClick = { uid -> navController.navigate("persona_detalle/$uid") }
+            )
+        }
+
         composable("perfil") {
             PerfilScreen(
                 vm = vm,
@@ -72,7 +123,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 },
                 onNavigateToInicio = { navController.navigate("inicio_user") },
                 onNavigateToServicios = { navController.navigate("servicios") },
-                onNavigateToAgenda = {}
+                onNavigateToEquipo = { navController.navigate("equipo") }
             )
         }
     }

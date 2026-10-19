@@ -1,5 +1,6 @@
 package cl.apiavengers.lince.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -25,19 +26,21 @@ fun ServiciosScreen(
     usuario: Usuario,
     servicios: List<Servicio>,
     onNavigateToInicio: () -> Unit = {},
+    onNavigateToEquipo: () -> Unit = {},
+    onNavigateToPerfil: () -> Unit = {},
     onNavigateToAgenda: () -> Unit = {},
-    onNavigateToPerfil: () -> Unit = {}
+    onServicioClick: (String) -> Unit = {}
 ) {
     var selectedBottomItem by remember { mutableStateOf(1) }
     
     var filtroSeleccionado by remember { mutableStateOf("Todas") }
     var textoBusqueda by remember { mutableStateOf("") }
 
-    val bottomItems = listOf("Inicio", "Servicios", "Agenda", "Perfil")
+    val bottomItems = listOf("Inicio", "Servicios", "Equipo", "Perfil")
     val bottomIcons = listOf(
         Icons.Default.Home,
         Icons.AutoMirrored.Filled.List,
-        Icons.Default.DateRange,
+        Icons.Default.Group,
         Icons.Default.Person
     )
 
@@ -69,7 +72,7 @@ fun ServiciosScreen(
                             selectedBottomItem = index
                             when (index) {
                                 0 -> onNavigateToInicio()
-                                2 -> onNavigateToAgenda()
+                                2 -> { onNavigateToEquipo(); onNavigateToAgenda() }
                                 3 -> onNavigateToPerfil()
                             }
                         }
@@ -146,14 +149,14 @@ fun ServiciosScreen(
             }
 
             items(serviciosFiltrados, key = { it.id }) { servicio ->
-                TarjetaServicio(servicio, usuario.rol == Rol.COORDINADOR)
+                TarjetaServicio(servicio, usuario.rol == Rol.COORDINADOR, onClick = { onServicioClick(servicio.id) })
             }
         }
     }
 }
 
 @Composable
-private fun TarjetaServicio(servicio: Servicio, mostrarRecurso: Boolean) {
+private fun TarjetaServicio(servicio: Servicio, mostrarRecurso: Boolean, onClick: () -> Unit = {}) {
     val esPendiente = servicio.titulo.contains("Transfer", ignoreCase = true)
     val estadoTexto = if (esPendiente) "Pendiente" else "Confirmada"
 
@@ -161,7 +164,7 @@ private fun TarjetaServicio(servicio: Servicio, mostrarRecurso: Boolean) {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier

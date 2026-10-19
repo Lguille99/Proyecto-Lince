@@ -7,9 +7,30 @@ import java.time.LocalDate
 object DatosPrueba {
     const val CLAVE_DEMO = "Lince123"
     val usuarios = listOf(
-        Usuario("DRV-001", "Conductor", "conductor.demo", "conductor@gmail.com", Rol.CONDUCTOR),
-        Usuario("GUI-002", "Guía", "guia.demo", "guia@gmail.com", Rol.GUIA),
-        Usuario("COO-003", "coordinador", "coordinador.demo", "coordinador@gmail.com", Rol.COORDINADOR)
+        Usuario(
+            "DRV-001", "Martín Conductor", "conductor.demo", "conductor@gmail.com", Rol.CONDUCTOR,
+            "+56 9 1234 5678", Disponibilidad.DISPONIBLE, "Santiago Centro"
+        ),
+        Usuario(
+            "GUI-002", "Valentina Guía", "guia.demo", "guia@gmail.com", Rol.GUIA,
+            "+56 9 8765 4321", Disponibilidad.EN_SERVICIO, "Providencia"
+        ),
+        Usuario(
+            "COO-003", "Camila Coordinadora", "coordinador.demo", "coordinador@gmail.com", Rol.COORDINADOR,
+            "+56 9 1111 2222", Disponibilidad.DISPONIBLE, "Oficina central"
+        ),
+        Usuario(
+            "DRV-002", "Diego Ruta", "conductor2.demo", "diego.ruta@gmail.com", Rol.CONDUCTOR,
+            "+56 9 3333 4444", Disponibilidad.NO_DISPONIBLE, "Maipú"
+        ),
+        Usuario(
+            "GUI-003", "Sofía Senderos", "guia2.demo", "sofia.senderos@gmail.com", Rol.GUIA,
+            "+56 9 5555 6666", Disponibilidad.DISPONIBLE, "Viña del Mar"
+        ),
+        Usuario(
+            "GUI-004", "Pedro Mirador", "guia3.demo", "pedro.mirador@gmail.com", Rol.GUIA,
+            "+56 9 7777 8888", Disponibilidad.DISPONIBLE, "Valparaíso"
+        )
     )
 
     fun servicios(hoy: LocalDate): List<Servicio> {

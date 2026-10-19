@@ -14,16 +14,20 @@ class LinceViewModel : ViewModel() {
         private set
     var servicios by mutableStateOf<List<Servicio>>(emptyList())
         private set
+    var equipo by mutableStateOf<List<Usuario>>(emptyList())
+        private set
     var error by mutableStateOf<String?>(null)
         private set
 
     fun iniciarSesion(cuenta: String, clave: String) {
         usuario = null
         servicios = emptyList()
+        equipo = emptyList()
         error = null
         try {
             usuario = repositorio.iniciarSesion(cuenta, clave)
             servicios = repositorio.consultarServicios()
+            equipo = repositorio.consultarEquipo()
         } catch (problema: IllegalArgumentException) {
             error = problema.message
         }
@@ -42,6 +46,31 @@ class LinceViewModel : ViewModel() {
         repositorio.cerrarSesion()
         usuario = null
         servicios = emptyList()
+        equipo = emptyList()
         error = null
+    }
+
+    fun obtenerPersona(id: String): Usuario? {
+        return try {
+            repositorio.obtenerUsuarioPorId(id)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun obtenerServicio(id: String): Servicio? {
+        return try {
+            repositorio.obtenerServicioPorId(id)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun serviciosDe(usuarioId: String): List<Servicio> {
+        return try {
+            repositorio.consultarServiciosDe(usuarioId)
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 }

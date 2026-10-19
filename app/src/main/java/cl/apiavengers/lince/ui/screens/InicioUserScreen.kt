@@ -1,9 +1,10 @@
 package cl.apiavengers.lince.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
@@ -23,14 +24,17 @@ fun InicioUserScreen(
     vm: LinceViewModel,
     onNavigateToServicios: () -> Unit = {},
     onNavigateToAgenda: () -> Unit = {},
+    onNavigateToEquipo: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {},
-    onNavigateToHistorial: () -> Unit = {}
+    onNavigateToHistorial: () -> Unit = {},
+    onServicioClick: (String) -> Unit = {}
 ) {
     var selectedItem by remember { mutableStateOf(0) }
-    val items = listOf("Inicio", "Servicios", "Agenda", "Perfil")
-    val icons = listOf(Icons.Default.Home, Icons.Default.List, Icons.Default.DateRange, Icons.Default.Person)
+    val items = listOf("Inicio", "Servicios", "Equipo", "Perfil")
+    val icons = listOf(Icons.Default.Home, Icons.Default.List, Icons.Default.Group, Icons.Default.Person)
 
     val nombreUsuario = vm.usuario?.nombre ?: "usuario"
+    val proximoServicio = vm.servicios.firstOrNull()
     Scaffold(
         bottomBar = {
             NavigationBar(
@@ -45,7 +49,7 @@ fun InicioUserScreen(
                             selectedItem = index
                             when (index) {
                                 1 -> onNavigateToServicios()
-                                2 -> onNavigateToAgenda()
+                                2 -> { onNavigateToEquipo(); onNavigateToAgenda() }
                                 3 -> onNavigateToPerfil()
                             }
                         }
@@ -111,7 +115,9 @@ fun InicioUserScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clickable(enabled = proximoServicio != null) {
+                        proximoServicio?.let { onServicioClick(it.id) }
+                    }
                 ) {
                     Row(
                         modifier = Modifier
@@ -122,25 +128,25 @@ fun InicioUserScreen(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                text = "12 SEP · 08:30",
+                                text = if (proximoServicio != null) "${proximoServicio.fecha} · ${proximoServicio.hora}" else "12 SEP · 08:30",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "Transfer de mañana",
+                                text = proximoServicio?.titulo ?: "Transfer de mañana",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Punto A → Terminal de prueba",
+                                text = if (proximoServicio != null) "${proximoServicio.recogida} → ${proximoServicio.destino}" else "Punto A → Terminal de prueba",
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Pendiente",
+                                text = "Pendiente · toca para ver en grande",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -164,6 +170,17 @@ fun InicioUserScreen(
                     .height(50.dp)
             ) {
                 Text(text = "Ver mis servicios", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            }
+
+            OutlinedButton(
+                onClick = onNavigateToEquipo,
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text(text = "Ver equipo (guías y conductores)", fontSize = 15.sp, fontWeight = FontWeight.Medium)
             }
 
         
