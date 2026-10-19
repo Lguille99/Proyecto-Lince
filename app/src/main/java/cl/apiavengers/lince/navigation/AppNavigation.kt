@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import cl.apiavengers.lince.ui.screens.LoginScreen
 import cl.apiavengers.lince.ui.screens.ServiciosScreen
 import cl.apiavengers.lince.ui.screens.InicioUserScreen
+import cl.apiavengers.lince.ui.screens.DisponibilidadScreen
 import cl.apiavengers.lince.ui.screens.PerfilScreen
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
@@ -36,7 +37,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
             InicioUserScreen(
                 vm = vm,
                 onNavigateToServicios = { navController.navigate("servicios") },
-                onNavigateToAgenda = {},
+                onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                 onNavigateToPerfil = {navController.navigate("perfil")},
                 onNavigateToHistorial = {}
     )
@@ -49,7 +50,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                     usuario = usuario,
                     servicios = vm.servicios,
                     onNavigateToInicio = { navController.navigate("inicio_user") },
-                    onNavigateToAgenda = {},
+                    onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                     onNavigateToPerfil = {navController.navigate("perfil")} 
                 )
             } else {
@@ -72,8 +73,42 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 },
                 onNavigateToInicio = { navController.navigate("inicio_user") },
                 onNavigateToServicios = { navController.navigate("servicios") },
-                onNavigateToAgenda = {}
+                onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } }
             )
         }
+        composable("agenda") {
+            val usuario = vm.usuario
+            if (usuario != null) {
+                DisponibilidadScreen(
+                    usuario = usuario,
+                    onNavigateToInicio = {
+                        navController.navigate("inicio_user") {
+                            popUpTo("inicio_user") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToServicios = {
+                        navController.navigate("servicios") {
+                            popUpTo("agenda") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToPerfil = {
+                        navController.navigate("perfil") {
+                            popUpTo("agenda") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.navigate("login") {
+                        popUpTo(navController.graph.id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+            }
+        }
+
     }
 }
