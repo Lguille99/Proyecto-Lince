@@ -9,7 +9,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -60,7 +60,7 @@ fun ResumenCoordinacionScreen(
                     onClick = {}
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Assignment, contentDescription = "Servicios") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Servicios") },
                     label = { Text("Servicios") },
                     selected = false,
                     onClick = onNavigateToServicios

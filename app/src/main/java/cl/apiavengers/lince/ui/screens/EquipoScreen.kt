@@ -13,8 +13,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -178,8 +178,8 @@ fun TarjetaPersona(persona: Usuario, onClick: () -> Unit) {
 fun EstadoChip(disponibilidad: Disponibilidad) {
     val (icono, color) = when (disponibilidad) {
         Disponibilidad.DISPONIBLE -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.primary
-        Disponibilidad.EN_SERVICIO -> Icons.Default.Schedule to MaterialTheme.colorScheme.secondary
-        Disponibilidad.NO_DISPONIBLE -> Icons.Default.Cancel to MaterialTheme.colorScheme.error
+        Disponibilidad.EN_SERVICIO -> Icons.Default.DateRange to MaterialTheme.colorScheme.secondary
+        Disponibilidad.NO_DISPONIBLE -> Icons.Default.Close to MaterialTheme.colorScheme.error
     }
     Surface(
         shape = RoundedCornerShape(50),

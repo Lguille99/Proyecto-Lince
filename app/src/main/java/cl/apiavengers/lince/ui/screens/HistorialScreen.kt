@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
@@ -115,7 +115,7 @@ fun HistorialScreen(
 fun ChipEstadoServicio(estado: EstadoServicio) {
     val (icono, color) = when (estado) {
         EstadoServicio.COMPLETADA -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondary
-        EstadoServicio.RECHAZADA -> Icons.Default.Cancel to MaterialTheme.colorScheme.error
+        EstadoServicio.RECHAZADA -> Icons.Default.Close to MaterialTheme.colorScheme.error
         EstadoServicio.CONFIRMADA -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.primary
         EstadoServicio.PENDIENTE -> Icons.Default.DateRange to MaterialTheme.colorScheme.primary
     }

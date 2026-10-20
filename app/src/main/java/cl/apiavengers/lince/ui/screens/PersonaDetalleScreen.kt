@@ -10,7 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -89,7 +89,7 @@ fun PersonaDetalleScreen(
                         Text("Contacto y zona", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         DetalleFila(Icons.Default.Phone, "Teléfono", persona.telefono)
                         DetalleFila(Icons.Default.Email, "Correo", persona.correo)
-                        DetalleFila(Icons.Default.Badge, "Cuenta", persona.cuenta)
+                        DetalleFila(Icons.Default.Person, "Cuenta", persona.cuenta)
                         DetalleFila(Icons.Default.Place, "Zona", persona.zona)
                     }
                 }

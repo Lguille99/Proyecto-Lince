@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -116,7 +116,7 @@ fun ServiciosScreen(
                             .size(48.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Group,
+                            imageVector = Icons.Default.Face,
                             contentDescription = "Ver equipo",
                             tint = MaterialTheme.colorScheme.primary
                         )
