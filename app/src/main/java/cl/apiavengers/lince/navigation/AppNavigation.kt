@@ -12,6 +12,7 @@ import cl.apiavengers.lince.ui.screens.EquipoScreen
 import cl.apiavengers.lince.ui.screens.LoginScreen
 import cl.apiavengers.lince.ui.screens.ServiciosScreen
 import cl.apiavengers.lince.ui.screens.InicioUserScreen
+import cl.apiavengers.lince.ui.screens.DisponibilidadScreen
 import cl.apiavengers.lince.ui.screens.PerfilScreen
 import cl.apiavengers.lince.ui.screens.PersonaDetalleScreen
 import cl.apiavengers.lince.ui.screens.ServicioDetalleScreen
@@ -41,6 +42,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
             InicioUserScreen(
                 vm = vm,
                 onNavigateToServicios = { navController.navigate("servicios") },
+                onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                 onNavigateToEquipo = { navController.navigate("equipo") },
                 onNavigateToPerfil = { navController.navigate("perfil") },
                 onNavigateToHistorial = {},
@@ -55,6 +57,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                     usuario = usuario,
                     servicios = vm.servicios,
                     onNavigateToInicio = { navController.navigate("inicio_user") },
+                    onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                     onNavigateToEquipo = { navController.navigate("equipo") },
                     onNavigateToPerfil = { navController.navigate("perfil") },
                     onServicioClick = { id -> navController.navigate("servicio_detalle/$id") }
@@ -78,6 +81,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                     onPersonaClick = { id -> navController.navigate("persona_detalle/$id") },
                     onNavigateToInicio = { navController.navigate("inicio_user") },
                     onNavigateToServicios = { navController.navigate("servicios") },
+                    onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                     onNavigateToPerfil = { navController.navigate("perfil") }
                 )
             }
@@ -123,8 +127,43 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 },
                 onNavigateToInicio = { navController.navigate("inicio_user") },
                 onNavigateToServicios = { navController.navigate("servicios") },
+                onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                 onNavigateToEquipo = { navController.navigate("equipo") }
             )
         }
+        composable("agenda") {
+            val usuario = vm.usuario
+            if (usuario != null) {
+                DisponibilidadScreen(
+                    usuario = usuario,
+                    onNavigateToInicio = {
+                        navController.navigate("inicio_user") {
+                            popUpTo("inicio_user") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToServicios = {
+                        navController.navigate("servicios") {
+                            popUpTo("agenda") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToPerfil = {
+                        navController.navigate("perfil") {
+                            popUpTo("agenda") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.navigate("login") {
+                        popUpTo(navController.graph.id) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+            }
+        }
+
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,11 +37,11 @@ fun ServiciosScreen(
     var filtroSeleccionado by remember { mutableStateOf("Todas") }
     var textoBusqueda by remember { mutableStateOf("") }
 
-    val bottomItems = listOf("Inicio", "Servicios", "Equipo", "Perfil")
+    val bottomItems = listOf("Inicio", "Servicios", "Agenda", "Perfil")
     val bottomIcons = listOf(
         Icons.Default.Home,
         Icons.AutoMirrored.Filled.List,
-        Icons.Default.Group,
+        Icons.Default.DateRange,
         Icons.Default.Person
     )
 
@@ -72,7 +73,7 @@ fun ServiciosScreen(
                             selectedBottomItem = index
                             when (index) {
                                 0 -> onNavigateToInicio()
-                                2 -> { onNavigateToEquipo(); onNavigateToAgenda() }
+                                2 -> onNavigateToAgenda()
                                 3 -> onNavigateToPerfil()
                             }
                         }
@@ -91,18 +92,35 @@ fun ServiciosScreen(
         ) {
             
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "Mis servicios",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = if (usuario.rol == Rol.COORDINADOR) "Todos los servicios del sistema" else "Asignaciones del conductor",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "Mis servicios",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = if (usuario.rol == Rol.COORDINADOR) "Todos los servicios del sistema" else "Asignaciones del conductor",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        )
+                    }
+                    IconButton(
+                        onClick = onNavigateToEquipo,
+                        modifier = Modifier
+                            .size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Group,
+                            contentDescription = "Ver equipo",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 

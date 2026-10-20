@@ -4,7 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
@@ -30,8 +30,8 @@ fun InicioUserScreen(
     onServicioClick: (String) -> Unit = {}
 ) {
     var selectedItem by remember { mutableStateOf(0) }
-    val items = listOf("Inicio", "Servicios", "Equipo", "Perfil")
-    val icons = listOf(Icons.Default.Home, Icons.Default.List, Icons.Default.Group, Icons.Default.Person)
+    val items = listOf("Inicio", "Servicios", "Agenda", "Perfil")
+    val icons = listOf(Icons.Default.Home, Icons.Default.List, Icons.Default.DateRange, Icons.Default.Person)
 
     val nombreUsuario = vm.usuario?.nombre ?: "usuario"
     val proximoServicio = vm.servicios.firstOrNull()
@@ -49,7 +49,7 @@ fun InicioUserScreen(
                             selectedItem = index
                             when (index) {
                                 1 -> onNavigateToServicios()
-                                2 -> { onNavigateToEquipo(); onNavigateToAgenda() }
+                                2 -> onNavigateToAgenda()
                                 3 -> onNavigateToPerfil()
                             }
                         }

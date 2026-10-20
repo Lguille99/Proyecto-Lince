@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -32,6 +32,7 @@ fun EquipoScreen(
     onPersonaClick: (String) -> Unit,
     onNavigateToInicio: () -> Unit = {},
     onNavigateToServicios: () -> Unit = {},
+    onNavigateToAgenda: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
     var textoBusqueda by remember { mutableStateOf("") }
@@ -62,10 +63,10 @@ fun EquipoScreen(
                     onClick = onNavigateToServicios
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Group, contentDescription = "Equipo") },
-                    label = { Text("Equipo") },
-                    selected = true,
-                    onClick = {}
+                    icon = { Icon(Icons.Default.DateRange, contentDescription = "Agenda") },
+                    label = { Text("Agenda") },
+                    selected = false,
+                    onClick = onNavigateToAgenda
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
