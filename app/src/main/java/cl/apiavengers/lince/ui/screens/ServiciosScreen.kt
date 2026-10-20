@@ -175,8 +175,7 @@ fun ServiciosScreen(
 
 @Composable
 private fun TarjetaServicio(servicio: Servicio, mostrarRecurso: Boolean, onClick: () -> Unit = {}) {
-    val esPendiente = servicio.titulo.contains("Transfer", ignoreCase = true)
-    val estadoTexto = if (esPendiente) "Pendiente" else "Confirmada"
+    val estadoTexto = servicio.estado.etiqueta
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -230,13 +229,6 @@ private fun TarjetaServicio(servicio: Servicio, mostrarRecurso: Boolean, onClick
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-
-            
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Ver detalle",
-                tint = MaterialTheme.colorScheme.primary
-            )
         }
     }
 }

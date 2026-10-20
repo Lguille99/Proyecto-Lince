@@ -56,6 +56,7 @@ fun ServicioDetalleScreen(
                         Text("${servicio.fecha} · ${servicio.hora}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
                         Text(servicio.titulo, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                         Text(servicio.tipo, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
+                        ChipEstadoServicio(servicio.estado)
                     }
                 }
             }

@@ -95,7 +95,7 @@ fun InicioUserScreen(
                         color = MaterialTheme.colorScheme.surfaceVariant
                     )
                     Text(
-                        text = "2 servicios por revisar",
+                        text = "${vm.servicios.size} servicios por revisar",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary

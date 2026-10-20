@@ -9,7 +9,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cl.apiavengers.lince.ui.screens.EquipoScreen
+import cl.apiavengers.lince.ui.screens.HistorialScreen
 import cl.apiavengers.lince.ui.screens.LoginScreen
+import cl.apiavengers.lince.ui.screens.ResumenCoordinacionScreen
 import cl.apiavengers.lince.ui.screens.ServiciosScreen
 import cl.apiavengers.lince.ui.screens.InicioUserScreen
 import cl.apiavengers.lince.ui.screens.DisponibilidadScreen
@@ -21,6 +23,7 @@ import cl.apiavengers.lince.viewmodel.LinceViewModel
 @Composable
 fun AppNavigation(vm: LinceViewModel = viewModel()) {
     val navController = rememberNavController()
+    val rutaInicio = if (vm.esCoordinador()) "resumen" else "inicio_user"
 
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
@@ -29,13 +32,30 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 onLogin = { cuenta, clave ->
                     vm.iniciarSesion(cuenta, clave)
                     if (vm.usuario != null) {
-                        navController.navigate("inicio_user") {
+                        val destino = if (vm.esCoordinador()) "resumen" else "inicio_user"
+                        navController.navigate(destino) {
                             popUpTo("login") { inclusive = true }
                             launchSingleTop = true
                         }
                     }
                 }
             )
+        }
+
+        composable("resumen") {
+            if (vm.usuario == null || !vm.esCoordinador()) {
+                LaunchedEffect(Unit) { navController.navigate("login") }
+            } else {
+                ResumenCoordinacionScreen(
+                    vm = vm,
+                    resumen = vm.resumen,
+                    onNavigateToServicios = { navController.navigate("servicios") },
+                    onNavigateToHistorial = { navController.navigate("historial") },
+                    onNavigateToEquipo = { navController.navigate("equipo") },
+                    onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
+                    onNavigateToPerfil = { navController.navigate("perfil") }
+                )
+            }
         }
 
         composable("inicio_user") {
@@ -45,9 +65,25 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                 onNavigateToEquipo = { navController.navigate("equipo") },
                 onNavigateToPerfil = { navController.navigate("perfil") },
-                onNavigateToHistorial = {},
+                onNavigateToHistorial = { navController.navigate("historial") },
                 onServicioClick = { id -> navController.navigate("servicio_detalle/$id") }
             )
+        }
+
+        composable("historial") {
+            if (vm.usuario == null) {
+                LaunchedEffect(Unit) { navController.navigate("login") }
+            } else {
+                HistorialScreen(
+                    historial = vm.historial,
+                    onBack = { navController.popBackStack() },
+                    onServicioClick = { id -> navController.navigate("servicio_detalle/$id") },
+                    onNavigateToInicio = { navController.navigate(rutaInicio) { launchSingleTop = true } },
+                    onNavigateToServicios = { navController.navigate("servicios") },
+                    onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
+                    onNavigateToPerfil = { navController.navigate("perfil") }
+                )
+            }
         }
 
         composable("servicios") {
@@ -56,7 +92,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 ServiciosScreen(
                     usuario = usuario,
                     servicios = vm.servicios,
-                    onNavigateToInicio = { navController.navigate("inicio_user") },
+                    onNavigateToInicio = { navController.navigate(rutaInicio) { launchSingleTop = true } },
                     onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                     onNavigateToEquipo = { navController.navigate("equipo") },
                     onNavigateToPerfil = { navController.navigate("perfil") },
@@ -79,7 +115,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 EquipoScreen(
                     equipo = vm.equipo,
                     onPersonaClick = { id -> navController.navigate("persona_detalle/$id") },
-                    onNavigateToInicio = { navController.navigate("inicio_user") },
+                    onNavigateToInicio = { navController.navigate(rutaInicio) { launchSingleTop = true } },
                     onNavigateToServicios = { navController.navigate("servicios") },
                     onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                     onNavigateToPerfil = { navController.navigate("perfil") }
@@ -125,7 +161,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                         launchSingleTop = true
                     }
                 },
-                onNavigateToInicio = { navController.navigate("inicio_user") },
+                onNavigateToInicio = { navController.navigate(rutaInicio) { launchSingleTop = true } },
                 onNavigateToServicios = { navController.navigate("servicios") },
                 onNavigateToAgenda = { navController.navigate("agenda") { launchSingleTop = true } },
                 onNavigateToEquipo = { navController.navigate("equipo") }
@@ -137,8 +173,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 DisponibilidadScreen(
                     usuario = usuario,
                     onNavigateToInicio = {
-                        navController.navigate("inicio_user") {
-                            popUpTo("inicio_user") { inclusive = false }
+                        navController.navigate(rutaInicio) {
                             launchSingleTop = true
                         }
                     },
