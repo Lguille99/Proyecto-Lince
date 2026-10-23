@@ -16,7 +16,10 @@ data class Servicio(
     val recogida: String,
     val destino: String,
     val asignadoA: String,
-    val estado: EstadoServicio = EstadoServicio.PENDIENTE
+    val estado: EstadoServicio = EstadoServicio.PENDIENTE,
+    val historico: Boolean = false,
+    val motivoRechazo: String? = null,
+    val respondidoEn: String? = null
 )
 
 data class ResumenCoordinador(

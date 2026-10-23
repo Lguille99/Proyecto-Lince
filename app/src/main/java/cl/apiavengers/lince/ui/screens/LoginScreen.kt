@@ -27,13 +27,15 @@ fun LoginScreen(error: String?, cargando: Boolean = false, onLogin: (String, Str
             var clave by remember { mutableStateOf("") }
             Image(painterResource(R.drawable.ic_lince), "Logo Lince", Modifier.fillMaxWidth().height(100.dp))
             Text("Proyecto Lince", style = MaterialTheme.typography.headlineLarge)
-            Text("Ingresa para consultar tus servicios.")
-            OutlinedTextField(cuenta, { cuenta = it }, label = { Text("Correo electrónico") },
-                singleLine = true, enabled = !cargando, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), modifier = Modifier.fillMaxWidth())
+            Text("Demostración académica · datos ficticios guardados en este teléfono.")
+            OutlinedTextField(cuenta, { cuenta = it }, label = { Text("Usuario de demostración") },
+                singleLine = true, enabled = !cargando, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text), modifier = Modifier.fillMaxWidth())
             OutlinedTextField(clave, { clave = it }, label = { Text("Contraseña") },
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+            Text("Usuarios: conductor.demo, guia.demo o coordinador.demo")
+            Text("Contraseña de demostración: Lince123")
             if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
             Button(onClick = { onLogin(cuenta, clave) }, modifier = Modifier.fillMaxWidth(),
                 enabled = !cargando && cuenta.isNotBlank() && clave.isNotBlank()) { Text(if (cargando) "Ingresando…" else "Ingresar") }

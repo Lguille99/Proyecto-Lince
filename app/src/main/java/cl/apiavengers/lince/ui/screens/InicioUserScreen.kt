@@ -1,5 +1,7 @@
 package cl.apiavengers.lince.ui.screens
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +13,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -29,12 +32,13 @@ fun InicioUserScreen(
     onNavigateToHistorial: () -> Unit = {},
     onServicioClick: (String) -> Unit = {}
 ) {
+    val estado by vm.uiState.collectAsStateWithLifecycle()
     var selectedItem by remember { mutableStateOf(0) }
     val items = listOf("Inicio", "Servicios", "Agenda", "Perfil")
     val icons = listOf(Icons.Default.Home, Icons.Default.List, Icons.Default.DateRange, Icons.Default.Person)
 
-    val nombreUsuario = vm.usuario?.nombre ?: "usuario"
-    val proximoServicio = vm.servicios.firstOrNull()
+    val nombreUsuario = estado.usuario?.nombre ?: "usuario"
+    val proximoServicio = estado.servicios.firstOrNull()
     Scaffold(
         bottomBar = {
             NavigationBar(
@@ -62,6 +66,7 @@ fun InicioUserScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -73,7 +78,7 @@ fun InicioUserScreen(
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "Viernes 11 de septiembre",
+                    text = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMMM", java.util.Locale.forLanguageTag("es-CL"))),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
@@ -95,7 +100,7 @@ fun InicioUserScreen(
                         color = MaterialTheme.colorScheme.surfaceVariant
                     )
                     Text(
-                        text = "${vm.servicios.size} servicios por revisar",
+                        text = "${estado.servicios.size} servicios por revisar",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary

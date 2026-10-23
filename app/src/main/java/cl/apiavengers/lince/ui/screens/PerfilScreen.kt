@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,14 +27,15 @@ fun PerfilScreen(
     onNavigateToEquipo: () -> Unit = {},
     onNavigateToAgenda: () -> Unit = {}
 ) {
-    val usuario = vm.usuario
+    val estado by vm.uiState.collectAsStateWithLifecycle()
+    val usuario = estado.usuario
     var selectedBottomItem by remember { mutableStateOf(3) } 
 
     var identificador by remember { mutableStateOf(usuario?.id ?: "") }
     var nombreDemostracao by remember { mutableStateOf(usuario?.nombre ?: "") }
     var correoPrueba by remember { mutableStateOf(usuario?.correo ?: "") }
     
-    var mensajeGuardado by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { vm.limpiarMensaje() }
 
     val bottomItems = listOf("Inicio", "Servicios", "Agenda", "Perfil")
     val bottomIcons = listOf(
@@ -141,10 +143,14 @@ fun PerfilScreen(
                 )
             }
 
-            if (mensajeGuardado) {
+            if (estado.error != null) {
+                item { Text(estado.error.orEmpty(), color = MaterialTheme.colorScheme.error) }
+            }
+
+            if (estado.mensaje != null) {
                 item {
                     Text(
-                        text = "Cambios aplicados solo durante esta sesión.",
+                        text = estado.mensaje.orEmpty(),
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
@@ -156,8 +162,8 @@ fun PerfilScreen(
                 Button(
                     onClick = {
                         vm.actualizarUsuario(nombreDemostracao, correoPrueba)
-                        mensajeGuardado = true
                     },
+                    enabled = !estado.cargando,
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier
@@ -174,6 +180,7 @@ fun PerfilScreen(
                         vm.cerrarSesion()
                         onCerrarSesion()
                     },
+                    enabled = !estado.cargando,
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier

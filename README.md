@@ -1,159 +1,90 @@
 # Proyecto Lince
 
-![Logotipo de Proyecto Lince](docs/diseno/logo.png)
-
-Aplicación móvil académica para consultar y responder asignaciones de servicios turísticos. Busca ordenar la información que hoy se reparte entre llamadas, mensajes y registros manuales.
+Aplicación Android académica para organizar la consulta y respuesta a asignaciones de servicios turísticos. El avance de la Evaluación 2 utiliza datos ficticios y almacenamiento local; no se conecta al sistema real del cliente.
 
 **Api Avengers · Equipo 5 · Sección 3D**
 
-## Estado del proyecto
-
-Propuesta de MVP y diseño de interfaces. Las imágenes son referencias visuales; no representan una aplicación implementada ni conectada al sistema real de Southbound. Todos los ejemplos son ficticios. Identidad y pantallas pendientes de revisión final del equipo.
-
-## Integrantes
-
-| Integrante | Rol |
+| Integrante | Rol del equipo |
 |---|---|
 | Vicente Krausse | Coordinador |
 | Luis Fermin | Diseñador |
 | Jeremy Ibañez | Desarrollador |
 
-Todos participan en las pruebas y documentación.
+## Ejecutar
 
-## Usuarios y funciones
+1. Abrir la carpeta raíz del repositorio en Android Studio.
+2. Usar JDK 17 e instalar Android SDK 35. El teléfono o emulador debe tener Android 8.0/API 26 o superior.
+3. Sincronizar Gradle. La primera sincronización requiere Internet para descargar dependencias.
+4. Ejecutar el módulo `app` con Run.
+5. Entrar con una cuenta de demostración de la tabla siguiente. No hace falta configurar Supabase.
 
-- **Conductor:** consulta sus asignaciones, confirma o rechaza, informa disponibilidad y registra check-in/check-out.
-- **Guía:** consulta sus servicios, responde asignaciones y actualiza disponibilidad y perfil.
-- **Coordinador:** consulta servicios, respuestas, disponibilidad e historial, y un resumen con sincronización simulada.
+Android Studio configura `local.properties` con la ruta del SDK de cada equipo. Ese archivo no se sube al repositorio. No copiar la ruta del SDK de otro compañero.
 
-El MVP incluye acceso con validación de rol, consultas y filtros básicos, respuestas validadas, disponibilidad, perfil ficticio, historial y ejecución del conductor. Las asignaciones y usuarios estarán precargados para el ejercicio. Quedan fuera la operación productiva, la asignación automática, el GPS en vivo, las notificaciones reales y los reportes avanzados.
-
-## Identidad visual
-
-Nombre: **Proyecto Lince**. El símbolo de lince representa atención y seguimiento; su centro alude a un punto de ruta. Se entrega en PNG transparente y SVG editable.
-
-| Color | HEX | Uso |
+| Rol | Cuenta | Contraseña de demostración |
 |---|---|---|
-| Principal | `#245B78` | Botones y elementos activos |
-| Secundario | `#286B5D` | Estados confirmados |
-| Fondo | `#F6F8FA` | Fondo general |
-| Texto | `#172B3A` | Títulos y contenido |
-| Error | `#BA1A1A` | Errores y rechazos |
-| Superficie | `#E0EDF2` | Navegación e información secundaria |
+| Conductor | `conductor.demo` | `Lince123` |
+| Guía | `guia.demo` | `Lince123` |
+| Coordinador | `coordinador.demo` | `Lince123` |
 
-Los estados usarán texto e iconos además de color. La propuesta emplea tarjetas, botones redondeados, campos etiquetados y navegación inferior para conductor y guía. La fuente del documento de evidencia conserva la del formato docente; las imágenes utilizan Arial como referencia visual, con Roboto previsto para Android.
+Estas cuentas y la contraseña son públicas y ficticias. Son un acceso de demostración, no un sistema de autenticación para producción. Al cerrar la aplicación hay que volver a ingresar; los registros de Room permanecen.
 
-## Flujo de usuario
+## Funciones del avance
 
-Diagrama de actividad UML exportado como PNG:
+- Pantallas con Jetpack Compose y Material 3, navegación por rol, listas, búsqueda, filtros y detalles.
+- Inicio de sesión de demostración con campos obligatorios y mensaje de credenciales incorrectas.
+- Confirmación o rechazo de un servicio pendiente por su responsable. El rechazo requiere un motivo de 1 a 300 caracteres; una respuesta guardada no se puede repetir.
+- Servicios y respuestas guardados en Room, con usuario responsable, motivo y fecha/hora de respuesta. El historial incluye servicios anteriores y respuestas nuevas; el resumen actualiza sus conteos.
+- Agenda por cuenta con selección de fecha y bloqueo de días desde hoy. Room conserva los días al reiniciar. Los antiguos archivos JSON se importan una sola vez por cuenta.
+- Perfil con validación de nombre y correo. Identificador y rol no editables. Los cambios del perfil solo duran durante la sesión y la pantalla lo informa.
+- Detección del estado de Internet con un aviso visible. Sin conexión se puede continuar el flujo local.
 
-![Diagrama de actividad UML](docs/diseno/flujo-usuario-uml.png)
+Los servicios de ejemplo se insertan sin sobrescribir los existentes. Sus fechas quedan fijadas al cargar la base por primera vez. El resumen de disponibilidad del equipo todavía utiliza valores de ejemplo; no representa los días de la agenda personal. La acción de actualizar coordinación recarga datos locales y no envía información al cliente.
 
-Representación equivalente en Mermaid para visualizarla directamente en GitHub. El archivo editable está en [flujo-usuario.mmd](docs/diseno/flujo-usuario.mmd).
+## Estructura
 
-```mermaid
-flowchart TD
-    A((Inicio)) --> B[Ingresar credenciales]
-    B --> C{¿Acceso válido?}
-    C -->|No| E[Mostrar error]
-    E --> B
-    C -->|Sí| R{Rol validado}
-    R -->|Coordinador| CO[Resumen operativo]
-    CO --> CR[Consultar servicios, respuestas, disponibilidad e historial]
-    CR --> CS[Simular sincronización y actualizar resumen]
-    R -->|Conductor o guía| H[Inicio personal]
-    H --> M{Sección elegida}
-    M -->|Disponibilidad o perfil| ED[Editar datos, validar y guardar]
-    M -->|Historial| HI[Consultar historial]
-    M -->|Servicios| L[Consultar lista de servicios]
-    L --> DT[Abrir detalle de asignación]
-    DT --> P{¿Asignación pendiente?}
-    P -->|Sí| Q{¿Confirmar?}
-    Q -->|No| RE[Indicar motivo, validar y guardar rechazo]
-    Q -->|Sí| OK[Guardar confirmación]
-    P -->|No| DR{¿Conductor y asignación confirmada?}
-    OK --> DR
-    DR -->|Sí| IN[Registrar check-in]
-    IN --> OUT[Registrar check-out]
-    DR -->|No| MERGE{ }
-    OUT --> MERGE
-    RE --> MERGE
-    HI --> MERGE
-    ED --> MERGE
-    CS --> MERGE
-    MERGE --> RETURN[Volver al inicio o resumen]
-    RETURN --> EXIT[Cerrar sesión]
-    EXIT --> END(((Fin)))
+- `dominio`: modelos, reglas de validación, repositorios e interfaces de almacenamiento Kotlin.
+- `app/.../ui/screens`: pantallas Compose.
+- `app/.../viewmodel`: estado de interfaz con ViewModel y StateFlow.
+- `app/.../datos/local`: entidades, DAO, almacenamiento y `LinceDatabase` de Room.
+- `app/.../datos/MonitorConexion.kt`: observación del estado de la red.
+- `app/schemas`: versiones exportadas del esquema Room. La migración 1 → 2 agrega servicios y conserva la agenda.
+- `supabase`: trabajo previo de base remota. Está conservado, pero no participa en el acceso ni en el flujo de esta entrega.
+
+La UI observa StateFlow. El ViewModel ejecuta operaciones de disco fuera del hilo principal. El Repository valida las reglas y usa el almacenamiento Room mediante una interfaz. Cuando el cliente entregue su API, se implementará el acceso remoto según su contrato y autenticación; no se asumen endpoints ni credenciales.
+
+## Pruebas
+
+Con Java 17 y Android SDK configurados:
+
+```sh
+./gradlew :dominio:test :app:testDebugUnitTest :app:assembleDebug
 ```
 
-Los errores de formulario se muestran en la misma pantalla y deben corregirse antes de guardar. Cada respuesta conserva usuario, fecha y hora. Una asignación rechazada no puede iniciar ejecución; el check-out se habilita después del check-in. El diagrama muestra un recorrido que termina al cerrar sesión; las secciones pueden volver a utilizarse en recorridos posteriores.
+Las pruebas JVM de Android usan Robolectric y pueden descargar su entorno en la primera ejecución. Comprueban respuestas y validaciones, aislamiento de cuentas, reapertura de Room, importación desde JSON y migración de la base. Las pruebas de UI verifican el flujo mediante Compose. No sustituyen el ensayo final en el dispositivo que se usará en la evaluación.
 
-## Pantallas principales
+## Demostración para la evaluación
 
-| Pantalla | Archivo | Componentes previstos |
-|---|---|---|
-| Inicio de sesión | [01-login.png](docs/diseno/interfaces/01-login.png) | OutlinedTextField, Button, Snackbar |
-| Inicio | [02-inicio.png](docs/diseno/interfaces/02-inicio.png) | TopAppBar, Card, NavigationBar |
-| Servicios | [03-servicios.png](docs/diseno/interfaces/03-servicios.png) | FilterChip, Card, OutlinedTextField |
-| Detalle | [04-detalle.png](docs/diseno/interfaces/04-detalle.png) | Button, OutlinedButton, AlertDialog |
-| Disponibilidad | [05-disponibilidad.png](docs/diseno/interfaces/05-disponibilidad.png) | DatePicker, Switch, Button |
-| Perfil | [06-perfil.png](docs/diseno/interfaces/06-perfil.png) | OutlinedTextField, Button, Snackbar |
-| Ejecución | [07-ejecucion.png](docs/diseno/interfaces/07-ejecucion.png) | Card, Button, TopAppBar |
-| Historial | [08-historial.png](docs/diseno/interfaces/08-historial.png) | Card, TopAppBar |
-| Variante de inicio para coordinación | [09-resumen-coordinacion.png](docs/diseno/interfaces/09-resumen-coordinacion.png) | Card, Button, TopAppBar |
+1. Entrar con contraseña incorrecta y mostrar el mensaje; luego ingresar como conductor.
+2. Abrir Servicios, buscar una asignación pendiente y acceder a su detalle.
+3. Intentar rechazar sin motivo; corregirlo y guardar. Mostrar estado, motivo y fecha/hora.
+4. Volver al listado y al historial para comprobar la misma respuesta.
+5. Abrir Agenda, elegir hoy o una fecha futura, bloquear el día y guardar.
+6. Cerrar completamente la app, volver a entrar y comprobar respuesta y disponibilidad.
+7. Ingresar como coordinador para consultar el resumen y el historial.
+8. Desactivar Wi-Fi/datos o activar modo avión y mostrar el aviso sin Internet; continuar consultando los datos locales. Reactivar Internet y observar el cambio.
+9. Abrir Perfil y demostrar el error de nombre vacío o correo inválido.
 
-Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. Historial se abre desde Inicio; detalle desde Servicios y ejecución desde el detalle de un servicio confirmado para el conductor. Coordinación dispone de su resumen con accesos a todos los servicios y al historial. La vista 09 es una variante por rol, no una pantalla nueva del alcance.
+## Pendientes
 
-### Galería
+- Ensayar el APK en un emulador o teléfono físico antes de la entrega y registrar el resultado.
+- Integrar la API y la autenticación que proporcione el cliente.
+- Implementar check-in/check-out, persistencia del perfil y disponibilidad real en el resumen de coordinación.
+- Confirmar con el equipo responsables y fechas del [tablero de tareas](docs/PLANIFICACION.md).
 
-![01-login](docs/diseno/interfaces/01-login.png)
+## Diseño y evidencias
 
-![02-inicio](docs/diseno/interfaces/02-inicio.png)
+- [Flujo de usuario](docs/diseno/flujo-usuario-uml.png).
+- [Interfaces propuestas](docs/diseno/interfaces).
+- [Planificación y verificación](docs/PLANIFICACION.md).
 
-![03-servicios](docs/diseno/interfaces/03-servicios.png)
-
-![04-detalle](docs/diseno/interfaces/04-detalle.png)
-
-![05-disponibilidad](docs/diseno/interfaces/05-disponibilidad.png)
-
-![06-perfil](docs/diseno/interfaces/06-perfil.png)
-
-![07-ejecucion](docs/diseno/interfaces/07-ejecucion.png)
-
-![08-historial](docs/diseno/interfaces/08-historial.png)
-
-![09-resumen-coordinacion](docs/diseno/interfaces/09-resumen-coordinacion.png)
-
-## Tecnologías previstas
-
-Android, Kotlin, Jetpack Compose y Material 3. Arquitectura MVVM, almacenamiento local y conexión a una API de prueba o simulada. Estas tecnologías están previstas para la implementación; esta entrega contiene análisis y diseño.
-
-Referencias oficiales de diseño: [Material Design 3](https://m3.material.io/) y [componentes Material para Android](https://developer.android.com/design/ui/mobile/guides/components/material-overview).
-
-## Organización
-
-```text
-Proyecto-lince/
-├── README.md
-└── docs/
-    ├── evidencias/
-    │   └── clase-02/
-    │       └── Evidencia_Clase_02_Diseno_Equipo05.docx
-    └── diseno/
-        ├── logo.png
-        ├── logo.svg
-        ├── flujo-usuario-uml.png
-        ├── flujo-usuario.mmd
-        └── interfaces/
-            └── 01-login.png … 09-resumen-coordinacion.png
-```
-
-La evidencia de clase 1 debe conservarse en `docs/evidencias/clase-01/` si ya está en el repositorio.
-
-## Entrega de clase 2
-
-- Documento completado y recursos visuales preparados con apoyo de Codex.
-- Pendiente: selección y revisión final de identidad, flujo y pantallas por el equipo.
-- Pendiente: incorporar los archivos y este contenido al README existente, conservando la información que ya tenga el proyecto.
-- Pendiente: realizar el commit `docs: agrega flujo UML e interfaces del proyecto` y subirlo al repositorio.
-
+Los diseños describen también funciones futuras: no deben confundirse con la lista de funciones implementadas. Cada integrante debe revisar, ejecutar y entender sus aportes para la defensa individual. Después del cierre de entrega, mantener la versión entregada sin cambios salvo indicación del docente.

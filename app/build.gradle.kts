@@ -36,6 +36,8 @@ dependencies {
     implementation("androidx.room:room-runtime:2.7.2")
     kapt("androidx.room:room-compiler:2.7.2")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     testImplementation("org.robolectric:robolectric:4.14.1")
     implementation(project(":dominio"))
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.0")

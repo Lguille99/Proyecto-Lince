@@ -1,0 +1,138 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "6f49075423c22cc02c6b6a50ba5068d6",
+    "entities": [
+      {
+        "tableName": "disponibilidad",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cuenta` TEXT NOT NULL, `fecha` TEXT NOT NULL, PRIMARY KEY(`cuenta`, `fecha`))",
+        "fields": [
+          {
+            "fieldPath": "cuenta",
+            "columnName": "cuenta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cuenta",
+            "fecha"
+          ]
+        }
+      },
+      {
+        "tableName": "agendas_importadas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cuenta` TEXT NOT NULL, PRIMARY KEY(`cuenta`))",
+        "fields": [
+          {
+            "fieldPath": "cuenta",
+            "columnName": "cuenta",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cuenta"
+          ]
+        }
+      },
+      {
+        "tableName": "servicios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `titulo` TEXT NOT NULL, `tipo` TEXT NOT NULL, `fecha` TEXT NOT NULL, `hora` TEXT NOT NULL, `recogida` TEXT NOT NULL, `destino` TEXT NOT NULL, `asignadoA` TEXT NOT NULL, `estado` TEXT NOT NULL, `historico` INTEGER NOT NULL, `motivoRechazo` TEXT, `respondidoEn` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "titulo",
+            "columnName": "titulo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hora",
+            "columnName": "hora",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recogida",
+            "columnName": "recogida",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destino",
+            "columnName": "destino",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "asignadoA",
+            "columnName": "asignadoA",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "historico",
+            "columnName": "historico",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivoRechazo",
+            "columnName": "motivoRechazo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "respondidoEn",
+            "columnName": "respondidoEn",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6f49075423c22cc02c6b6a50ba5068d6')"
+    ]
+  }
+}

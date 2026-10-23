@@ -6,7 +6,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import cl.apiavengers.lince.modelo.Rol
+import cl.apiavengers.lince.modelo.EstadoServicio
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -20,9 +23,15 @@ import cl.apiavengers.lince.modelo.Usuario
 fun ServicioDetalleScreen(
     servicio: Servicio?,
     responsable: Usuario?,
+    usuario: Usuario?,
+    cargando: Boolean,
+    error: String?,
+    mensaje: String?,
+    onResponder: (Boolean, String) -> Unit,
     onBack: () -> Unit,
     onResponsableClick: (String) -> Unit
 ) {
+    var motivo by rememberSaveable(servicio?.id) { mutableStateOf("") }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -83,15 +92,29 @@ fun ServicioDetalleScreen(
                 }
             }
             item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = {}, modifier = Modifier.weight(1f)) { Text("Confirmar") }
-                    OutlinedButton(onClick = {}, modifier = Modifier.weight(1f)) { Text("Rechazar") }
+                servicio.respondidoEn?.let {
+                    val fechaLocal = java.time.Instant.parse(it).atZone(java.time.ZoneId.systemDefault())
+                        .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                    Text("Respuesta guardada: $fechaLocal")
                 }
-                Text(
-                    "Botones visuales del MVP. La lógica de respuesta se conecta en el siguiente sprint.",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
+                servicio.motivoRechazo?.let { Text("Motivo: $it") }
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                mensaje?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+                if (usuario?.id == servicio.asignadoA && usuario.rol != Rol.COORDINADOR &&
+                    servicio.estado == EstadoServicio.PENDIENTE && !servicio.historico) {
+                    OutlinedTextField(
+                        value = motivo, onValueChange = { motivo = it },
+                        label = { Text("Motivo de rechazo") },
+                        supportingText = { Text("Obligatorio al rechazar · máximo 300 caracteres") },
+                        isError = motivo.length > 300,
+                        enabled = !cargando, modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = { onResponder(true, "") }, enabled = !cargando, modifier = Modifier.weight(1f)) { Text("Confirmar") }
+                        OutlinedButton(onClick = { onResponder(false, motivo) }, enabled = !cargando, modifier = Modifier.weight(1f)) { Text("Rechazar") }
+                    }
+                    if (cargando) LinearProgressIndicator(Modifier.fillMaxWidth())
+                }
             }
         }
     }

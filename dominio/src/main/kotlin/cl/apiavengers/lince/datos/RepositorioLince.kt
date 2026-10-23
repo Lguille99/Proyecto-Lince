@@ -3,12 +3,16 @@ package cl.apiavengers.lince.datos
 import cl.apiavengers.lince.modelo.*
 import java.time.LocalDate
 
-class RepositorioLince {
+class RepositorioLince(private val almacen: AlmacenServicios = AlmacenServiciosMemoria()) {
     private var usuarioActual: Usuario? = null
-    private val hoy = LocalDate.now()
-    private val activos = DatosPrueba.servicios(hoy)
-    private val historial = DatosPrueba.historial(hoy)
-    private val todos = activos + historial
+    private val activos get() = almacen.consultar().filter { !it.historico }
+    private val historial get() = almacen.consultar().filter { it.historico || it.respondidoEn != null }
+    private val todos get() = almacen.consultar()
+
+    private fun preparar() {
+        val hoy = LocalDate.now()
+        almacen.preparar(DatosPrueba.servicios(hoy) + DatosPrueba.historial(hoy).map { it.copy(historico = true) })
+    }
 
     fun iniciarSesion(cuenta: String, clave: String): Usuario {
         usuarioActual = null
@@ -16,11 +20,13 @@ class RepositorioLince {
         require(usuario != null && clave == DatosPrueba.CLAVE_DEMO) {
             "Usuario o contraseña incorrectos."
         }
+        preparar()
         usuarioActual = usuario
         return usuario
     }
 
     fun establecerUsuario(usuario: Usuario) {
+        preparar()
         usuarioActual = usuario
     }
 
@@ -77,6 +83,30 @@ class RepositorioLince {
     fun consultarServiciosDe(usuarioId: String): List<Servicio> {
         usuarioActual ?: throw IllegalStateException("Debes iniciar sesión.")
         return activos.filter { it.asignadoA == usuarioId }
+    }
+
+    fun responderServicio(id: String, confirmar: Boolean, motivo: String) {
+        val usuario = usuarioActual ?: throw IllegalStateException("Debes iniciar sesión.")
+        val servicio = obtenerServicioPorId(id)
+        require(usuario.rol != Rol.COORDINADOR && servicio.asignadoA == usuario.id) {
+            "Solo el responsable puede responder este servicio."
+        }
+        require(!servicio.historico && servicio.estado == EstadoServicio.PENDIENTE) { "El servicio ya fue respondido." }
+        require(confirmar || motivo.trim().length in 1..300) { "Escribe un motivo de rechazo de entre 1 y 300 caracteres." }
+        check(almacen.responder(id, usuario.id,
+            if (confirmar) EstadoServicio.CONFIRMADA else EstadoServicio.RECHAZADA,
+            if (confirmar) null else motivo.trim(), java.time.Instant.now().toString())) {
+            "El servicio ya cambió. Actualiza la lista."
+        }
+    }
+
+    fun actualizarPerfil(nombre: String, correo: String): Usuario {
+        val actual = usuarioActual ?: throw IllegalStateException("Debes iniciar sesión.")
+        require(nombre.trim().length in 2..120) { "El nombre debe tener entre 2 y 120 caracteres." }
+        require(correo.trim().length <= 254 && Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$").matches(correo.trim())) {
+            "Ingresa un correo válido."
+        }
+        return actual.copy(nombre = nombre.trim(), correo = correo.trim()).also { usuarioActual = it }
     }
 
     fun cerrarSesion() {

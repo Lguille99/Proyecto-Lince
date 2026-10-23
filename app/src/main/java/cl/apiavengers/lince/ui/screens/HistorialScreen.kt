@@ -85,7 +85,7 @@ fun HistorialScreen(
         ) {
             item {
                 Text(
-                    "${historial.size} servicios finalizados · toca para ver en grande",
+                    "${historial.size} respuestas y servicios anteriores · toca para ver detalle",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )

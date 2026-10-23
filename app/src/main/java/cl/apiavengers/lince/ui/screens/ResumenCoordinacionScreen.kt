@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +33,7 @@ fun ResumenCoordinacionScreen(
     onNavigateToAgenda: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
+    val estado by vm.uiState.collectAsStateWithLifecycle()
     var sincronizando by remember { mutableStateOf(false) }
     var ultimaSync by remember { mutableStateOf("aún sin sincronizar") }
 
@@ -46,7 +48,7 @@ fun ResumenCoordinacionScreen(
                         },
                         enabled = !sincronizando
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Sincronizar")
+                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar datos locales")
                     }
                 }
             )
@@ -96,12 +98,12 @@ fun ResumenCoordinacionScreen(
         ) {
             item {
                 Text(
-                    "Hola, ${vm.usuario?.nombre ?: "coordinación"}",
+                    "Hola, ${estado.usuario?.nombre ?: "coordinación"}",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    "Estado de la operación turística · sincronizado $ultimaSync",
+                    "Datos de demostración locales · actualizado $ultimaSync",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
@@ -115,7 +117,7 @@ fun ResumenCoordinacionScreen(
                 ) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("SERVICIOS ACTIVOS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
-                        Text("${resumen?.serviciosActivos ?: 0} en curso", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                        Text("${resumen?.serviciosActivos ?: 0} asignados", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                         Text(
                             "${resumen?.pendientes ?: 0} pendientes de respuesta · ${resumen?.historialTotal ?: 0} en historial",
                             fontSize = 13.sp,
