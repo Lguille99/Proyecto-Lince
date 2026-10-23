@@ -5,6 +5,27 @@ import cl.apiavengers.lince.modelo.EstadoServicio
 import kotlin.test.*
 
 class RepositorioLinceTest {
+    @Test fun perfilAutenticadoConservaFiltroPorCodigo() {
+        val repo = RepositorioLince()
+        repo.establecerUsuario(cl.apiavengers.lince.modelo.Usuario(
+            "GUI-002", "Guía", "guia@example.com", "guia@example.com", cl.apiavengers.lince.modelo.Rol.GUIA
+        ))
+        assertEquals(2, repo.consultarServicios().size)
+        assertTrue(repo.consultarServicios().all { it.asignadoA == "GUI-002" })
+        assertFailsWith<IllegalArgumentException> { repo.resumenCoordinador() }
+        repo.cerrarSesion()
+        assertFailsWith<IllegalStateException> { repo.consultarServicios() }
+    }
+
+    @Test fun perfilNuevoNoRecibeServiciosDeOtroUsuario() {
+        val repo = RepositorioLince()
+        repo.establecerUsuario(cl.apiavengers.lince.modelo.Usuario(
+            "DRV-NUEVO", "Nuevo", "nuevo@example.com", "nuevo@example.com", cl.apiavengers.lince.modelo.Rol.CONDUCTOR
+        ))
+        assertTrue(repo.consultarServicios().isEmpty())
+        assertTrue(repo.consultarHistorial().isEmpty())
+    }
+
     @Test fun exigeSesion() {
         assertFailsWith<IllegalStateException> { RepositorioLince().consultarServicios() }
     }

@@ -20,6 +20,10 @@ class RepositorioLince {
         return usuario
     }
 
+    fun establecerUsuario(usuario: Usuario) {
+        usuarioActual = usuario
+    }
+
     fun consultarServicios(): List<Servicio> {
         val usuario = usuarioActual ?: throw IllegalStateException("Debes iniciar sesión.")
         return when (usuario.rol) {

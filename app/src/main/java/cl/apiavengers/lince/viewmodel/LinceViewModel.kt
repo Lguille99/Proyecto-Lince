@@ -3,6 +3,11 @@ package cl.apiavengers.lince.viewmodel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import java.io.IOException
+import cl.apiavengers.lince.datos.AutenticacionSupabase
 import androidx.lifecycle.ViewModel
 import cl.apiavengers.lince.datos.RepositorioLince
 import cl.apiavengers.lince.modelo.ResumenCoordinador
@@ -11,6 +16,9 @@ import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
 
 class LinceViewModel : ViewModel() {
+    private val autenticacion = AutenticacionSupabase()
+    var cargando by mutableStateOf(false)
+        private set
     private val repositorio = RepositorioLince()
     var usuario by mutableStateOf<Usuario?>(null)
         private set
@@ -26,33 +34,40 @@ class LinceViewModel : ViewModel() {
         private set
 
     fun iniciarSesion(cuenta: String, clave: String) {
-        usuario = null
-        servicios = emptyList()
-        historial = emptyList()
-        equipo = emptyList()
-        resumen = null
+        if (cargando) return
+        cerrarSesion()
         error = null
-        try {
-            usuario = repositorio.iniciarSesion(cuenta, clave)
-            servicios = repositorio.consultarServicios()
-            historial = repositorio.consultarHistorial()
-            equipo = repositorio.consultarEquipo()
-            if (usuario?.rol == Rol.COORDINADOR) {
-                resumen = repositorio.resumenCoordinador()
+        cargando = true
+        viewModelScope.launch {
+            try {
+                val perfil = autenticacion.iniciarSesion(cuenta, clave)
+                repositorio.establecerUsuario(perfil)
+                servicios = repositorio.consultarServicios()
+                historial = repositorio.consultarHistorial()
+                equipo = repositorio.consultarEquipo()
+                if (perfil.rol == Rol.COORDINADOR) resumen = repositorio.resumenCoordinador()
+                usuario = perfil
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
+            } catch (problema: IOException) {
+                error = "No se pudo conectar. Revisa tu conexión a Internet."
+            } catch (problema: IllegalArgumentException) {
+                error = problema.message
+            } catch (problema: Exception) {
+                error = "No se pudo cargar tu perfil. Intenta nuevamente."
+            } finally {
+                cargando = false
             }
-        } catch (problema: IllegalArgumentException) {
-            error = problema.message
         }
     }
 
     fun esCoordinador(): Boolean = usuario?.rol == Rol.COORDINADOR
 
     // Función para actualizar los datos del usuario en memoria durante la sesión
-    fun actualizarUsuario(nuevoNombre: String, nuevoCorreo: String, nuevoIdentificador: String) {
+    fun actualizarUsuario(nuevoNombre: String, nuevoCorreo: String) {
         usuario = usuario?.copy(
             nombre = nuevoNombre,
-            correo = nuevoCorreo,
-            id = nuevoIdentificador
+            correo = nuevoCorreo
         )
     }
 

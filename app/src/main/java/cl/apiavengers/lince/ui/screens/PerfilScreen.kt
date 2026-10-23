@@ -83,7 +83,7 @@ fun PerfilScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Cuenta ficticia · ${usuario?.rol?.etiqueta ?: "Usuario"}",
+                        text = "Cuenta · ${usuario?.rol?.etiqueta ?: "Usuario"}",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
@@ -93,7 +93,8 @@ fun PerfilScreen(
             item {
                 OutlinedTextField(
                     value = identificador,
-                    onValueChange = { identificador = it },
+                    onValueChange = {},
+                    readOnly = true,
                     label = { Text("Identificador") },
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
@@ -143,7 +144,7 @@ fun PerfilScreen(
             if (mensajeGuardado) {
                 item {
                     Text(
-                        text = "¡Cambios guardados exitosamente!",
+                        text = "Cambios aplicados solo durante esta sesión.",
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
@@ -154,7 +155,7 @@ fun PerfilScreen(
             item {
                 Button(
                     onClick = {
-                        vm.actualizarUsuario(nombreDemostracao, correoPrueba, identificador)
+                        vm.actualizarUsuario(nombreDemostracao, correoPrueba)
                         mensajeGuardado = true
                     },
                     shape = RoundedCornerShape(50),

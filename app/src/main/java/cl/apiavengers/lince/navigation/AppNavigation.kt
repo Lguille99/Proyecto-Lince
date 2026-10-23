@@ -27,19 +27,16 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
 
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
-            LoginScreen(
-                error = vm.error,
-                onLogin = { cuenta, clave ->
-                    vm.iniciarSesion(cuenta, clave)
-                    if (vm.usuario != null) {
-                        val destino = if (vm.esCoordinador()) "resumen" else "inicio_user"
-                        navController.navigate(destino) {
-                            popUpTo("login") { inclusive = true }
-                            launchSingleTop = true
-                        }
+            LaunchedEffect(vm.usuario) {
+                if (vm.usuario != null) {
+                    val destino = if (vm.esCoordinador()) "resumen" else "inicio_user"
+                    navController.navigate(destino) {
+                        popUpTo("login") { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
-            )
+            }
+            LoginScreen(error = vm.error, cargando = vm.cargando, onLogin = vm::iniciarSesion)
         }
 
         composable("resumen") {
@@ -157,7 +154,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                 vm = vm,
                 onCerrarSesion = {
                     navController.navigate("login") {
-                        popUpTo("perfil") { inclusive = true }
+                        popUpTo(navController.graph.id) { inclusive = false }
                         launchSingleTop = true
                     }
                 },
