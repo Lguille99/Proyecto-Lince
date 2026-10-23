@@ -3,6 +3,8 @@ package cl.apiavengers.lince.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.apiavengers.lince.datos.local.AlmacenDisponibilidadRoom
+import cl.apiavengers.lince.datos.local.LinceDatabase
 import cl.apiavengers.lince.datos.ArchivoDisponibilidad
 import cl.apiavengers.lince.datos.RepositorioDisponibilidad
 import cl.apiavengers.lince.modelo.DisponibilidadUiState
@@ -17,7 +19,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class DisponibilidadViewModel(application: Application) : AndroidViewModel(application) {
-    private val repositorio = RepositorioDisponibilidad(ArchivoDisponibilidad(application))
+    private val repositorio = RepositorioDisponibilidad(
+        AlmacenDisponibilidadRoom(LinceDatabase.obtener(application).disponibilidadDao(), ArchivoDisponibilidad(application))
+    )
     private val _uiState = MutableStateFlow(DisponibilidadUiState())
     val uiState = _uiState.asStateFlow()
     private var usuarioActual: Usuario? = null
