@@ -16,5 +16,6 @@ data class Usuario(
     val rol: Rol,
     val telefono: String = "+56 9 0000 0000",
     val disponibilidad: Disponibilidad = Disponibilidad.DISPONIBLE,
-    val zona: String = "Zona central"
+    val zona: String = "Zona central",
+    val idiomas: List<Idioma> = listOf(Idioma.ESPANOL)
 )
