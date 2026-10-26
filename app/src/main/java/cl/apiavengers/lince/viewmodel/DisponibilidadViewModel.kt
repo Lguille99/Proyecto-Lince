@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.datos.ArchivoDisponibilidad
 import cl.apiavengers.lince.datos.RepositorioDisponibilidad
 import cl.apiavengers.lince.modelo.DisponibilidadUiState
+import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
@@ -47,7 +48,7 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
         _uiState.update { it.copy(bloqueado = bloqueado, mensaje = null, esError = false) }
     }
 
-    fun guardar() {
+    fun guardar(serviciosAsignados: List<Servicio> = emptyList()) {
         val actual = _uiState.value
         if (actual.cargando || !actual.cargado) return
         val usuario = usuarioActual ?: return
@@ -55,7 +56,7 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch {
             try {
                 val dias = withContext(Dispatchers.IO) {
-                    repositorio.guardar(usuario, actual.fecha, actual.bloqueado)
+                    repositorio.guardar(usuario, actual.fecha, actual.bloqueado, serviciosAsignados)
                 }
                 _uiState.update { it.copy(diasBloqueados = dias, cargando = false, mensaje = "Disponibilidad guardada en este dispositivo.") }
             } catch (cancelacion: CancellationException) {

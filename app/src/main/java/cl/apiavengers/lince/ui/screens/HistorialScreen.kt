@@ -1,18 +1,20 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package cl.apiavengers.lince.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -20,22 +22,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Servicio
+import cl.apiavengers.lince.ui.components.BarraInferior
+import cl.apiavengers.lince.ui.components.ChipEstadoServicio
+import cl.apiavengers.lince.ui.fechaNumerica
+import cl.apiavengers.lince.ui.montoClp
+import cl.apiavengers.lince.ui.selloFechaHora
+import cl.apiavengers.lince.viewmodel.LinceViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistorialScreen(
-    historial: List<Servicio>,
+    vm: LinceViewModel,
     onBack: () -> Unit,
     onServicioClick: (String) -> Unit,
     onNavigateToInicio: () -> Unit = {},
     onNavigateToServicios: () -> Unit = {},
     onNavigateToAgenda: () -> Unit = {},
+    onNavigateToEquipo: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
+    var filtro by remember { mutableStateOf<EstadoServicio?>(null) }
+    val registros = vm.historial.filter { filtro == null || it.estado == filtro }
+    val usuario = vm.usuario
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Historial") },
+                title = { Text("Historial", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -44,89 +56,132 @@ fun HistorialScreen(
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Inicio") },
-                    label = { Text("Inicio") },
-                    selected = false,
-                    onClick = onNavigateToInicio
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Servicios") },
-                    label = { Text("Servicios") },
-                    selected = false,
-                    onClick = onNavigateToServicios
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.DateRange, contentDescription = "Agenda") },
-                    label = { Text("Agenda") },
-                    selected = false,
-                    onClick = onNavigateToAgenda
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
-                    label = { Text("Perfil") },
-                    selected = false,
-                    onClick = onNavigateToPerfil
-                )
-            }
+            BarraInferior(
+                esCoordinador = vm.esCoordinador(),
+                seleccion = "Servicios",
+                onInicio = onNavigateToInicio,
+                onServicios = onNavigateToServicios,
+                onAgenda = onNavigateToAgenda,
+                onEquipo = onNavigateToEquipo,
+                onPerfil = onNavigateToPerfil
+            )
         }
     ) { innerPadding ->
-        if (historial.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("Sin servicios en el historial todavía.")
-            }
-            return@Scaffold
-        }
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
+        Column(
+            modifier = Modifier.fillMaxSize().padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                Text(
-                    "${historial.size} servicios finalizados · toca para ver en grande",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        if (vm.esCoordinador()) "HISTORIAL GENERAL" else "ACUMULADO",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    )
+                    Text(
+                        if (vm.esCoordinador()) "${vm.historial.size} servicios registrados"
+                        else montoClp(usuario?.let { vm.totalGanado(it.id) } ?: 0),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Text(
+                        if (vm.esCoordinador()) "Incluye completados y rechazados."
+                        else "Servicios confirmados y completados.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text("Todos") })
+                FilterChip(
+                    selected = filtro == EstadoServicio.COMPLETADA,
+                    onClick = { filtro = EstadoServicio.COMPLETADA },
+                    label = { Text("Completados") }
+                )
+                FilterChip(
+                    selected = filtro == EstadoServicio.RECHAZADA,
+                    onClick = { filtro = EstadoServicio.RECHAZADA },
+                    label = { Text("Rechazados") }
                 )
             }
-            items(historial.size) { index ->
-                val servicio = historial[index]
+
+            if (registros.isEmpty()) {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { onServicioClick(servicio.id) }
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("${servicio.fecha} · ${servicio.hora}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text(servicio.titulo, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("${servicio.recogida} → ${servicio.destino}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-                        Spacer(Modifier.height(2.dp))
-                        ChipEstadoServicio(servicio.estado)
-                    }
+                    Text("Todavía no hay servicios en tu historial.", Modifier.padding(16.dp))
                 }
+            }
+
+            registros.forEach { servicio ->
+                TarjetaHistorial(
+                    servicio = servicio,
+                    autor = vm.obtenerPersona(servicio.asignadoA)?.nombre ?: servicio.asignadoA,
+                    onClick = { onServicioClick(servicio.id) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun ChipEstadoServicio(estado: EstadoServicio) {
-    val (icono, color) = when (estado) {
-        EstadoServicio.COMPLETADA -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondary
-        EstadoServicio.RECHAZADA -> Icons.Default.Close to MaterialTheme.colorScheme.error
-        EstadoServicio.CONFIRMADA -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.primary
-        EstadoServicio.PENDIENTE -> Icons.Default.DateRange to MaterialTheme.colorScheme.primary
-    }
-    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceVariant) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(icono, contentDescription = estado.etiqueta, tint = color, modifier = Modifier.size(14.dp))
-            Text(estado.etiqueta, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = color)
+private fun TarjetaHistorial(servicio: Servicio, autor: String, onClick: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "ID ${servicio.id}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                ChipEstadoServicio(servicio.estado)
+            }
+            Text(servicio.titulo, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "${fechaNumerica(servicio.fecha)} · ${servicio.hora}",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+            )
+            Text("Responsable: $autor", fontSize = 13.sp)
+            HorizontalDivider()
+            if (servicio.respondidoEn != null) {
+                Text(
+                    if (servicio.estado == EstadoServicio.RECHAZADA) "Rechazado: ${selloFechaHora(servicio.respondidoEn)}"
+                    else "Confirmado: ${selloFechaHora(servicio.respondidoEn)}",
+                    fontSize = 12.sp
+                )
+            }
+            servicio.inicioEn?.let { Text("Check-in: ${selloFechaHora(it)}", fontSize = 12.sp) }
+            servicio.terminoEn?.let { Text("Check-out: ${selloFechaHora(it)}", fontSize = 12.sp) }
+            servicio.puntaje?.let { Text("Calificación: $it/5", fontSize = 12.sp) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Tarifa", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                Text(montoClp(servicio.tarifa), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

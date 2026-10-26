@@ -2,13 +2,15 @@
 
 ![Logotipo de Proyecto Lince](docs/diseno/logo.png)
 
-Aplicación móvil académica para consultar y responder asignaciones de servicios turísticos. Busca ordenar la información que hoy se reparte entre llamadas, mensajes y registros manuales.
+Aplicación móvil académica para consultar, responder y ejecutar asignaciones de servicios turísticos. Busca ordenar la información que hoy se reparte entre llamadas, mensajes y registros manuales.
 
 **Api Avengers · Equipo 5 · Sección 3D**
 
 ## Estado del proyecto
 
-Propuesta de MVP y diseño de interfaces. Las imágenes son referencias visuales; no representan una aplicación implementada ni conectada al sistema real de Southbound. Todos los ejemplos son ficticios. Identidad y pantallas pendientes de revisión final del equipo.
+MVP Android implementado con datos ficticios y persistencia local en el dispositivo. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. No requiere backend para funcionar.
+
+Las imágenes de `docs/diseno/interfaces` son la referencia de diseño utilizada para construir las pantallas.
 
 ## Integrantes
 
@@ -22,11 +24,39 @@ Todos participan en las pruebas y documentación.
 
 ## Usuarios y funciones
 
-- **Conductor:** consulta sus asignaciones, confirma o rechaza, informa disponibilidad y registra check-in/check-out.
-- **Guía:** consulta sus servicios, responde asignaciones y actualiza disponibilidad y perfil.
-- **Coordinador:** consulta servicios, respuestas, disponibilidad e historial, y un resumen con sincronización simulada.
+- **Conductor:** consulta sus asignaciones, confirma o rechaza, registra check-in/check-out y actualiza disponibilidad y perfil.
+- **Guía:** consulta sus servicios, responde asignaciones, ejecuta los servicios asignados y actualiza disponibilidad y perfil.
+- **Coordinador:** consulta todos los servicios, reasigna, califica servicios completados y revisa el resumen operativo, la disponibilidad del equipo y el historial.
 
-El MVP incluye acceso con validación de rol, consultas y filtros básicos, respuestas validadas, disponibilidad, perfil ficticio, historial y ejecución del conductor. Las asignaciones y usuarios estarán precargados para el ejercicio. Quedan fuera la operación productiva, la asignación automática, el GPS en vivo, las notificaciones reales y los reportes avanzados.
+Una asignación tiene un **titular** y, opcionalmente, un **acompañante**. Ambos ven el servicio, pero solo el titular responde y ejecuta.
+
+### Cuentas de prueba
+
+Todas usan la clave `Lince123`.
+
+| Usuario | Rol |
+|---|---|
+| `conductor.demo` | Conductor |
+| `conductor2.demo` | Conductor |
+| `guia.demo` | Guía |
+| `guia2.demo` | Guía |
+| `guia3.demo` | Guía |
+| `coordinador.demo` | Coordinador |
+
+Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e historial (completados y rechazados), con servicios programados para el día actual.
+
+## Reglas implementadas
+
+- El acceso valida cuenta, clave y rol.
+- Confirmar o rechazar una asignación pendiente registra autor y fecha. El rechazo exige un motivo de entre 1 y 300 caracteres.
+- El check-in se habilita 15 minutos antes de la hora programada, solo para el titular, y requiere una ubicación escrita manualmente.
+- El check-out finaliza el servicio: pasa de confirmada a completada y queda en el historial.
+- El coordinador puede calificar un servicio completado de 1 a 5; el promedio se muestra en la ficha de la persona.
+- La reasignación solo admite personas del mismo rol y con el idioma requerido por el servicio.
+- La disponibilidad se bloquea con al menos 7 días de anticipación y no permite bloquear un día con un servicio asignado.
+- El perfil permite editar nombre, correo, teléfono, zona e idiomas; el ID y el rol son de solo lectura.
+- El acumulado considera los servicios confirmados y completados del usuario.
+- La simulación de sincronización actualiza el resumen y registra la hora de la última ejecución.
 
 ## Identidad visual
 
@@ -41,7 +71,7 @@ Nombre: **Proyecto Lince**. El símbolo de lince representa atención y seguimie
 | Error | `#BA1A1A` | Errores y rechazos |
 | Superficie | `#E0EDF2` | Navegación e información secundaria |
 
-Los estados usarán texto e iconos además de color. La propuesta emplea tarjetas, botones redondeados, campos etiquetados y navegación inferior para conductor y guía. La fuente del documento de evidencia conserva la del formato docente; las imágenes utilizan Arial como referencia visual, con Roboto previsto para Android.
+Los estados usan texto e iconos además de color. La interfaz emplea tarjetas, botones redondeados, campos etiquetados y navegación inferior para conductor y guía.
 
 ## Flujo de usuario
 
@@ -71,7 +101,7 @@ flowchart TD
     P -->|Sí| Q{¿Confirmar?}
     Q -->|No| RE[Indicar motivo, validar y guardar rechazo]
     Q -->|Sí| OK[Guardar confirmación]
-    P -->|No| DR{¿Conductor y asignación confirmada?}
+    P -->|No| DR{¿Titular y asignación confirmada?}
     OK --> DR
     DR -->|Sí| IN[Registrar check-in]
     IN --> OUT[Registrar check-out]
@@ -86,23 +116,25 @@ flowchart TD
     EXIT --> END(((Fin)))
 ```
 
-Los errores de formulario se muestran en la misma pantalla y deben corregirse antes de guardar. Cada respuesta conserva usuario, fecha y hora. Una asignación rechazada no puede iniciar ejecución; el check-out se habilita después del check-in. El diagrama muestra un recorrido que termina al cerrar sesión; las secciones pueden volver a utilizarse en recorridos posteriores.
+Los errores de formulario se muestran en la misma pantalla. Cada respuesta conserva usuario, fecha y hora. Una asignación rechazada no puede iniciar ejecución; el check-out se habilita después del check-in.
 
-## Pantallas principales
+## Pantallas
 
-| Pantalla | Archivo | Componentes previstos |
+| Pantalla | Referencia | Elementos principales |
 |---|---|---|
-| Inicio de sesión | [01-login.png](docs/diseno/interfaces/01-login.png) | OutlinedTextField, Button, Snackbar |
-| Inicio | [02-inicio.png](docs/diseno/interfaces/02-inicio.png) | TopAppBar, Card, NavigationBar |
-| Servicios | [03-servicios.png](docs/diseno/interfaces/03-servicios.png) | FilterChip, Card, OutlinedTextField |
-| Detalle | [04-detalle.png](docs/diseno/interfaces/04-detalle.png) | Button, OutlinedButton, AlertDialog |
-| Disponibilidad | [05-disponibilidad.png](docs/diseno/interfaces/05-disponibilidad.png) | DatePicker, Switch, Button |
-| Perfil | [06-perfil.png](docs/diseno/interfaces/06-perfil.png) | OutlinedTextField, Button, Snackbar |
-| Ejecución | [07-ejecucion.png](docs/diseno/interfaces/07-ejecucion.png) | Card, Button, TopAppBar |
-| Historial | [08-historial.png](docs/diseno/interfaces/08-historial.png) | Card, TopAppBar |
-| Variante de inicio para coordinación | [09-resumen-coordinacion.png](docs/diseno/interfaces/09-resumen-coordinacion.png) | Card, Button, TopAppBar |
+| Inicio de sesión | [01-login.png](docs/diseno/interfaces/01-login.png) | Campos de acceso, validación de rol, cuentas de prueba |
+| Inicio | [02-inicio.png](docs/diseno/interfaces/02-inicio.png) | Jornada, próximo servicio, servicios de hoy, accesos |
+| Servicios | [03-servicios.png](docs/diseno/interfaces/03-servicios.png) | Búsqueda, filtros por estado, tarjetas con chips |
+| Detalle | [04-detalle.png](docs/diseno/interfaces/04-detalle.png) | Información, itinerario, reserva, equipo y trazabilidad |
+| Disponibilidad | [05-disponibilidad.png](docs/diseno/interfaces/05-disponibilidad.png) | Calendario mensual, selección de día, Switch y guardado |
+| Perfil | [06-perfil.png](docs/diseno/interfaces/06-perfil.png) | ID de solo lectura, datos editables, idiomas, acumulado |
+| Ejecución | [07-ejecucion.png](docs/diseno/interfaces/07-ejecucion.png) | Hitos, check-in con ubicación, check-out |
+| Historial | [08-historial.png](docs/diseno/interfaces/08-historial.png) | Filtros, acumulado, trazabilidad y tarifas |
+| Resumen de coordinación | [09-resumen-coordinacion.png](docs/diseno/interfaces/09-resumen-coordinacion.png) | Pendientes, confirmadas, rechazadas, recursos y sincronización |
+| Equipo | — | Búsqueda por nombre o rol, disponibilidad, idiomas y calificación |
+| Ficha de persona | — | Contacto, desempeño, acumulado y servicios activos |
 
-Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. Historial se abre desde Inicio; detalle desde Servicios y ejecución desde el detalle de un servicio confirmado para el conductor. Coordinación dispone de su resumen con accesos a todos los servicios y al historial. La vista 09 es una variante por rol, no una pantalla nueva del alcance.
+Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. Historial se abre desde Inicio; detalle desde Servicios; ejecución desde el detalle de un servicio confirmado. Coordinación dispone de su resumen con accesos a todos los servicios, al historial y al equipo.
 
 ### Galería
 
@@ -124,9 +156,28 @@ Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. H
 
 ![09-resumen-coordinacion](docs/diseno/interfaces/09-resumen-coordinacion.png)
 
-## Tecnologías previstas
+## Tecnologías
 
-Android, Kotlin, Jetpack Compose y Material 3. Arquitectura MVVM, almacenamiento local y conexión a una API de prueba o simulada. Estas tecnologías están previstas para la implementación; esta entrega contiene análisis y diseño.
+- Kotlin y Jetpack Compose con Material 3.
+- Arquitectura MVVM: UI en `app/`, reglas de negocio en `dominio/`.
+- Persistencia local en JSON con `AtomicFile`; no requiere conexión.
+- Pruebas unitarias JUnit del dominio.
+
+### Compilar y probar
+
+```bash
+./gradlew :dominio:test
+./gradlew :app:assembleDebug
+```
+
+En Windows:
+
+```bat
+gradlew.bat :dominio:test
+gradlew.bat :app:assembleDebug
+```
+
+Requiere JDK 17 y Android SDK configurados.
 
 Referencias oficiales de diseño: [Material Design 3](https://m3.material.io/) y [componentes Material para Android](https://developer.android.com/design/ui/mobile/guides/components/material-overview).
 
@@ -135,8 +186,12 @@ Referencias oficiales de diseño: [Material Design 3](https://m3.material.io/) y
 ```text
 Proyecto-lince/
 ├── README.md
+├── app/                      # Interfaz, navegación y ViewModels
+├── dominio/                  # Modelo, repositorios y pruebas
 └── docs/
     ├── evidencias/
+    │   ├── clase-01/
+    │   │   └── Evidencia_Clase_01_MVP_Equipo05.docx
     │   └── clase-02/
     │       └── Evidencia_Clase_02_Diseno_Equipo05.docx
     └── diseno/
@@ -148,12 +203,9 @@ Proyecto-lince/
             └── 01-login.png … 09-resumen-coordinacion.png
 ```
 
-La evidencia de clase 1 debe conservarse en `docs/evidencias/clase-01/` si ya está en el repositorio.
-
 ## Entrega de clase 2
 
-- Documento completado y recursos visuales preparados con apoyo de Codex.
-- Pendiente: selección y revisión final de identidad, flujo y pantallas por el equipo.
-- Pendiente: incorporar los archivos y este contenido al README existente, conservando la información que ya tenga el proyecto.
-- Pendiente: realizar el commit `docs: agrega flujo UML e interfaces del proyecto` y subirlo al repositorio.
-
+- Documento de diseño y recursos visuales incorporados al repositorio.
+- Identidad, flujo y pantallas usados como base de la implementación.
+- MVP funcional con datos ficticios y persistencia local.
+- Pruebas unitarias del dominio y compilación del APK verificadas.

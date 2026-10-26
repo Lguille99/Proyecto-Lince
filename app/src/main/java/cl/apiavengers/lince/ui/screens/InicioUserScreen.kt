@@ -2,13 +2,11 @@ package cl.apiavengers.lince.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,7 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cl.apiavengers.lince.modelo.*
+import cl.apiavengers.lince.modelo.EstadoServicio
+import cl.apiavengers.lince.ui.components.*
+import cl.apiavengers.lince.ui.fechaCorta
+import cl.apiavengers.lince.ui.fechaLargaHoy
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -29,194 +30,147 @@ fun InicioUserScreen(
     onNavigateToHistorial: () -> Unit = {},
     onServicioClick: (String) -> Unit = {}
 ) {
-    var selectedItem by remember { mutableStateOf(0) }
-    val items = listOf("Inicio", "Servicios", "Agenda", "Perfil")
-    val icons = listOf(Icons.Default.Home, Icons.Default.List, Icons.Default.DateRange, Icons.Default.Person)
+    val usuario = vm.usuario
+    val pendientes = vm.servicios.count { it.estado == EstadoServicio.PENDIENTE }
+    val proximo = vm.servicios.sortedWith(compareBy({ it.fecha }, { it.hora })).firstOrNull()
+    val deHoy = vm.serviciosDeHoy().filter { !vm.esCoordinador() }
 
-    val nombreUsuario = vm.usuario?.nombre ?: "usuario"
-    val proximoServicio = vm.servicios.firstOrNull()
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                items.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        icon = { Icon(icons[index], contentDescription = item) },
-                        label = { Text(item) },
-                        selected = selectedItem == index,
-                        onClick = {
-                            selectedItem = index
-                            when (index) {
-                                1 -> onNavigateToServicios()
-                                2 -> onNavigateToAgenda()
-                                3 -> onNavigateToPerfil()
-                            }
-                        }
-                    )
-                }
-            }
+            BarraInferior(
+                esCoordinador = false,
+                seleccion = "Inicio",
+                onInicio = {},
+                onServicios = onNavigateToServicios,
+                onAgenda = onNavigateToAgenda,
+                onEquipo = onNavigateToEquipo,
+                onPerfil = onNavigateToPerfil
+            )
         }
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize().padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Hola, $nombreUsuario",
+                    "Hola, ${usuario?.nombre ?: "usuario"}",
                     fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Viernes 11 de septiembre",
+                    fechaLargaHoy(),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
             }
 
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "TU JORNADA",
+                        "TU JORNADA",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                     )
                     Text(
-                        text = "${vm.servicios.size} servicios por revisar",
-                        fontSize = 20.sp,
+                        "$pendientes servicios por revisar",
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
+                    Text(
+                        "Hoy tienes ${deHoy.size} servicio(s) asignado(s).",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                    )
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Próximo servicio",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+            if (deHoy.isNotEmpty()) {
+                Text("Servicios de hoy", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                deHoy.forEach { servicio ->
+                    TarjetaResumenServicio(servicio, onClick = { onServicioClick(servicio.id) })
+                }
+            }
 
+            Text("Próximo servicio", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            if (proximo != null) {
+                TarjetaResumenServicio(proximo, onClick = { onServicioClick(proximo.id) })
+            } else {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    modifier = Modifier.fillMaxWidth().clickable(enabled = proximoServicio != null) {
-                        proximoServicio?.let { onServicioClick(it.id) }
-                    }
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                text = if (proximoServicio != null) "${proximoServicio.fecha} · ${proximoServicio.hora}" else "12 SEP · 08:30",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = proximoServicio?.titulo ?: "Transfer de mañana",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = if (proximoServicio != null) "${proximoServicio.recogida} → ${proximoServicio.destino}" else "Punto A → Terminal de prueba",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Pendiente · toca para ver en grande",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowRight,
-                            contentDescription = "Ver detalle",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    Text("No tienes servicios activos por ahora.", Modifier.padding(16.dp), fontSize = 14.sp)
                 }
             }
 
-            Button(
-                onClick = onNavigateToServicios,
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Text(text = "Ver mis servicios", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-            }
-
-            OutlinedButton(
-                onClick = onNavigateToEquipo,
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Text(text = "Ver equipo (guías y conductores)", fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            }
-
-        
-            OutlinedButton(
-                onClick = onNavigateToHistorial,
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Text(text = "Consultar historial", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-            }
+            BotonPrincipal(texto = "Ver mis servicios", onClick = onNavigateToServicios)
+            BotonSecundario(texto = "Consultar historial", onClick = onNavigateToHistorial)
+            BotonSecundario(texto = "Ver equipo (guías y conductores)", onClick = onNavigateToEquipo)
 
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Disponibilidad", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        text = "Disponible el 12 de septiembre",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
+                        "Recuerda bloquear con 7 días de anticipación los días en que no puedas trabajar.",
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(
-                        text = "Actualiza tus días en Agenda.",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
+                    TextButton(onClick = onNavigateToAgenda) { Text("Actualizar mi agenda") }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TarjetaResumenServicio(servicio: cl.apiavengers.lince.modelo.Servicio, onClick: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+                Text(
+                    "${fechaCorta(servicio.fecha)} · ${servicio.hora}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(servicio.titulo, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "${servicio.recogida} → ${servicio.destino}",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ChipEstadoServicio(servicio.estado)
+                    ChipModalidad(servicio.modalidad)
+                }
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Ver detalle",
+                tint = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
