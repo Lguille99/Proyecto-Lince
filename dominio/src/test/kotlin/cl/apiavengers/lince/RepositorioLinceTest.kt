@@ -29,7 +29,7 @@ class RepositorioLinceTest {
     @Test fun guiaVeSoloSusServicios() {
         val repo = repo()
         repo.iniciarSesion("guia.demo", "Lince123")
-        assertEquals(2, repo.consultarServicios().size)
+        assertEquals(5, repo.consultarServicios().size)
         assertTrue(repo.consultarServicios().all { it.esDe("GUI-002") })
     }
 
@@ -67,7 +67,7 @@ class RepositorioLinceTest {
         val repo = repo()
         repo.iniciarSesion("coordinador.demo", "Lince123")
         val equipo = repo.consultarEquipo()
-        assertEquals(6, equipo.size)
+        assertEquals(4, equipo.size)
         assertTrue(equipo.any { it.id == "DRV-001" && it.telefono.isNotBlank() })
         assertTrue(equipo.any { it.id == "GUI-002" && it.idiomas.contains(Idioma.INGLES) })
     }
@@ -124,8 +124,8 @@ class RepositorioLinceTest {
         assertEquals(4, resumen.confirmadas)
         assertEquals(1, resumen.rechazadas)
         assertEquals(0, resumen.enEjecucion)
-        assertEquals(6, resumen.personasEquipo)
-        assertEquals(4, resumen.personasDisponibles)
+        assertEquals(4, resumen.personasEquipo)
+        assertEquals(2, resumen.personasDisponibles)
         assertEquals(6, resumen.historialTotal)
     }
 
@@ -174,7 +174,7 @@ class RepositorioLinceTest {
 
     @Test fun checkInExigeUbicacion() {
         val repo = repo()
-        repo.iniciarSesion("guia2.demo", "Lince123")
+        repo.iniciarSesion("guia.demo", "Lince123")
         assertFailsWith<IllegalArgumentException> { repo.registrarCheckIn("LIN-009", "  ") }
     }
 
@@ -189,10 +189,10 @@ class RepositorioLinceTest {
 
     @Test fun checkInYCheckOutMueveAlHistorial() {
         val repo = repo()
-        repo.iniciarSesion("guia2.demo", "Lince123")
+        repo.iniciarSesion("guia.demo", "Lince123")
         repo.registrarCheckIn("LIN-009", "Hotel Plaza", "Salida puntual")
         val enCurso = repo.obtenerServicioPorId("LIN-009")
-        assertEquals("GUI-003", enCurso.inicioPor)
+        assertEquals("GUI-002", enCurso.inicioPor)
         assertEquals("Hotel Plaza", enCurso.ubicacionInicio)
         assertTrue(repo.consultarServicios().any { it.id == "LIN-009" })
         repo.registrarCheckOut("LIN-009", "Término sin novedades")
@@ -205,7 +205,7 @@ class RepositorioLinceTest {
 
     @Test fun checkOutSinCheckInFalla() {
         val repo = repo()
-        repo.iniciarSesion("guia2.demo", "Lince123")
+        repo.iniciarSesion("guia.demo", "Lince123")
         assertFailsWith<IllegalArgumentException> { repo.registrarCheckOut("LIN-009") }
     }
 
@@ -239,7 +239,7 @@ class RepositorioLinceTest {
         val repo = repo()
         repo.iniciarSesion("coordinador.demo", "Lince123")
         assertEquals(160_000, repo.totalGanado("DRV-001"))
-        assertEquals(80_000, repo.totalGanado("GUI-002"))
+        assertEquals(313_000, repo.totalGanado("GUI-002"))
         assertEquals(0, repo.totalGanado("DRV-002"))
     }
 

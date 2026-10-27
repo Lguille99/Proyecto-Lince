@@ -26,16 +26,6 @@ object DatosPrueba {
             "DRV-002", "Diego Ruta", "conductor2.demo", "diego.ruta@gmail.com", Rol.CONDUCTOR,
             "+56 9 3333 4444", Disponibilidad.NO_DISPONIBLE, "Maipú",
             listOf(Idioma.ESPANOL)
-        ),
-        Usuario(
-            "GUI-003", "Sofía Senderos", "guia2.demo", "sofia.senderos@gmail.com", Rol.GUIA,
-            "+56 9 5555 6666", Disponibilidad.DISPONIBLE, "Viña del Mar",
-            listOf(Idioma.ESPANOL, Idioma.INGLES)
-        ),
-        Usuario(
-            "GUI-004", "Pedro Mirador", "guia3.demo", "pedro.mirador@gmail.com", Rol.GUIA,
-            "+56 9 7777 8888", Disponibilidad.DISPONIBLE, "Valparaíso",
-            listOf(Idioma.ESPANOL)
         )
     )
 
@@ -92,7 +82,7 @@ object DatosPrueba {
             ),
             Servicio(
                 "LIN-007", "Tour viña y mar", "Excursión", siguiente, "10:30",
-                "Hotel Marina", "Viña de prueba", "GUI-003", EstadoServicio.CONFIRMADA,
+                "Hotel Marina", "Viña de prueba", "GUI-002", EstadoServicio.CONFIRMADA,
                 idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.DIA_COMPLETO,
                 almuerzoIncluido = true, hotelRecogida = "Hotel Marina", tarifa = 65_000,
                 pasajeros = 8, itinerario = listOf("Hotel Marina", "Viña de prueba", "Costa de prueba"),
@@ -100,7 +90,7 @@ object DatosPrueba {
             ),
             Servicio(
                 "LIN-008", "City tour Valparaíso", "Servicio guiado", manana, "15:00",
-                "Plaza de prueba", "Cerro de prueba", "GUI-004", EstadoServicio.PENDIENTE,
+                "Plaza de prueba", "Cerro de prueba", "GUI-002", EstadoServicio.PENDIENTE,
                 idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.MEDIO_DIA,
                 hotelRecogida = "Plaza de prueba", tarifa = 38_000, pasajeros = 6,
                 itinerario = listOf("Plaza de prueba", "Cerro de prueba", "Mirador de prueba"),
@@ -108,7 +98,7 @@ object DatosPrueba {
             ),
             Servicio(
                 "LIN-009", "City tour día completo", "City tour", hoy.toString(), "08:00",
-                "Hotel Plaza", "Cerro de prueba", "GUI-003", EstadoServicio.CONFIRMADA,
+                "Hotel Plaza", "Cerro de prueba", "GUI-002", EstadoServicio.CONFIRMADA,
                 acompananteId = "DRV-001", idiomaRequerido = Idioma.INGLES,
                 modalidad = Modalidad.DIA_COMPLETO, almuerzoIncluido = true,
                 hotelRecogida = "Hotel Plaza", tarifa = 65_000, pasajeros = 10,
@@ -157,22 +147,22 @@ object DatosPrueba {
             ),
             Servicio(
                 "LIN-104", "Excursión costera", "Excursión", hoy.minusDays(4).toString(), "08:30",
-                "Centro de prueba", "Playa de prueba", "GUI-003", EstadoServicio.COMPLETADA,
+                "Centro de prueba", "Playa de prueba", "GUI-002", EstadoServicio.COMPLETADA,
                 idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.DIA_COMPLETO,
                 almuerzoIncluido = true, hotelRecogida = "Centro de prueba", tarifa = 65_000, pasajeros = 9,
-                respondidoPor = "GUI-003", respondidoEn = sello(hoy.minusDays(5), "12:00"),
+                respondidoPor = "GUI-002", respondidoEn = sello(hoy.minusDays(5), "12:00"),
                 inicioEn = sello(hoy.minusDays(4), "08:20"), terminoEn = sello(hoy.minusDays(4), "17:30"),
-                inicioPor = "GUI-003", ubicacionInicio = "Centro de prueba", puntaje = 5,
+                inicioPor = "GUI-002", ubicacionInicio = "Centro de prueba", puntaje = 5,
                 calificadoPor = "COO-003", calificadoEn = sello(hoy.minusDays(4), "20:00")
             ),
             Servicio(
                 "LIN-105", "Visita museo", "Servicio guiado", hoy.minusDays(5).toString(), "10:00",
-                "Plaza de prueba", "Museo de prueba", "GUI-004", EstadoServicio.COMPLETADA,
+                "Plaza de prueba", "Museo de prueba", "GUI-002", EstadoServicio.COMPLETADA,
                 idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.MEDIO_DIA,
                 hotelRecogida = "Plaza de prueba", tarifa = 38_000, pasajeros = 5,
-                respondidoPor = "GUI-004", respondidoEn = sello(hoy.minusDays(6), "09:00"),
+                respondidoPor = "GUI-002", respondidoEn = sello(hoy.minusDays(6), "09:00"),
                 inicioEn = sello(hoy.minusDays(5), "09:50"), terminoEn = sello(hoy.minusDays(5), "12:40"),
-                inicioPor = "GUI-004", ubicacionInicio = "Plaza de prueba", puntaje = 3,
+                inicioPor = "GUI-002", ubicacionInicio = "Plaza de prueba", puntaje = 3,
                 calificadoPor = "COO-003", calificadoEn = sello(hoy.minusDays(5), "19:00")
             ),
             Servicio(

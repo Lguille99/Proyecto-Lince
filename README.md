@@ -39,8 +39,6 @@ Todas usan la clave `Lince123`.
 | `conductor.demo` | Conductor |
 | `conductor2.demo` | Conductor |
 | `guia.demo` | Guía |
-| `guia2.demo` | Guía |
-| `guia3.demo` | Guía |
 | `coordinador.demo` | Coordinador |
 
 Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e historial (completados y rechazados), con servicios programados para el día actual.
