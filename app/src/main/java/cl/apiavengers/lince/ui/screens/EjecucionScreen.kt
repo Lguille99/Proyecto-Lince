@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.ui.components.BarraInferior
+import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
 import cl.apiavengers.lince.ui.fechaNumerica
@@ -71,14 +72,7 @@ fun EjecucionScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
-                title = { Text("Ejecución del servicio", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
+            BarraSuperior(titulo = "Ejecución del servicio", onBack = onBack)
         },
         bottomBar = {
             BarraInferior(
@@ -116,7 +110,7 @@ fun EjecucionScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ChipEstadoServicio(servicio.estado)
-                Text("ID ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                Text("ID ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(servicio.titulo, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text(
@@ -128,12 +122,15 @@ fun EjecucionScreen(
             Text(
                 "${servicio.recogida} → ${servicio.destino}",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Card(
+            OutlinedCard(
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -156,8 +153,9 @@ fun EjecucionScreen(
                 }
             }
 
-            Card(
+            OutlinedCard(
                 shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -218,7 +216,7 @@ fun EjecucionScreen(
                 Text(
                     "El check-in se habilita 15 minutos antes (${servicio.inicioProgramado.minusMinutes(15).format(DateTimeFormatter.ofPattern("HH:mm"))}).",
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -264,14 +262,14 @@ private fun Hito(titulo: String, detalle: String, completado: Boolean) {
                     if (completado) Icons.Default.Check else Icons.Default.DateRange,
                     contentDescription = null,
                     tint = if (completado) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(15.dp)
                 )
             }
         }
         Column {
             Text(titulo, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            Text(detalle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+            Text(detalle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

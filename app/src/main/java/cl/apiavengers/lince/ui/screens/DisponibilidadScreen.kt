@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
 import cl.apiavengers.lince.ui.components.BarraInferior
+import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.fechaLarga
 import cl.apiavengers.lince.viewmodel.DisponibilidadViewModel
@@ -53,14 +54,7 @@ fun DisponibilidadScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Mi disponibilidad", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
+            BarraSuperior(titulo = "Mi disponibilidad", onBack = onBack)
         },
         bottomBar = {
             BarraInferior(
@@ -82,10 +76,14 @@ fun DisponibilidadScreen(
             Text(
                 "Marca los días en que no podrás trabajar. Los bloqueos requieren 7 días de anticipación.",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Card(shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedCard(
+                shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Column(Modifier.padding(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -116,7 +114,7 @@ fun DisponibilidadScreen(
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -138,7 +136,7 @@ fun DisponibilidadScreen(
                                             shape = CircleShape,
                                             color = when {
                                                 seleccionado -> MaterialTheme.colorScheme.primary
-                                                bloqueado -> MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                                                bloqueado -> MaterialTheme.colorScheme.errorContainer
                                                 else -> Color.Transparent
                                             },
                                             modifier = Modifier
@@ -152,8 +150,8 @@ fun DisponibilidadScreen(
                                                     fontWeight = if (seleccionado || fecha == hoy) FontWeight.Bold else FontWeight.Normal,
                                                     color = when {
                                                         seleccionado -> MaterialTheme.colorScheme.onPrimary
-                                                        pasado -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                                                        bloqueado -> MaterialTheme.colorScheme.error
+                                                        pasado -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                        bloqueado -> MaterialTheme.colorScheme.onErrorContainer
                                                         else -> MaterialTheme.colorScheme.onSurface
                                                     }
                                                 )
@@ -167,9 +165,12 @@ fun DisponibilidadScreen(
                 }
             }
 
-            Card(
+            OutlinedCard(
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -209,7 +210,7 @@ fun DisponibilidadScreen(
             Text(
                 "Los cambios se guardan en este dispositivo. No puedes bloquear un día con un servicio asignado.",
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

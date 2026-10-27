@@ -53,9 +53,9 @@ fun PerfilScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
-                title = { Text("Mi perfil", fontWeight = FontWeight.Bold) },
-                actions = {
+            BarraSuperior(
+                titulo = "Mi perfil",
+                acciones = {
                     IconButton(onClick = onCerrarSesion) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")
                     }
@@ -90,7 +90,7 @@ fun PerfilScreen(
                     Text(
                         usuario?.rol?.etiqueta.orEmpty(),
                         fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                     if (usuario != null && !vm.esCoordinador()) {
                         Text(
@@ -103,7 +103,7 @@ fun PerfilScreen(
                             Text(
                                 "Calificación promedio: ${"%.1f".format(it)}/5",
                                 fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -180,7 +180,7 @@ fun PerfilScreen(
             Text(
                 "Los datos se guardan en este dispositivo. La cuenta y el rol no se pueden modificar.",
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             TextButton(onClick = onCerrarSesion) { Text("Cerrar sesión") }
         }

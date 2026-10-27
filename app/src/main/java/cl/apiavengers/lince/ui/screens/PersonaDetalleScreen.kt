@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.Usuario
+import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
 import cl.apiavengers.lince.ui.components.ChipIdioma
@@ -42,14 +43,7 @@ fun PersonaDetalleScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Ficha del equipo", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
+            BarraSuperior(titulo = "Ficha del equipo", onBack = onBack)
         }
     ) { innerPadding ->
         if (persona == null) {
@@ -67,7 +61,7 @@ fun PersonaDetalleScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.size(64.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -90,9 +84,12 @@ fun PersonaDetalleScreen(
                 persona.idiomas.forEach { ChipIdioma(it) }
             }
 
-            Card(
+            OutlinedCard(
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -103,8 +100,9 @@ fun PersonaDetalleScreen(
                 }
             }
 
-            Card(
+            OutlinedCard(
                 shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -130,7 +128,7 @@ fun PersonaDetalleScreen(
                 Text("Sin servicios activos asignados.", fontSize = 14.sp)
             }
             servicios.forEach { servicio ->
-                Card(
+                OutlinedCard(
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth().clickable { onServicioClick(servicio.id) }
                 ) {
@@ -144,7 +142,7 @@ fun PersonaDetalleScreen(
                             Text(
                                 "${fechaNumerica(servicio.fecha)} · ${servicio.hora}",
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         ChipEstadoServicio(servicio.estado)
@@ -162,7 +160,7 @@ fun PersonaDetalleScreen(
 @Composable
 private fun Fila(etiqueta: String, valor: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(etiqueta, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+        Text(etiqueta, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(valor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }

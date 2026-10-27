@@ -73,14 +73,7 @@ fun ServicioDetalleScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
-                title = { Text("Detalle del servicio", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
+            BarraSuperior(titulo = "Detalle del servicio", onBack = onBack)
         },
         bottomBar = {
             BarraInferior(
@@ -117,11 +110,15 @@ fun ServicioDetalleScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ChipEstadoServicio(servicio.estado)
-                Text("ID ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                Text("ID ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(servicio.titulo, fontSize = 23.sp, fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                ChipSuave("${servicio.tipo}", MaterialTheme.colorScheme.primary)
+                ChipSuave(
+                    servicio.tipo,
+                    contenedor = MaterialTheme.colorScheme.primaryContainer,
+                    contenido = MaterialTheme.colorScheme.onPrimaryContainer
+                )
                 ChipModalidad(servicio.modalidad)
                 ChipIdioma(servicio.idiomaRequerido)
             }
@@ -260,7 +257,7 @@ fun ServicioDetalleScreen(
             Text(
                 "Cada respuesta queda registrada con autor y fecha para mantener la trazabilidad.",
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -336,7 +333,7 @@ fun ServicioDetalleScreen(
                                 Icons.Default.Star,
                                 contentDescription = "$valor estrellas",
                                 tint = if (valor <= puntaje) MaterialTheme.colorScheme.secondary
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
+                                else MaterialTheme.colorScheme.outlineVariant,
                                 modifier = Modifier.size(32.dp).clickable { puntaje = valor }
                             )
                         }
@@ -358,9 +355,12 @@ fun ServicioDetalleScreen(
 
 @Composable
 private fun Seccion(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
-    Card(
+    OutlinedCard(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -373,7 +373,7 @@ private fun Seccion(titulo: String, contenido: @Composable ColumnScope.() -> Uni
 @Composable
 private fun FilaDato(etiqueta: String, valor: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(etiqueta, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+        Text(etiqueta, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(valor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
@@ -387,7 +387,7 @@ private fun FilaPersona(rol: String, persona: Usuario?, onClick: () -> Unit) {
     ) {
         Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         Column(Modifier.weight(1f)) {
-            Text(rol, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            Text(rol, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(persona?.nombre ?: "Sin asignar", fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
         if (persona != null) {

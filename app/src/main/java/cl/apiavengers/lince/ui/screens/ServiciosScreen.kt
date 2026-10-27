@@ -48,22 +48,11 @@ fun ServiciosScreen(
     }
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Servicios", fontWeight = FontWeight.Bold)
-                        Text(
-                            if (vm.esCoordinador()) "Todos los servicios del sistema" else "Tus asignaciones",
-                            fontSize = 12.sp
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                },
-                actions = {
+            BarraSuperior(
+                titulo = "Servicios",
+                subtitulo = if (vm.esCoordinador()) "Todos los servicios del sistema" else "Tus asignaciones",
+                onBack = onBack,
+                acciones = {
                     IconButton(onClick = onEquipoClick) {
                         Icon(Icons.Default.Person, contentDescription = "Equipo")
                     }
@@ -110,9 +99,11 @@ fun ServiciosScreen(
                 )
             }
             if (filtrados.isEmpty()) {
-                Card(
+                OutlinedCard(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("No hay servicios que coincidan con el filtro.", Modifier.padding(16.dp))
@@ -127,9 +118,9 @@ fun ServiciosScreen(
 
 @Composable
 private fun TarjetaServicio(servicio: Servicio, onClick: () -> Unit) {
-    Card(
+    OutlinedCard(
         shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -145,14 +136,18 @@ private fun TarjetaServicio(servicio: Servicio, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 if (esFechaHoy(servicio.fecha)) {
-                    ChipSuave("HOY", MaterialTheme.colorScheme.secondary)
+                    ChipSuave(
+                        "HOY",
+                        contenedor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contenido = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
                 }
             }
             Text(servicio.titulo, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(
                 "${servicio.recogida} → ${servicio.destino}",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ChipEstadoServicio(servicio.estado)
@@ -165,7 +160,7 @@ private fun TarjetaServicio(servicio: Servicio, onClick: () -> Unit) {
             Text(
                 "ID ${servicio.id}",
                 fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

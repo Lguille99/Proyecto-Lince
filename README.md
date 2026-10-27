@@ -62,16 +62,20 @@ Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e his
 
 Nombre: **Proyecto Lince**. El símbolo de lince representa atención y seguimiento; su centro alude a un punto de ruta. Se entrega en PNG transparente y SVG editable.
 
-| Color | HEX | Uso |
-|---|---|---|
-| Principal | `#245B78` | Botones y elementos activos |
-| Secundario | `#286B5D` | Estados confirmados |
-| Fondo | `#F6F8FA` | Fondo general |
-| Texto | `#172B3A` | Títulos y contenido |
-| Error | `#BA1A1A` | Errores y rechazos |
-| Superficie | `#E0EDF2` | Navegación e información secundaria |
+| Color | Claro | Oscuro | Uso |
+|---|---|---|---|
+| Primario | `#175873` | `#8FCEE8` | Botones y elementos activos |
+| Contenedor primario | `#CFE8F3` | `#0C4A60` | Botones secundarios y chips |
+| Secundario | `#1F6B58` | `#8ED8C1` | Estados confirmados y disponibles |
+| Pendiente | `#8A5B00` | `#F3C56B` | Estados pendientes y en servicio |
+| Error | `#B3261E` | `#FFB4AB` | Errores y rechazos |
+| Fondo | `#E3EEF4` | `#0D171D` | Fondo general |
+| Superficie | `#FFFFFF` | `#132128` | Tarjetas y barras |
+| Texto | `#102A36` | `#E2EDF2` | Títulos y contenido |
+| Texto secundario | `#41535F` | `#B7C9D2` | Apoyos y metadatos |
+| Borde | `#738590` | `#8499A4` | Contornos y separadores |
 
-Los estados usan texto e iconos además de color. La interfaz emplea tarjetas, botones redondeados, campos etiquetados y navegación inferior para conductor y guía.
+La app respeta el modo claro u oscuro del sistema. Los estados usan texto e iconos además de color. La interfaz emplea tarjetas, botones redondeados, campos etiquetados y navegación inferior para conductor y guía.
 
 ## Flujo de usuario
 

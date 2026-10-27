@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.ui.components.BarraInferior
+import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
 import cl.apiavengers.lince.ui.fechaNumerica
 import cl.apiavengers.lince.ui.montoClp
@@ -46,14 +47,7 @@ fun HistorialScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Historial", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
+            BarraSuperior(titulo = "Historial", onBack = onBack)
         },
         bottomBar = {
             BarraInferior(
@@ -83,7 +77,7 @@ fun HistorialScreen(
                         if (vm.esCoordinador()) "HISTORIAL GENERAL" else "ACUMULADO",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
                         if (vm.esCoordinador()) "${vm.historial.size} servicios registrados"
@@ -96,7 +90,7 @@ fun HistorialScreen(
                         if (vm.esCoordinador()) "Incluye completados y rechazados."
                         else "Servicios confirmados y completados.",
                         fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
@@ -116,9 +110,11 @@ fun HistorialScreen(
             }
 
             if (registros.isEmpty()) {
-                Card(
+                OutlinedCard(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Todavía no hay servicios en tu historial.", Modifier.padding(16.dp))
@@ -138,9 +134,9 @@ fun HistorialScreen(
 
 @Composable
 private fun TarjetaHistorial(servicio: Servicio, autor: String, onClick: () -> Unit) {
-    Card(
+    OutlinedCard(
         shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -161,7 +157,7 @@ private fun TarjetaHistorial(servicio: Servicio, autor: String, onClick: () -> U
             Text(
                 "${fechaNumerica(servicio.fecha)} · ${servicio.hora}",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text("Responsable: $autor", fontSize = 13.sp)
             HorizontalDivider()
@@ -179,7 +175,7 @@ private fun TarjetaHistorial(servicio: Servicio, autor: String, onClick: () -> U
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Tarifa", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                Text("Tarifa", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(montoClp(servicio.tarifa), fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.Usuario
 import cl.apiavengers.lince.ui.components.BarraInferior
+import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
 import cl.apiavengers.lince.ui.components.ChipIdioma
 import cl.apiavengers.lince.viewmodel.LinceViewModel
@@ -44,18 +45,10 @@ fun EquipoScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Equipo", fontWeight = FontWeight.Bold)
-                        Text("Guías y conductores disponibles", fontSize = 12.sp)
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
+            BarraSuperior(
+                titulo = "Equipo",
+                subtitulo = "Guías y conductores disponibles",
+                onBack = onBack
             )
         },
         bottomBar = {
@@ -100,9 +93,9 @@ fun EquipoScreen(
 
 @Composable
 fun TarjetaPersona(persona: Usuario, calificacion: Double?, onClick: () -> Unit) {
-    Card(
+    OutlinedCard(
         shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Row(
@@ -112,7 +105,7 @@ fun TarjetaPersona(persona: Usuario, calificacion: Double?, onClick: () -> Unit)
         ) {
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(46.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {

@@ -63,7 +63,7 @@ fun InicioUserScreen(
                 Text(
                     fechaLargaHoy(),
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -77,7 +77,7 @@ fun InicioUserScreen(
                         "TU JORNADA",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
                         "$pendientes servicios por revisar",
@@ -88,7 +88,7 @@ fun InicioUserScreen(
                     Text(
                         "Hoy tienes ${deHoy.size} servicio(s) asignado(s).",
                         fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
@@ -104,9 +104,11 @@ fun InicioUserScreen(
             if (proximo != null) {
                 TarjetaResumenServicio(proximo, onClick = { onServicioClick(proximo.id) })
             } else {
-                Card(
+                OutlinedCard(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("No tienes servicios activos por ahora.", Modifier.padding(16.dp), fontSize = 14.sp)
@@ -117,9 +119,12 @@ fun InicioUserScreen(
             BotonSecundario(texto = "Consultar historial", onClick = onNavigateToHistorial)
             BotonSecundario(texto = "Ver equipo (guías y conductores)", onClick = onNavigateToEquipo)
 
-            Card(
+            OutlinedCard(
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -138,9 +143,9 @@ fun InicioUserScreen(
 
 @Composable
 private fun TarjetaResumenServicio(servicio: cl.apiavengers.lince.modelo.Servicio, onClick: () -> Unit) {
-    Card(
+    OutlinedCard(
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Row(
@@ -159,7 +164,7 @@ private fun TarjetaResumenServicio(servicio: cl.apiavengers.lince.modelo.Servici
                 Text(
                     "${servicio.recogida} → ${servicio.destino}",
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     ChipEstadoServicio(servicio.estado)
