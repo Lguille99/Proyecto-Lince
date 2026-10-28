@@ -8,7 +8,7 @@ Aplicación móvil académica para consultar, responder y ejecutar asignaciones 
 
 ## Estado del proyecto
 
-MVP Android implementado con datos ficticios y persistencia local en el dispositivo. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. No requiere backend para funcionar.
+MVP Android implementado con datos ficticios y persistencia local en el dispositivo. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. No requiere backend ni conexión. El dominio cuenta con 40 pruebas unitarias y el APK debug compila correctamente.
 
 Las imágenes de `docs/diseno/interfaces` son la referencia de diseño utilizada para construir las pantallas.
 
@@ -92,6 +92,9 @@ flowchart TD
     C -->|Sí| R{Rol validado}
     R -->|Coordinador| CO[Resumen operativo]
     CO --> CR[Consultar servicios, respuestas, disponibilidad e historial]
+    CO --> EQ[Consultar equipo y ficha de persona]
+    CR --> RA[Reasignar asignación]
+    CR --> CA[Calificar servicio completado]
     CR --> CS[Simular sincronización y actualizar resumen]
     R -->|Conductor o guía| H[Inicio personal]
     H --> M{Sección elegida}
@@ -113,6 +116,9 @@ flowchart TD
     HI --> MERGE
     ED --> MERGE
     CS --> MERGE
+    EQ --> MERGE
+    RA --> MERGE
+    CA --> MERGE
     MERGE --> RETURN[Volver al inicio o resumen]
     RETURN --> EXIT[Cerrar sesión]
     EXIT --> END(((Fin)))
@@ -210,4 +216,5 @@ Proyecto-lince/
 - Documento de diseño y recursos visuales incorporados al repositorio.
 - Identidad, flujo y pantallas usados como base de la implementación.
 - MVP funcional con datos ficticios y persistencia local.
+- Documentación alineada con la implementación: titular conductor o guía, acompañante opcional, equipo, ficha, reasignación y calificación.
 - Pruebas unitarias del dominio y compilación del APK verificadas.

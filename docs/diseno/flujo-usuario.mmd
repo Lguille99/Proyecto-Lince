@@ -6,6 +6,9 @@ flowchart TD
     C -->|Sí| R{Rol validado}
     R -->|Coordinador| CO[Resumen operativo]
     CO --> CR[Consultar servicios, respuestas, disponibilidad e historial]
+    CO --> EQ[Consultar equipo y ficha de persona]
+    CR --> RA[Reasignar asignación]
+    CR --> CA[Calificar servicio completado]
     CR --> CS[Simular sincronización y actualizar resumen]
     R -->|Conductor o guía| H[Inicio personal]
     H --> M{Sección elegida}
@@ -17,7 +20,7 @@ flowchart TD
     P -->|Sí| Q{¿Confirmar?}
     Q -->|No| RE[Indicar motivo, validar y guardar rechazo]
     Q -->|Sí| OK[Guardar confirmación]
-    P -->|No| DR{¿Conductor y asignación confirmada?}
+    P -->|No| DR{¿Titular y asignación confirmada?}
     OK --> DR
     DR -->|Sí| IN[Registrar check-in]
     IN --> OUT[Registrar check-out]
@@ -27,6 +30,9 @@ flowchart TD
     HI --> MERGE
     ED --> MERGE
     CS --> MERGE
+    EQ --> MERGE
+    RA --> MERGE
+    CA --> MERGE
     MERGE --> RETURN[Volver al inicio o resumen]
     RETURN --> EXIT[Cerrar sesión]
     EXIT --> END(((Fin)))
