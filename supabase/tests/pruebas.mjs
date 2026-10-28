@@ -55,10 +55,10 @@ await verificar('reset y seed reproducen el estado demo',async()=>{
     'LIN-004':'CONFIRMADO', 'LIN-005':'PENDIENTE', 'LIN-006':'PENDIENTE'
   });
 });
-await verificar('seed incluye servicio de hoy e historial calificado',async()=>{
-  const hoy=await db.query(`select count(*)::int n from servicios
-    where codigo='LIN-001' and fecha=(now() at time zone 'America/Santiago')::date`);
-  assert.equal(hoy.rows[0].n,1);
+await verificar('seed incluye servicios de hoy e historial calificado',async()=>{
+  const hoy=await db.query(`select codigo from servicios
+    where fecha=(now() at time zone 'America/Santiago')::date order by codigo`);
+  assert.deepEqual(hoy.rows.map(x=>x.codigo),['LIN-001','LIN-005']);
   assert.equal((await db.query('select count(*)::int n from ejecuciones')).rows[0].n,1);
   assert.equal((await db.query('select count(*)::int n from calificaciones')).rows[0].n,1);
 });

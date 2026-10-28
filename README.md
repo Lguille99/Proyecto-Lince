@@ -71,7 +71,7 @@ Aplicar en orden en el SQL Editor del proyecto o con Supabase CLI:
 
 La migración `202610280001_mvp_supabase.sql` es aditiva: agrega acompañante, reasignación, calificaciones, ubicación de check-in, funciones y políticas RLS sin borrar datos existentes. La publicación de cambios en la base remota requiere permisos de administración; la publishable key de la app no permite ejecutar DDL.
 
-Para restaurar el estado demo, ejecutar `supabase/reset_demo.sql` y luego `supabase/seed.sql`. El reset elimina solo los servicios `LIN-001` a `LIN-006`, sus asignaciones, ejecuciones, calificaciones, historial, disponibilidad y sincronizaciones; conserva los perfiles y sus vínculos con Auth. El seed es repetible si se ejecuta después del reset y deja un servicio de hoy confirmado, uno rechazado, uno completado y calificado, y servicios pendientes para conductor y guía.
+Para restaurar el estado demo, ejecutar `supabase/reset_demo.sql` y luego `supabase/seed.sql`. El reset elimina solo los servicios `LIN-001` a `LIN-006`, sus asignaciones, ejecuciones, calificaciones, historial, disponibilidad y sincronizaciones; conserva los perfiles y sus vínculos con Auth. El seed es repetible si se ejecuta después del reset y deja dos servicios de hoy (uno confirmado para conductor y uno pendiente para guía), uno rechazado, uno completado y calificado, y servicios pendientes para conductor y guía.
 
 ### Usuarios Auth
 
