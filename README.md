@@ -8,7 +8,7 @@ Aplicación móvil académica para consultar, responder y ejecutar asignaciones 
 
 ## Estado del proyecto
 
-MVP Android implementado con datos ficticios y persistencia local en el dispositivo. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. No requiere backend ni conexión. El dominio cuenta con 40 pruebas unitarias y el APK debug compila correctamente.
+MVP Android implementado con datos ficticios y persistencia local en el dispositivo. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. Cuando `SUPABASE_URL` y `SUPABASE_KEY` están configurados, la app usa Supabase Auth, PostgREST y RPC con RLS; si no hay configuración, conexión o el acceso remoto no está disponible, conserva el modo local con datos ficticios. El dominio cuenta con 40 pruebas unitarias, la migración SQL con 43 comprobaciones PGlite y el APK debug compila correctamente.
 
 Las imágenes de `docs/diseno/interfaces` son la referencia de diseño utilizada para construir las pantallas.
 
@@ -34,14 +34,14 @@ Una asignación tiene un **titular** y, opcionalmente, un **acompañante**. Ambo
 
 Todas usan la clave `Lince123`.
 
-| Usuario | Rol |
-|---|---|
-| `conductor.demo` | Conductor |
-| `conductor2.demo` | Conductor |
-| `guia.demo` | Guía |
-| `coordinador.demo` | Coordinador |
+| Usuario | Correo Auth | Perfil | Rol |
+|---|---|---|---|
+| `conductor.demo` | `conductor.demo@lince.local` | `DRV-001` | Conductor |
+| `conductor2.demo` | `conductor2.demo@lince.local` | `DRV-002` | Conductor |
+| `guia.demo` | `guia.demo@lince.local` | `GUI-002` | Guía |
+| `coordinador.demo` | `coordinador.demo@lince.local` | `COO-003` | Coordinador |
 
-Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e historial (completados y rechazados), con servicios programados para el día actual.
+En modo local basta con el usuario. En Supabase se debe crear cada usuario Auth con su correo y luego vincularlo a `perfiles.auth_user_id`. Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e historial (completados y rechazados), con servicios programados para el día actual.
 
 ## Reglas implementadas
 
@@ -55,6 +55,62 @@ Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e his
 - El perfil permite editar nombre, correo, teléfono, zona e idiomas; el ID y el rol son de solo lectura.
 - El acumulado considera los servicios confirmados y completados del usuario.
 - La simulación de sincronización actualiza el resumen y registra la hora de la última ejecución.
+
+## Integración con Supabase
+
+La app usa Supabase cuando la configuración local está presente. El modo local se conserva como respaldo y para ejecutar la demo sin red. No se sincronizan cambios entre ambos modos.
+
+### Base de datos
+
+Aplicar en orden en el SQL Editor del proyecto o con Supabase CLI:
+
+1. `supabase/migrations/202610190001_estructura.sql`
+2. `supabase/migrations/202610190002_permisos_y_operaciones.sql`
+3. `supabase/migrations/202610280001_mvp_supabase.sql`
+4. `supabase/seed.sql`
+
+La migración `202610280001_mvp_supabase.sql` es aditiva: agrega acompañante, reasignación, calificaciones, ubicación de check-in, funciones y políticas RLS sin borrar datos existentes. La publicación de cambios en la base remota requiere permisos de administración; la publishable key de la app no permite ejecutar DDL.
+
+Para restaurar el estado demo, ejecutar `supabase/reset_demo.sql` y luego `supabase/seed.sql`. El reset elimina solo los servicios `LIN-001` a `LIN-006`, sus asignaciones, ejecuciones, calificaciones, historial, disponibilidad y sincronizaciones; conserva los perfiles y sus vínculos con Auth. El seed es repetible si se ejecuta después del reset y deja un servicio de hoy confirmado, uno rechazado, uno completado y calificado, y servicios pendientes para conductor y guía.
+
+### Usuarios Auth
+
+Crear en **Authentication > Users** los cuatro correos de la tabla de cuentas, con la clave `Lince123` o la que defina el equipo. Luego vincular cada perfil:
+
+```sql
+update public.perfiles p
+set auth_user_id = u.id
+from auth.users u
+where u.email = case p.codigo
+    when 'DRV-001' then 'conductor.demo@lince.local'
+    when 'DRV-002' then 'conductor2.demo@lince.local'
+    when 'GUI-002' then 'guia.demo@lince.local'
+    when 'COO-003' then 'coordinador.demo@lince.local'
+end;
+```
+
+La creación de usuarios Auth no se hace con la publishable key desde la app; se realiza en el panel de Supabase o con la Admin API usando una clave secreta que nunca se incorpora al APK.
+
+### Configuración Android
+
+Crear o editar `local.properties` en la raíz, sin commitearlo:
+
+```properties
+SUPABASE_URL=https://TU-PROYECTO.supabase.co
+SUPABASE_KEY=sb_publishable_TU_CLAVE
+```
+
+`app/build.gradle.kts` expone ambos valores como `BuildConfig`. La app usa la publishable key con RLS; no se debe usar `service_role` ni una clave secreta en el cliente. Si faltan los valores, el login y las operaciones usan el repositorio local.
+
+### Pruebas SQL
+
+```bash
+cd supabase/tests
+npm install
+npm test
+```
+
+La suite levanta PGlite, aplica las migraciones y el seed, y comprueba 43 reglas de negocio, permisos y trazabilidad.
 
 ## Identidad visual
 
@@ -167,9 +223,9 @@ Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. H
 ## Tecnologías
 
 - Kotlin y Jetpack Compose con Material 3.
-- Arquitectura MVVM: UI en `app/`, reglas de negocio en `dominio/`.
-- Persistencia local en JSON con `AtomicFile`; no requiere conexión.
-- Pruebas unitarias JUnit del dominio.
+- Arquitectura MVVM: UI y cliente Supabase en `app/`, reglas de negocio en `dominio/`.
+- Modo remoto con Supabase Auth, PostgREST, RPC y RLS; respaldo local en JSON con `AtomicFile`.
+- Pruebas unitarias JUnit del dominio y pruebas SQL con PGlite.
 
 ### Compilar y probar
 
@@ -194,8 +250,9 @@ Referencias oficiales de diseño: [Material Design 3](https://m3.material.io/) y
 ```text
 Proyecto-lince/
 ├── README.md
-├── app/                      # Interfaz, navegación y ViewModels
+├── app/                      # Interfaz, navegación, ViewModels y cliente Supabase
 ├── dominio/                  # Modelo, repositorios y pruebas
+├── supabase/                 # Migraciones, seed y pruebas PGlite
 └── docs/
     ├── evidencias/
     │   ├── clase-01/
@@ -216,5 +273,6 @@ Proyecto-lince/
 - Documento de diseño y recursos visuales incorporados al repositorio.
 - Identidad, flujo y pantallas usados como base de la implementación.
 - MVP funcional con datos ficticios y persistencia local.
+- Integración preparada con Supabase Auth, PostgREST, RPC y RLS, con respaldo local.
 - Documentación alineada con la implementación: titular conductor o guía, acompañante opcional, equipo, ficha, reasignación y calificación.
-- Pruebas unitarias del dominio y compilación del APK verificadas.
+- Pruebas unitarias del dominio, pruebas SQL PGlite y compilación del APK verificadas.

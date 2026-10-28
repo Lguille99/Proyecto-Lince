@@ -58,8 +58,6 @@ fun ServicioDetalleScreen(
     val mensaje = vm.mensaje
     LaunchedEffect(mensaje) {
         if (mensaje != null) {
-            snackbar.showSnackbar(mensaje)
-            vm.limpiarMensaje()
             if (!vm.esError) {
                 motivo = ""
                 errorMotivo = null
@@ -67,6 +65,8 @@ fun ServicioDetalleScreen(
                 reasignarDialogo = false
                 calificarDialogo = false
             }
+            snackbar.showSnackbar(mensaje)
+            vm.limpiarMensaje()
         }
     }
 

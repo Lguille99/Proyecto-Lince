@@ -178,7 +178,11 @@ fun PerfilScreen(
             BotonSecundario(texto = "Ver equipo", onClick = onNavigateToEquipo)
 
             Text(
-                "Los datos se guardan en este dispositivo. La cuenta y el rol no se pueden modificar.",
+                if (vm.modoRemoto) {
+                    "Los datos se guardan en Supabase. La cuenta y el rol no se pueden modificar."
+                } else {
+                    "Los datos se guardan en este dispositivo. La cuenta y el rol no se pueden modificar."
+                },
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

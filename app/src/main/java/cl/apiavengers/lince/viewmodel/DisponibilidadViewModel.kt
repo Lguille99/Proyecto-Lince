@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.datos.ArchivoDisponibilidad
+import cl.apiavengers.lince.datos.ErrorSupabase
 import cl.apiavengers.lince.datos.RepositorioDisponibilidad
+import cl.apiavengers.lince.datos.SesionSupabase
 import cl.apiavengers.lince.modelo.DisponibilidadUiState
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
@@ -28,7 +30,12 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
         _uiState.value = DisponibilidadUiState()
         viewModelScope.launch {
             try {
-                val dias = withContext(Dispatchers.IO) { repositorio.consultar(usuario) }
+                val cliente = SesionSupabase.cliente?.takeIf { it.activo }
+                val dias = if (cliente != null) {
+                    cliente.cargarDisponibilidad()
+                } else {
+                    withContext(Dispatchers.IO) { repositorio.consultar(usuario) }
+                }
                 _uiState.update { it.copy(diasBloqueados = dias, bloqueado = it.fecha in dias, cargando = false, cargado = true) }
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
@@ -55,14 +62,41 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
         _uiState.update { it.copy(cargando = true, mensaje = null, esError = false) }
         viewModelScope.launch {
             try {
-                val dias = withContext(Dispatchers.IO) {
-                    repositorio.guardar(usuario, actual.fecha, actual.bloqueado, serviciosAsignados)
+                val cliente = SesionSupabase.cliente?.takeIf { it.activo }
+                if (cliente != null) {
+                    cliente.guardarDisponibilidad(actual.fecha, actual.bloqueado)
+                    val dias = if (actual.bloqueado) {
+                        actual.diasBloqueados + actual.fecha
+                    } else {
+                        actual.diasBloqueados - actual.fecha
+                    }
+                    _uiState.update {
+                        it.copy(
+                            diasBloqueados = dias,
+                            cargando = false,
+                            mensaje = "Disponibilidad guardada en Supabase."
+                        )
+                    }
+                } else {
+                    val dias = withContext(Dispatchers.IO) {
+                        repositorio.guardar(usuario, actual.fecha, actual.bloqueado, serviciosAsignados)
+                    }
+                    _uiState.update {
+                        it.copy(
+                            diasBloqueados = dias,
+                            cargando = false,
+                            mensaje = "Disponibilidad guardada en este dispositivo."
+                        )
+                    }
                 }
-                _uiState.update { it.copy(diasBloqueados = dias, cargando = false, mensaje = "Disponibilidad guardada en este dispositivo.") }
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (error: Exception) {
-                val mensaje = if (error is IllegalArgumentException) error.message else "No se pudo guardar. Intenta nuevamente."
+                val mensaje = when {
+                    error is IllegalArgumentException -> error.message
+                    error is ErrorSupabase -> error.message
+                    else -> "No se pudo guardar. Intenta nuevamente."
+                }
                 _uiState.update { it.copy(cargando = false, mensaje = mensaje, esError = true) }
             }
         }

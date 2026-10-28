@@ -58,7 +58,7 @@ fun ResumenCoordinacionScreen(
         topBar = {
             BarraSuperior(
                 titulo = "Resumen operativo",
-                subtitulo = "Coordinación · Datos de prueba",
+                subtitulo = if (vm.modoRemoto) "Coordinación · Supabase" else "Coordinación · Datos locales",
                 acciones = {
                     IconButton(onClick = onCerrarSesion) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")

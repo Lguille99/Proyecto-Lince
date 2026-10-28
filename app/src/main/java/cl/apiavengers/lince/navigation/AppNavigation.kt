@@ -19,6 +19,7 @@ import cl.apiavengers.lince.ui.screens.PerfilScreen
 import cl.apiavengers.lince.ui.screens.PersonaDetalleScreen
 import cl.apiavengers.lince.ui.screens.ResumenCoordinacionScreen
 import cl.apiavengers.lince.ui.screens.ServicioDetalleScreen
+import cl.apiavengers.lince.modelo.Rol
 import cl.apiavengers.lince.ui.screens.ServiciosScreen
 import cl.apiavengers.lince.viewmodel.DisponibilidadViewModel
 import cl.apiavengers.lince.viewmodel.LinceViewModel
@@ -27,6 +28,15 @@ import cl.apiavengers.lince.viewmodel.LinceViewModel
 fun AppNavigation(vm: LinceViewModel = viewModel()) {
     val navController = rememberNavController()
     val rutaInicio = if (vm.esCoordinador()) "resumen" else "inicio_user"
+
+    LaunchedEffect(vm.usuario?.id) {
+        val actual = vm.usuario ?: return@LaunchedEffect
+        val destino = if (actual.rol == Rol.COORDINADOR) "resumen" else "inicio_user"
+        navController.navigate(destino) {
+            popUpTo("login") { inclusive = true }
+            launchSingleTop = true
+        }
+    }
 
     val irInicio: () -> Unit = {
         navController.navigate(rutaInicio) {
@@ -57,16 +67,8 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
         composable("login") {
             LoginScreen(
                 error = vm.error,
-                onLogin = { cuenta, clave ->
-                    vm.iniciarSesion(cuenta, clave)
-                    if (vm.usuario != null) {
-                        val destino = if (vm.esCoordinador()) "resumen" else "inicio_user"
-                        navController.navigate(destino) {
-                            popUpTo("login") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                }
+                cargando = vm.cargando,
+                onLogin = { cuenta, clave -> vm.iniciarSesion(cuenta, clave) }
             )
         }
 

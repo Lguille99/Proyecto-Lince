@@ -23,7 +23,11 @@ import cl.apiavengers.lince.datos.DatosPrueba
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 
 @Composable
-fun LoginScreen(error: String?, onLogin: (String, String) -> Unit) {
+fun LoginScreen(
+    error: String?,
+    cargando: Boolean = false,
+    onLogin: (String, String) -> Unit
+) {
     var cuenta by rememberSaveable { mutableStateOf("") }
     var clave by remember { mutableStateOf("") }
     var verClave by remember { mutableStateOf(false) }
@@ -129,7 +133,8 @@ fun LoginScreen(error: String?, onLogin: (String, String) -> Unit) {
                     BotonPrincipal(
                         texto = "Iniciar sesión",
                         onClick = { onLogin(cuenta, clave) },
-                        enabled = cuenta.isNotBlank() && clave.isNotBlank()
+                        enabled = cuenta.isNotBlank() && clave.isNotBlank(),
+                        cargando = cargando
                     )
                 }
             }

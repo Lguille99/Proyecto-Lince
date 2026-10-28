@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cl.apiavengers.lince.datos.SesionSupabase
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
 import cl.apiavengers.lince.ui.components.BarraInferior
@@ -48,6 +49,7 @@ fun DisponibilidadScreen(
     onNavigateToPerfil: () -> Unit = {}
 ) {
     val state by vm.uiState.collectAsState()
+    val esRemoto = SesionSupabase.activa
     var mes by remember { mutableStateOf(YearMonth.now()) }
     val hoy = LocalDate.now()
     val nombresMes = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "CL"))
@@ -208,7 +210,11 @@ fun DisponibilidadScreen(
                 )
             }
             Text(
-                "Los cambios se guardan en este dispositivo. No puedes bloquear un día con un servicio asignado.",
+                if (esRemoto) {
+                    "Los cambios se guardan en Supabase. No puedes bloquear un día con un servicio asignado."
+                } else {
+                    "Los cambios se guardan en este dispositivo. No puedes bloquear un día con un servicio asignado."
+                },
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
