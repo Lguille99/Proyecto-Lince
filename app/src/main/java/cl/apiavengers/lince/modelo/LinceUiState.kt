@@ -8,5 +8,8 @@ data class LinceUiState(
     val resumen: ResumenCoordinador? = null,
     val cargando: Boolean = false,
     val error: String? = null,
-    val mensaje: String? = null
+    val mensaje: String? = null,
+    val esError: Boolean = false,
+    val ultimaSincronizacion: String? = null,
+    val modoRemoto: Boolean = false
 )

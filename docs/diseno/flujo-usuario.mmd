@@ -1,0 +1,38 @@
+flowchart TD
+    A((Inicio)) --> B[Ingresar credenciales]
+    B --> C{¿Acceso válido?}
+    C -->|No| E[Mostrar error]
+    E --> B
+    C -->|Sí| R{Rol validado}
+    R -->|Coordinador| CO[Resumen operativo]
+    CO --> CR[Consultar servicios, respuestas, disponibilidad e historial]
+    CO --> EQ[Consultar equipo y ficha de persona]
+    CR --> RA[Reasignar asignación]
+    CR --> CA[Calificar servicio completado]
+    CR --> CS[Simular sincronización y actualizar resumen]
+    R -->|Conductor o guía| H[Inicio personal]
+    H --> M{Sección elegida}
+    M -->|Disponibilidad o perfil| ED[Editar datos, validar y guardar]
+    M -->|Historial| HI[Consultar historial]
+    M -->|Servicios| L[Consultar lista de servicios]
+    L --> DT[Abrir detalle de asignación]
+    DT --> P{¿Asignación pendiente?}
+    P -->|Sí| Q{¿Confirmar?}
+    Q -->|No| RE[Indicar motivo, validar y guardar rechazo]
+    Q -->|Sí| OK[Guardar confirmación]
+    P -->|No| DR{¿Titular y asignación confirmada?}
+    OK --> DR
+    DR -->|Sí| IN[Registrar check-in]
+    IN --> OUT[Registrar check-out]
+    DR -->|No| MERGE{ }
+    OUT --> MERGE
+    RE --> MERGE
+    HI --> MERGE
+    ED --> MERGE
+    CS --> MERGE
+    EQ --> MERGE
+    RA --> MERGE
+    CA --> MERGE
+    MERGE --> RETURN[Volver al inicio o resumen]
+    RETURN --> EXIT[Cerrar sesión]
+    EXIT --> END(((Fin)))

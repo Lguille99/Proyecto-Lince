@@ -1,140 +1,265 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package cl.apiavengers.lince.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import cl.apiavengers.lince.modelo.Rol
+import androidx.compose.ui.unit.sp
+import cl.apiavengers.lince.datos.SesionSupabase
+import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
+import cl.apiavengers.lince.ui.components.BarraInferior
+import cl.apiavengers.lince.ui.components.BarraSuperior
+import cl.apiavengers.lince.ui.components.BotonPrincipal
+import cl.apiavengers.lince.ui.fechaLarga
 import cl.apiavengers.lince.viewmodel.DisponibilidadViewModel
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DisponibilidadScreen(
-    usuario: Usuario,
-    onNavigateToInicio: () -> Unit,
-    onNavigateToServicios: () -> Unit,
-    onNavigateToPerfil: () -> Unit,
-    vm: DisponibilidadViewModel = viewModel()
+    vm: DisponibilidadViewModel,
+    usuario: Usuario?,
+    serviciosAsignados: List<Servicio> = emptyList(),
+    onBack: () -> Unit,
+    onCerrarSesion: () -> Unit = {},
+    onNavigateToInicio: () -> Unit = {},
+    onNavigateToServicios: () -> Unit = {},
+    onNavigateToPerfil: () -> Unit = {}
 ) {
-    val state by vm.uiState.collectAsStateWithLifecycle()
-    var mostrarCalendario by rememberSaveable { mutableStateOf(false) }
-    val formato = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
-    val esRecurso = usuario.rol != Rol.COORDINADOR
-    LaunchedEffect(usuario.cuenta) {
-        if (esRecurso) vm.cargar(usuario)
+    val state by vm.uiState.collectAsState()
+    val esRemoto = SesionSupabase.activa
+    var mes by remember { mutableStateOf(YearMonth.now()) }
+    var mostrarSelector by remember { mutableStateOf(false) }
+    val hoy = LocalDate.now()
+    val hoyMillis = remember(hoy) { hoy.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() }
+    val fechasSeleccionables = remember(hoyMillis) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean = utcTimeMillis >= hoyMillis
+            override fun isSelectableYear(year: Int): Boolean = year >= hoy.year
+        }
     }
-    val opciones = listOf("Inicio", "Servicios", "Agenda", "Perfil")
-    val iconos = listOf(Icons.Default.Home, Icons.AutoMirrored.Filled.List, Icons.Default.DateRange, Icons.Default.Person)
+    val nombresMes = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "CL"))
 
     Scaffold(
+        topBar = {
+            BarraSuperior(titulo = "Mi disponibilidad", onBack = onBack)
+        },
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
-                opciones.forEachIndexed { index, nombre ->
-                    NavigationBarItem(
-                        selected = index == 2,
-                        enabled = !esRecurso || !state.cargando,
-                        icon = { Icon(iconos[index], contentDescription = nombre) },
-                        label = { Text(nombre) },
-                        onClick = {
-                            when (index) {
-                                0 -> onNavigateToInicio()
-                                1 -> onNavigateToServicios()
-                                3 -> onNavigateToPerfil()
+            BarraInferior(
+                esCoordinador = false,
+                seleccion = "Agenda",
+                onInicio = onNavigateToInicio,
+                onServicios = onNavigateToServicios,
+                onAgenda = {},
+                onPerfil = onNavigateToPerfil
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(
+                "Marca los días en que no podrás trabajar. Los bloqueos requieren 7 días de anticipación.",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            OutlinedCard(
+                shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { mes = mes.minusMonths(1) },
+                            enabled = mes.isAfter(YearMonth.from(hoy))
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Mes anterior")
+                        }
+                        Text(
+                            mes.format(nombresMes)
+                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("es", "CL")) else it.toString() },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(onClick = { mes = mes.plusMonths(1) }) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Mes siguiente")
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth()) {
+                        listOf("L", "M", "X", "J", "V", "S", "D").forEach { dia ->
+                            Text(
+                                dia,
+                                modifier = Modifier.weight(1f),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    val primerDia = mes.atDay(1)
+                    val desplazamiento = primerDia.dayOfWeek.value - 1
+                    val totalCeldas = desplazamiento + mes.lengthOfMonth()
+                    val filas = (totalCeldas + 6) / 7
+                    repeat(filas) { fila ->
+                        Row(Modifier.fillMaxWidth()) {
+                            repeat(7) { columna ->
+                                val dia = fila * 7 + columna - desplazamiento + 1
+                                Box(Modifier.weight(1f).aspectRatio(1.1f), contentAlignment = Alignment.Center) {
+                                    if (dia in 1..mes.lengthOfMonth()) {
+                                        val fecha = mes.atDay(dia)
+                                        val seleccionado = fecha == state.fecha
+                                        val bloqueado = fecha in state.diasBloqueados
+                                        val pasado = fecha.isBefore(hoy)
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = when {
+                                                seleccionado -> MaterialTheme.colorScheme.primary
+                                                bloqueado -> MaterialTheme.colorScheme.errorContainer
+                                                else -> Color.Transparent
+                                            },
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clickable(enabled = !pasado) { vm.seleccionarFecha(fecha) }
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(
+                                                    dia.toString(),
+                                                    fontSize = 14.sp,
+                                                    fontWeight = if (seleccionado || fecha == hoy) FontWeight.Bold else FontWeight.Normal,
+                                                    color = when {
+                                                        seleccionado -> MaterialTheme.colorScheme.onPrimary
+                                                        pasado -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                        bloqueado -> MaterialTheme.colorScheme.onErrorContainer
+                                                        else -> MaterialTheme.colorScheme.onSurface
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
-                    )
-                }
-            }
-        }
-    ) { margen ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(margen)
-                .verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text("Mi disponibilidad", style = MaterialTheme.typography.headlineMedium)
-            Text("${usuario.nombre} · ${usuario.rol.etiqueta}")
-            if (!esRecurso) {
-                Text("La agenda personal está disponible para conductores y guías.")
-            } else {
-                if (state.cargando) LinearProgressIndicator(Modifier.fillMaxWidth())
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Día seleccionado", style = MaterialTheme.typography.titleMedium)
-                        Text(state.fecha.format(formato), style = MaterialTheme.typography.headlineSmall)
-                        OutlinedButton(
-                            onClick = { mostrarCalendario = true },
-                            enabled = state.cargado && !state.cargando,
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text("Elegir fecha") }
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Bloquear este día", modifier = Modifier.weight(1f))
-                            Switch(checked = state.bloqueado, onCheckedChange = vm::cambiarBloqueo,
-                                enabled = state.cargado && !state.cargando)
-                        }
-                        Text(if (state.bloqueado) "No disponible para esta fecha" else "Disponible para esta fecha")
                     }
                 }
-                Button(onClick = vm::guardar, enabled = state.cargado && !state.cargando,
-                    modifier = Modifier.fillMaxWidth()) { Text("Guardar disponibilidad") }
-                state.mensaje?.let { mensaje ->
-                    Text(mensaje, color = if (state.esError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-                }
-                if (!state.cargado && !state.cargando) {
-                    OutlinedButton(onClick = { vm.cargar(usuario) }) { Text("Reintentar carga") }
-                }
-                if (state.cargado) {
-                    Text("Días bloqueados guardados", style = MaterialTheme.typography.titleMedium)
-                    val futuros = state.diasBloqueados.filter { !it.isBefore(LocalDate.now()) }.sorted()
-                    if (futuros.isEmpty()) Text("No tienes días bloqueados desde hoy.")
-                    futuros.forEach { fecha ->
-                        TextButton(onClick = { vm.seleccionarFecha(fecha) }, enabled = !state.cargando) {
-                            Text(fecha.format(formato))
-                        }
+            }
+
+            OutlinedCard(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Día seleccionado", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(fechaLarga(state.fecha.toString()), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    TextButton(onClick = { mostrarSelector = true }) {
+                        Icon(Icons.Filled.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Elegir otra fecha")
                     }
-                    Text("Los cambios del interruptor se aplican al pulsar Guardar. No modifican tus servicios asignados.",
-                        style = MaterialTheme.typography.bodySmall)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Bloquear este día", fontSize = 14.sp)
+                        Switch(
+                            checked = state.bloqueado,
+                            onCheckedChange = { vm.cambiarBloqueo(it) },
+                            enabled = state.cargado && !state.cargando
+                        )
+                    }
+                    if (state.bloqueado) {
+                        Text("No recibirás asignaciones para este día.", fontSize = 12.sp)
+                    }
                 }
             }
+
+            BotonPrincipal(
+                texto = "Guardar disponibilidad",
+                onClick = { vm.guardar(serviciosAsignados) },
+                enabled = state.cargado,
+                cargando = state.cargando
+            )
+            state.mensaje?.let { mensaje ->
+                Text(
+                    mensaje,
+                    fontSize = 13.sp,
+                    color = if (state.esError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
+                )
+            }
+            Text(
+                if (esRemoto) {
+                    "Los cambios se guardan en Supabase. No puedes bloquear un día con un servicio asignado."
+                } else {
+                    "Los cambios se guardan en este dispositivo. No puedes bloquear un día con un servicio asignado."
+                },
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 
-    if (mostrarCalendario && esRecurso) {
-        val calendario = rememberDatePickerState(
+    if (mostrarSelector) {
+        val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = state.fecha.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-            selectableDates = object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
-                    !Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate().isBefore(LocalDate.now())
-            }
+            selectableDates = fechasSeleccionables
         )
         DatePickerDialog(
-            onDismissRequest = { mostrarCalendario = false },
+            onDismissRequest = { mostrarSelector = false },
             confirmButton = {
-                TextButton(enabled = calendario.selectedDateMillis != null, onClick = {
-                    calendario.selectedDateMillis?.let {
-                        vm.seleccionarFecha(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate())
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val fecha = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                            mes = YearMonth.from(fecha)
+                            vm.seleccionarFecha(fecha)
+                        }
+                        mostrarSelector = false
                     }
-                    mostrarCalendario = false
-                }) { Text("Seleccionar") }
+                ) { Text("Aceptar") }
             },
-            dismissButton = { TextButton(onClick = { mostrarCalendario = false }) { Text("Cancelar") } }
-        ) { DatePicker(state = calendario) }
+            dismissButton = {
+                TextButton(onClick = { mostrarSelector = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 }

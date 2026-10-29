@@ -1,90 +1,285 @@
 # Proyecto Lince
 
-Aplicación Android académica para organizar la consulta y respuesta a asignaciones de servicios turísticos. El avance de la Evaluación 2 utiliza datos ficticios y almacenamiento local; no se conecta al sistema real del cliente.
+![Logotipo de Proyecto Lince](docs/diseno/logo.png)
+
+Aplicación móvil académica para consultar, responder y ejecutar asignaciones de servicios turísticos. Busca ordenar la información que hoy se reparte entre llamadas, mensajes y registros manuales.
 
 **Api Avengers · Equipo 5 · Sección 3D**
 
-| Integrante | Rol del equipo |
+## Estado del proyecto
+
+MVP Android implementado con datos ficticios y persistencia local en Room. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. La interfaz observa un `StateFlow` único y muestra el estado de la conexión; la agenda permite elegir una fecha con `DatePickerDialog`. Cuando `SUPABASE_URL` y `SUPABASE_KEY` están configurados, la app usa Supabase Auth, PostgREST y RPC con RLS; si no hay configuración, red validada o el acceso remoto no está disponible, conserva el modo local. La base Room guarda estado, perfiles y disponibilidad, e importa una sola vez los datos locales anteriores en JSON. El dominio cuenta con 40 pruebas unitarias, la app con 7 pruebas Room/conectividad y la migración SQL con 43 comprobaciones PGlite.
+
+Las imágenes de `docs/diseno/interfaces` son la referencia de diseño utilizada para construir las pantallas.
+
+## Integrantes
+
+| Integrante | Rol |
 |---|---|
 | Vicente Krausse | Coordinador |
 | Luis Fermin | Diseñador |
 | Jeremy Ibañez | Desarrollador |
 
-## Ejecutar
+Todos participan en las pruebas y documentación.
 
-1. Abrir la carpeta raíz del repositorio en Android Studio.
-2. Usar JDK 17 e instalar Android SDK 35. El teléfono o emulador debe tener Android 8.0/API 26 o superior.
-3. Sincronizar Gradle. La primera sincronización requiere Internet para descargar dependencias.
-4. Ejecutar el módulo `app` con Run.
-5. Entrar con una cuenta de demostración de la tabla siguiente. No hace falta configurar Supabase.
+## Usuarios y funciones
 
-Android Studio configura `local.properties` con la ruta del SDK de cada equipo. Ese archivo no se sube al repositorio. No copiar la ruta del SDK de otro compañero.
+- **Conductor:** consulta sus asignaciones, confirma o rechaza, registra check-in/check-out y actualiza disponibilidad y perfil.
+- **Guía:** consulta sus servicios, responde asignaciones, ejecuta los servicios asignados y actualiza disponibilidad y perfil.
+- **Coordinador:** consulta todos los servicios, reasigna, califica servicios completados y revisa el resumen operativo, la disponibilidad del equipo y el historial.
 
-| Rol | Cuenta | Contraseña de demostración |
-|---|---|---|
-| Conductor | `conductor.demo` | `Lince123` |
-| Guía | `guia.demo` | `Lince123` |
-| Coordinador | `coordinador.demo` | `Lince123` |
+Una asignación tiene un **titular** y, opcionalmente, un **acompañante**. Ambos ven el servicio, pero solo el titular responde y ejecuta.
 
-Estas cuentas y la contraseña son públicas y ficticias. Son un acceso de demostración, no un sistema de autenticación para producción. Al cerrar la aplicación hay que volver a ingresar; los registros de Room permanecen.
+### Cuentas de prueba
 
-## Funciones del avance
+Todas usan la clave `Lince123`.
 
-- Pantallas con Jetpack Compose y Material 3, navegación por rol, listas, búsqueda, filtros y detalles.
-- Inicio de sesión de demostración con campos obligatorios y mensaje de credenciales incorrectas.
-- Confirmación o rechazo de un servicio pendiente por su responsable. El rechazo requiere un motivo de 1 a 300 caracteres; una respuesta guardada no se puede repetir.
-- Servicios y respuestas guardados en Room, con usuario responsable, motivo y fecha/hora de respuesta. El historial incluye servicios anteriores y respuestas nuevas; el resumen actualiza sus conteos.
-- Agenda por cuenta con selección de fecha y bloqueo de días desde hoy. Room conserva los días al reiniciar. Los antiguos archivos JSON se importan una sola vez por cuenta.
-- Perfil con validación de nombre y correo. Identificador y rol no editables. Los cambios del perfil solo duran durante la sesión y la pantalla lo informa.
-- Detección del estado de Internet con un aviso visible. Sin conexión se puede continuar el flujo local.
+| Usuario | Correo Auth | Perfil | Rol |
+|---|---|---|---|
+| `conductor.demo` | `conductor.demo@lince.local` | `DRV-001` | Conductor |
+| `conductor2.demo` | `conductor2.demo@lince.local` | `DRV-002` | Conductor |
+| `guia.demo` | `guia.demo@lince.local` | `GUI-002` | Guía |
+| `coordinador.demo` | `coordinador.demo@lince.local` | `COO-003` | Coordinador |
 
-Los servicios de ejemplo se insertan sin sobrescribir los existentes. Sus fechas quedan fijadas al cargar la base por primera vez. El resumen de disponibilidad del equipo todavía utiliza valores de ejemplo; no representa los días de la agenda personal. La acción de actualizar coordinación recarga datos locales y no envía información al cliente.
+En modo local basta con el usuario. En Supabase se debe crear cada usuario Auth con su correo y luego vincularlo a `perfiles.auth_user_id`. Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e historial (completados y rechazados), con servicios programados para el día actual.
 
-## Estructura
+## Reglas implementadas
 
-- `dominio`: modelos, reglas de validación, repositorios e interfaces de almacenamiento Kotlin.
-- `app/.../ui/screens`: pantallas Compose.
-- `app/.../viewmodel`: estado de interfaz con ViewModel y StateFlow.
-- `app/.../datos/local`: entidades, DAO, almacenamiento y `LinceDatabase` de Room.
-- `app/.../datos/MonitorConexion.kt`: observación del estado de la red.
-- `app/schemas`: versiones exportadas del esquema Room. La migración 1 → 2 agrega servicios y conserva la agenda.
-- `supabase`: trabajo previo de base remota. Está conservado, pero no participa en el acceso ni en el flujo de esta entrega.
+- El acceso valida cuenta, clave y rol.
+- Confirmar o rechazar una asignación pendiente registra autor y fecha. El rechazo exige un motivo de entre 1 y 300 caracteres.
+- El check-in se habilita 15 minutos antes de la hora programada, solo para el titular, y requiere una ubicación escrita manualmente.
+- El check-out finaliza el servicio: pasa de confirmada a completada y queda en el historial.
+- El coordinador puede calificar un servicio completado de 1 a 5; el promedio se muestra en la ficha de la persona.
+- La reasignación solo admite personas del mismo rol y con el idioma requerido por el servicio.
+- La disponibilidad se bloquea con al menos 7 días de anticipación y no permite bloquear un día con un servicio asignado.
+- La agenda acepta fechas desde el día actual mediante `DatePickerDialog`; el calendario mensual sigue disponible.
+- El perfil permite editar nombre, correo, teléfono, zona e idiomas; el ID y el rol son de solo lectura. Los errores de nombre, correo, teléfono, zona e idiomas se muestran en el formulario.
+- La app distingue una red validada de una red sin Internet y muestra un aviso cuando se pierde la conexión.
+- El acumulado considera los servicios confirmados y completados del usuario.
+- La simulación de sincronización actualiza el resumen y registra la hora de la última ejecución.
 
-La UI observa StateFlow. El ViewModel ejecuta operaciones de disco fuera del hilo principal. El Repository valida las reglas y usa el almacenamiento Room mediante una interfaz. Cuando el cliente entregue su API, se implementará el acceso remoto según su contrato y autenticación; no se asumen endpoints ni credenciales.
+## Integración con Supabase
 
-## Pruebas
+La app usa Supabase cuando la configuración local está presente. El modo local se conserva como respaldo y para ejecutar la demo sin red. No se sincronizan cambios entre ambos modos.
 
-Con Java 17 y Android SDK configurados:
+### Base de datos
 
-```sh
-./gradlew :dominio:test :app:testDebugUnitTest :app:assembleDebug
+Aplicar en orden en el SQL Editor del proyecto o con Supabase CLI:
+
+1. `supabase/migrations/202610190001_estructura.sql`
+2. `supabase/migrations/202610190002_permisos_y_operaciones.sql`
+3. `supabase/migrations/202610280001_mvp_supabase.sql`
+4. `supabase/seed.sql`
+
+La migración `202610280001_mvp_supabase.sql` es aditiva: agrega acompañante, reasignación, calificaciones, ubicación de check-in, funciones y políticas RLS sin borrar datos existentes. La publicación de cambios en la base remota requiere permisos de administración; la publishable key de la app no permite ejecutar DDL.
+
+Para restaurar el estado demo, ejecutar `supabase/reset_demo.sql` y luego `supabase/seed.sql`. El reset elimina solo los servicios `LIN-001` a `LIN-006`, sus asignaciones, ejecuciones, calificaciones, historial, disponibilidad y sincronizaciones; conserva los perfiles y sus vínculos con Auth. El seed es repetible si se ejecuta después del reset y deja dos servicios de hoy (uno confirmado para conductor y uno pendiente para guía), uno rechazado, uno completado y calificado, y servicios pendientes para conductor y guía.
+
+### Usuarios Auth
+
+Crear en **Authentication > Users** los cuatro correos de la tabla de cuentas, con la clave `Lince123` o la que defina el equipo. Luego vincular cada perfil:
+
+```sql
+update public.perfiles p
+set auth_user_id = u.id
+from auth.users u
+where u.email = case p.codigo
+    when 'DRV-001' then 'conductor.demo@lince.local'
+    when 'DRV-002' then 'conductor2.demo@lince.local'
+    when 'GUI-002' then 'guia.demo@lince.local'
+    when 'COO-003' then 'coordinador.demo@lince.local'
+end;
 ```
 
-Las pruebas JVM de Android usan Robolectric y pueden descargar su entorno en la primera ejecución. Comprueban respuestas y validaciones, aislamiento de cuentas, reapertura de Room, importación desde JSON y migración de la base. Las pruebas de UI verifican el flujo mediante Compose. No sustituyen el ensayo final en el dispositivo que se usará en la evaluación.
+La creación de usuarios Auth no se hace con la publishable key desde la app; se realiza en el panel de Supabase o con la Admin API usando una clave secreta que nunca se incorpora al APK.
 
-## Demostración para la evaluación
+### Configuración Android
 
-1. Entrar con contraseña incorrecta y mostrar el mensaje; luego ingresar como conductor.
-2. Abrir Servicios, buscar una asignación pendiente y acceder a su detalle.
-3. Intentar rechazar sin motivo; corregirlo y guardar. Mostrar estado, motivo y fecha/hora.
-4. Volver al listado y al historial para comprobar la misma respuesta.
-5. Abrir Agenda, elegir hoy o una fecha futura, bloquear el día y guardar.
-6. Cerrar completamente la app, volver a entrar y comprobar respuesta y disponibilidad.
-7. Ingresar como coordinador para consultar el resumen y el historial.
-8. Desactivar Wi-Fi/datos o activar modo avión y mostrar el aviso sin Internet; continuar consultando los datos locales. Reactivar Internet y observar el cambio.
-9. Abrir Perfil y demostrar el error de nombre vacío o correo inválido.
+Crear o editar `local.properties` en la raíz, sin commitearlo:
 
-## Pendientes
+```properties
+SUPABASE_URL=https://TU-PROYECTO.supabase.co
+SUPABASE_KEY=sb_publishable_TU_CLAVE
+```
 
-- Ensayar el APK en un emulador o teléfono físico antes de la entrega y registrar el resultado.
-- Integrar la API y la autenticación que proporcione el cliente.
-- Implementar check-in/check-out, persistencia del perfil y disponibilidad real en el resumen de coordinación.
-- Confirmar con el equipo responsables y fechas del [tablero de tareas](docs/PLANIFICACION.md).
+`app/build.gradle.kts` expone ambos valores como `BuildConfig`. La app usa la publishable key con RLS; no se debe usar `service_role` ni una clave secreta en el cliente. Si faltan los valores, el login y las operaciones usan el repositorio local.
 
-## Diseño y evidencias
+### Pruebas SQL
 
-- [Flujo de usuario](docs/diseno/flujo-usuario-uml.png).
-- [Interfaces propuestas](docs/diseno/interfaces).
-- [Planificación y verificación](docs/PLANIFICACION.md).
+```bash
+cd supabase/tests
+npm install
+npm test
+```
 
-Los diseños describen también funciones futuras: no deben confundirse con la lista de funciones implementadas. Cada integrante debe revisar, ejecutar y entender sus aportes para la defensa individual. Después del cierre de entrega, mantener la versión entregada sin cambios salvo indicación del docente.
+La suite levanta PGlite, aplica las migraciones y el seed, y comprueba 43 reglas de negocio, permisos y trazabilidad.
+
+## Identidad visual
+
+Nombre: **Proyecto Lince**. El símbolo de lince representa atención y seguimiento; su centro alude a un punto de ruta. Se entrega en PNG transparente y SVG editable.
+
+| Color | Claro | Oscuro | Uso |
+|---|---|---|---|
+| Primario | `#175873` | `#8FCEE8` | Botones y elementos activos |
+| Contenedor primario | `#CFE8F3` | `#0C4A60` | Botones secundarios y chips |
+| Secundario | `#1F6B58` | `#8ED8C1` | Estados confirmados y disponibles |
+| Pendiente | `#8A5B00` | `#F3C56B` | Estados pendientes y en servicio |
+| Error | `#B3261E` | `#FFB4AB` | Errores y rechazos |
+| Fondo | `#E3EEF4` | `#0D171D` | Fondo general |
+| Superficie | `#FFFFFF` | `#132128` | Tarjetas y barras |
+| Texto | `#102A36` | `#E2EDF2` | Títulos y contenido |
+| Texto secundario | `#41535F` | `#B7C9D2` | Apoyos y metadatos |
+| Borde | `#738590` | `#8499A4` | Contornos y separadores |
+
+La app respeta el modo claro u oscuro del sistema. Los estados usan texto e iconos además de color. La interfaz emplea tarjetas, botones redondeados, campos etiquetados y navegación inferior para conductor y guía.
+
+## Flujo de usuario
+
+Diagrama de actividad UML exportado como PNG:
+
+![Diagrama de actividad UML](docs/diseno/flujo-usuario-uml.png)
+
+Representación equivalente en Mermaid para visualizarla directamente en GitHub. El archivo editable está en [flujo-usuario.mmd](docs/diseno/flujo-usuario.mmd).
+
+```mermaid
+flowchart TD
+    A((Inicio)) --> B[Ingresar credenciales]
+    B --> C{¿Acceso válido?}
+    C -->|No| E[Mostrar error]
+    E --> B
+    C -->|Sí| R{Rol validado}
+    R -->|Coordinador| CO[Resumen operativo]
+    CO --> CR[Consultar servicios, respuestas, disponibilidad e historial]
+    CO --> EQ[Consultar equipo y ficha de persona]
+    CR --> RA[Reasignar asignación]
+    CR --> CA[Calificar servicio completado]
+    CR --> CS[Simular sincronización y actualizar resumen]
+    R -->|Conductor o guía| H[Inicio personal]
+    H --> M{Sección elegida}
+    M -->|Disponibilidad o perfil| ED[Editar datos, validar y guardar]
+    M -->|Historial| HI[Consultar historial]
+    M -->|Servicios| L[Consultar lista de servicios]
+    L --> DT[Abrir detalle de asignación]
+    DT --> P{¿Asignación pendiente?}
+    P -->|Sí| Q{¿Confirmar?}
+    Q -->|No| RE[Indicar motivo, validar y guardar rechazo]
+    Q -->|Sí| OK[Guardar confirmación]
+    P -->|No| DR{¿Titular y asignación confirmada?}
+    OK --> DR
+    DR -->|Sí| IN[Registrar check-in]
+    IN --> OUT[Registrar check-out]
+    DR -->|No| MERGE{ }
+    OUT --> MERGE
+    RE --> MERGE
+    HI --> MERGE
+    ED --> MERGE
+    CS --> MERGE
+    EQ --> MERGE
+    RA --> MERGE
+    CA --> MERGE
+    MERGE --> RETURN[Volver al inicio o resumen]
+    RETURN --> EXIT[Cerrar sesión]
+    EXIT --> END(((Fin)))
+```
+
+Los errores de formulario se muestran en la misma pantalla. Cada respuesta conserva usuario, fecha y hora. Una asignación rechazada no puede iniciar ejecución; el check-out se habilita después del check-in.
+
+## Pantallas
+
+| Pantalla | Referencia | Elementos principales |
+|---|---|---|
+| Inicio de sesión | [01-login.png](docs/diseno/interfaces/01-login.png) | Campos de acceso, validación de rol, cuentas de prueba |
+| Inicio | [02-inicio.png](docs/diseno/interfaces/02-inicio.png) | Jornada, próximo servicio, servicios de hoy, accesos |
+| Servicios | [03-servicios.png](docs/diseno/interfaces/03-servicios.png) | Búsqueda, filtros por estado, tarjetas con chips |
+| Detalle | [04-detalle.png](docs/diseno/interfaces/04-detalle.png) | Información, itinerario, reserva, equipo y trazabilidad |
+| Disponibilidad | [05-disponibilidad.png](docs/diseno/interfaces/05-disponibilidad.png) | Calendario mensual, `DatePickerDialog`, selección de día, Switch y guardado |
+| Perfil | [06-perfil.png](docs/diseno/interfaces/06-perfil.png) | ID de solo lectura, datos editables, idiomas, acumulado |
+| Ejecución | [07-ejecucion.png](docs/diseno/interfaces/07-ejecucion.png) | Hitos, check-in con ubicación, check-out |
+| Historial | [08-historial.png](docs/diseno/interfaces/08-historial.png) | Filtros, acumulado, trazabilidad y tarifas |
+| Resumen de coordinación | [09-resumen-coordinacion.png](docs/diseno/interfaces/09-resumen-coordinacion.png) | Pendientes, confirmadas, rechazadas, recursos y sincronización |
+| Equipo | — | Búsqueda por nombre o rol, disponibilidad, idiomas y calificación |
+| Ficha de persona | — | Contacto, desempeño, acumulado y servicios activos |
+
+Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. Historial se abre desde Inicio; detalle desde Servicios; ejecución desde el detalle de un servicio confirmado. Coordinación dispone de su resumen con accesos a todos los servicios, al historial y al equipo.
+
+### Galería
+
+![01-login](docs/diseno/interfaces/01-login.png)
+
+![02-inicio](docs/diseno/interfaces/02-inicio.png)
+
+![03-servicios](docs/diseno/interfaces/03-servicios.png)
+
+![04-detalle](docs/diseno/interfaces/04-detalle.png)
+
+![05-disponibilidad](docs/diseno/interfaces/05-disponibilidad.png)
+
+![06-perfil](docs/diseno/interfaces/06-perfil.png)
+
+![07-ejecucion](docs/diseno/interfaces/07-ejecucion.png)
+
+![08-historial](docs/diseno/interfaces/08-historial.png)
+
+![09-resumen-coordinacion](docs/diseno/interfaces/09-resumen-coordinacion.png)
+
+## Tecnologías
+
+- Kotlin y Jetpack Compose con Material 3.
+- Arquitectura MVVM: UI y cliente Supabase en `app/`, reglas de negocio en `dominio/`.
+- Modo remoto con Supabase Auth, PostgREST, RPC y RLS; respaldo local con Room y `StateFlow`.
+- Room 2.7.2 con migraciones, DAOs y pruebas Robolectric. El JSON con `AtomicFile` se conserva solo para importar datos anteriores.
+- Indicador de conectividad con `ConnectivityManager` y pruebas SQL con PGlite.
+
+### Compilar y probar
+
+```bash
+./gradlew :dominio:test
+./gradlew :app:testDebugUnitTest
+./gradlew :app:lintDebug
+./gradlew :app:assembleDebug
+```
+
+En Windows:
+
+```bat
+gradlew.bat :dominio:test
+gradlew.bat :app:testDebugUnitTest
+gradlew.bat :app:lintDebug
+gradlew.bat :app:assembleDebug
+```
+
+Requiere JDK 17 y Android SDK configurados.
+
+Referencias oficiales de diseño: [Material Design 3](https://m3.material.io/) y [componentes Material para Android](https://developer.android.com/design/ui/mobile/guides/components/material-overview).
+
+## Organización
+
+```text
+Proyecto-lince/
+├── README.md
+├── app/                      # Interfaz, navegación, ViewModels y cliente Supabase
+├── dominio/                  # Modelo, repositorios y pruebas
+├── supabase/                 # Migraciones, seed y pruebas PGlite
+└── docs/
+    ├── evidencias/
+    │   ├── clase-01/
+    │   │   └── Evidencia_Clase_01_MVP_Equipo05.docx
+    │   └── clase-02/
+    │       └── Evidencia_Clase_02_Diseno_Equipo05.docx
+    └── diseno/
+        ├── logo.png
+        ├── logo.svg
+        ├── flujo-usuario-uml.png
+        ├── flujo-usuario.mmd
+        └── interfaces/
+            └── 01-login.png … 09-resumen-coordinacion.png
+```
+
+## Entrega de clase 2
+
+- Documento de diseño y recursos visuales incorporados al repositorio.
+- Identidad, flujo y pantallas usados como base de la implementación.
+- MVP funcional con datos ficticios y persistencia local.
+- Integración preparada con Supabase Auth, PostgREST, RPC y RLS, con respaldo local.
+- Documentación alineada con la implementación: titular conductor o guía, acompañante opcional, equipo, ficha, reasignación y calificación.
+- Pruebas unitarias del dominio, pruebas SQL PGlite y compilación del APK verificadas.

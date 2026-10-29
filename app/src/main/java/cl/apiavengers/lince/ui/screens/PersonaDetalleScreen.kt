@@ -1,151 +1,169 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package cl.apiavengers.lince.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
+import cl.apiavengers.lince.ui.components.BarraSuperior
+import cl.apiavengers.lince.ui.components.ChipDisponibilidad
+import cl.apiavengers.lince.ui.components.ChipEstadoServicio
+import cl.apiavengers.lince.ui.components.ChipIdioma
+import cl.apiavengers.lince.ui.fechaNumerica
+import cl.apiavengers.lince.ui.montoClp
+import cl.apiavengers.lince.viewmodel.LinceViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonaDetalleScreen(
-    persona: Usuario?,
-    serviciosAsignados: List<Servicio>,
+    vm: LinceViewModel,
+    personaId: String,
     onBack: () -> Unit,
     onServicioClick: (String) -> Unit
 ) {
+    val estado by vm.uiState.collectAsStateWithLifecycle()
+    val persona = remember(estado.equipo) { vm.obtenerPersona(personaId) }
+    val servicios = remember(estado.servicios) { vm.serviciosDe(personaId) }
+    val calificacion = remember(estado.historial) { vm.promedioCalificacion(personaId) }
+    val total = remember(estado.historial, estado.servicios) { vm.totalGanado(personaId) }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Detalle de persona") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
+            BarraSuperior(titulo = "Ficha del equipo", onBack = onBack)
         }
     ) { innerPadding ->
         if (persona == null) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("Persona no encontrada.", color = MaterialTheme.colorScheme.error)
+                Text("No se encontró la persona.")
             }
             return@Scaffold
         }
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.fillMaxWidth()
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(64.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(72.dp)) {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(
-                                    persona.nombre.firstOrNull()?.uppercase() ?: "?",
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                        Text(persona.nombre, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                    Box(contentAlignment = Alignment.Center) {
                         Text(
-                            "${persona.rol.etiqueta} · ${persona.id}",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                            persona.nombre.take(1),
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
-                        EstadoChipGrande(persona)
                     }
                 }
-            }
-            item {
-                Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("Contacto y zona", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        DetalleFila(Icons.Default.Phone, "Teléfono", persona.telefono)
-                        DetalleFila(Icons.Default.Email, "Correo", persona.correo)
-                        DetalleFila(Icons.Default.Person, "Cuenta", persona.cuenta)
-                        DetalleFila(Icons.Default.Place, "Zona", persona.zona)
-                    }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(persona.nombre, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                    Text("${persona.rol.etiqueta} · ${persona.id}", fontSize = 13.sp)
+                    ChipDisponibilidad(persona.disponibilidad)
                 }
             }
-            item {
-                Text("Servicios asignados (${serviciosAsignados.size})", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                persona.idiomas.forEach { ChipIdioma(it) }
             }
-            if (serviciosAsignados.isEmpty()) {
-                item {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
+
+            OutlinedCard(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Contacto", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Fila("Correo", persona.correo)
+                    Fila("Teléfono", persona.telefono)
+                    Fila("Zona", persona.zona)
+                }
+            }
+
+            OutlinedCard(
+                shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Desempeño", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            if (calificacion != null) " ${"%.1f".format(calificacion)}/5" else " Sin calificaciones",
+                            fontSize = 14.sp
+                        )
+                    }
+                    Fila("Acumulado", montoClp(total))
+                }
+            }
+
+            Text("Servicios activos", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            if (servicios.isEmpty()) {
+                Text("Sin servicios activos asignados.", fontSize = 14.sp)
+            }
+            servicios.forEach { servicio ->
+                OutlinedCard(
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth().clickable { onServicioClick(servicio.id) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Sin servicios asignados por ahora.", Modifier.padding(16.dp), fontSize = 14.sp)
-                    }
-                }
-            } else {
-                items(serviciosAsignados.size) { index ->
-                    val s = serviciosAsignados[index]
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { onServicioClick(s.id) }
-                    ) {
-                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("${s.fecha} · ${s.hora}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Text(s.titulo, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                Text("${s.recogida} → ${s.destino}", fontSize = 13.sp)
-                            }
-                            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Ver servicio", tint = MaterialTheme.colorScheme.primary)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(servicio.titulo, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text(
+                                "${fechaNumerica(servicio.fecha)} · ${servicio.hora}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
+                        ChipEstadoServicio(servicio.estado)
                     }
                 }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(14.dp))
+                Text(" Toca un servicio para ver el detalle.", fontSize = 12.sp)
             }
         }
     }
 }
 
 @Composable
-private fun EstadoChipGrande(persona: Usuario) {
-    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.onPrimary) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            EstadoChip(persona.disponibilidad)
-        }
-    }
-}
-
-@Composable
-private fun DetalleFila(icono: androidx.compose.ui.graphics.vector.ImageVector, etiqueta: String, valor: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Icon(icono, contentDescription = etiqueta, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-        Column {
-            Text(etiqueta, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-            Text(valor, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-        }
+private fun Fila(etiqueta: String, valor: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(etiqueta, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(valor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }

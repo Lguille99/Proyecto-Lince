@@ -15,11 +15,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.apiavengers.lince.viewmodel.ConexionViewModel
 
 @Composable
-fun EstadoConexion(vm: ConexionViewModel = viewModel()) {
+fun EstadoConexion(
+    modoRemoto: Boolean = false,
+    vm: ConexionViewModel = viewModel()
+) {
     val conectado by vm.conectado.collectAsStateWithLifecycle()
     Surface(color = if (conectado) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer) {
         Text(
-            if (conectado) "Con Internet · demostración local" else "Sin Internet · puedes seguir trabajando localmente",
+            when {
+                !conectado -> "Sin Internet · trabajando en modo local"
+                modoRemoto -> "Con Internet · conectado a Supabase"
+                else -> "Con Internet · demostración local"
+            },
             modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelMedium
         )
