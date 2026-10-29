@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -37,10 +38,11 @@ fun ServiciosScreen(
     onNavigateToAgenda: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
+    val estado by vm.uiState.collectAsStateWithLifecycle()
     var filtro by remember { mutableStateOf<EstadoServicio?>(null) }
     var busqueda by remember { mutableStateOf("") }
-    val usuario = vm.usuario
-    val propios = if (vm.esCoordinador()) vm.servicios else vm.servicios.filter { usuario != null && it.esDe(usuario.id) }
+    val usuario = estado.usuario
+    val propios = if (vm.esCoordinador()) estado.servicios else estado.servicios.filter { usuario != null && it.esDe(usuario.id) }
     val filtrados = propios.filter { servicio ->
         (filtro == null || servicio.estado == filtro) &&
             (busqueda.isBlank() || servicio.titulo.contains(busqueda, true) ||

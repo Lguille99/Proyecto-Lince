@@ -8,7 +8,7 @@ Aplicación móvil académica para consultar, responder y ejecutar asignaciones 
 
 ## Estado del proyecto
 
-MVP Android implementado con datos ficticios y persistencia local en el dispositivo. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. Cuando `SUPABASE_URL` y `SUPABASE_KEY` están configurados, la app usa Supabase Auth, PostgREST y RPC con RLS; si no hay configuración, conexión o el acceso remoto no está disponible, conserva el modo local con datos ficticios. El dominio cuenta con 40 pruebas unitarias, la migración SQL con 43 comprobaciones PGlite y el APK debug compila correctamente.
+MVP Android implementado con datos ficticios y persistencia local en Room. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. La interfaz observa un `StateFlow` único y muestra el estado de la conexión; la agenda permite elegir una fecha con `DatePickerDialog`. Cuando `SUPABASE_URL` y `SUPABASE_KEY` están configurados, la app usa Supabase Auth, PostgREST y RPC con RLS; si no hay configuración, red validada o el acceso remoto no está disponible, conserva el modo local. La base Room guarda estado, perfiles y disponibilidad, e importa una sola vez los datos locales anteriores en JSON. El dominio cuenta con 40 pruebas unitarias, la app con 7 pruebas Room/conectividad y la migración SQL con 43 comprobaciones PGlite.
 
 Las imágenes de `docs/diseno/interfaces` son la referencia de diseño utilizada para construir las pantallas.
 
@@ -52,7 +52,9 @@ En modo local basta con el usuario. En Supabase se debe crear cada usuario Auth 
 - El coordinador puede calificar un servicio completado de 1 a 5; el promedio se muestra en la ficha de la persona.
 - La reasignación solo admite personas del mismo rol y con el idioma requerido por el servicio.
 - La disponibilidad se bloquea con al menos 7 días de anticipación y no permite bloquear un día con un servicio asignado.
-- El perfil permite editar nombre, correo, teléfono, zona e idiomas; el ID y el rol son de solo lectura.
+- La agenda acepta fechas desde el día actual mediante `DatePickerDialog`; el calendario mensual sigue disponible.
+- El perfil permite editar nombre, correo, teléfono, zona e idiomas; el ID y el rol son de solo lectura. Los errores de nombre, correo, teléfono, zona e idiomas se muestran en el formulario.
+- La app distingue una red validada de una red sin Internet y muestra un aviso cuando se pierde la conexión.
 - El acumulado considera los servicios confirmados y completados del usuario.
 - La simulación de sincronización actualiza el resumen y registra la hora de la última ejecución.
 
@@ -190,7 +192,7 @@ Los errores de formulario se muestran en la misma pantalla. Cada respuesta conse
 | Inicio | [02-inicio.png](docs/diseno/interfaces/02-inicio.png) | Jornada, próximo servicio, servicios de hoy, accesos |
 | Servicios | [03-servicios.png](docs/diseno/interfaces/03-servicios.png) | Búsqueda, filtros por estado, tarjetas con chips |
 | Detalle | [04-detalle.png](docs/diseno/interfaces/04-detalle.png) | Información, itinerario, reserva, equipo y trazabilidad |
-| Disponibilidad | [05-disponibilidad.png](docs/diseno/interfaces/05-disponibilidad.png) | Calendario mensual, selección de día, Switch y guardado |
+| Disponibilidad | [05-disponibilidad.png](docs/diseno/interfaces/05-disponibilidad.png) | Calendario mensual, `DatePickerDialog`, selección de día, Switch y guardado |
 | Perfil | [06-perfil.png](docs/diseno/interfaces/06-perfil.png) | ID de solo lectura, datos editables, idiomas, acumulado |
 | Ejecución | [07-ejecucion.png](docs/diseno/interfaces/07-ejecucion.png) | Hitos, check-in con ubicación, check-out |
 | Historial | [08-historial.png](docs/diseno/interfaces/08-historial.png) | Filtros, acumulado, trazabilidad y tarifas |
@@ -224,13 +226,16 @@ Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. H
 
 - Kotlin y Jetpack Compose con Material 3.
 - Arquitectura MVVM: UI y cliente Supabase en `app/`, reglas de negocio en `dominio/`.
-- Modo remoto con Supabase Auth, PostgREST, RPC y RLS; respaldo local en JSON con `AtomicFile`.
-- Pruebas unitarias JUnit del dominio y pruebas SQL con PGlite.
+- Modo remoto con Supabase Auth, PostgREST, RPC y RLS; respaldo local con Room y `StateFlow`.
+- Room 2.7.2 con migraciones, DAOs y pruebas Robolectric. El JSON con `AtomicFile` se conserva solo para importar datos anteriores.
+- Indicador de conectividad con `ConnectivityManager` y pruebas SQL con PGlite.
 
 ### Compilar y probar
 
 ```bash
 ./gradlew :dominio:test
+./gradlew :app:testDebugUnitTest
+./gradlew :app:lintDebug
 ./gradlew :app:assembleDebug
 ```
 
@@ -238,6 +243,8 @@ En Windows:
 
 ```bat
 gradlew.bat :dominio:test
+gradlew.bat :app:testDebugUnitTest
+gradlew.bat :app:lintDebug
 gradlew.bat :app:assembleDebug
 ```
 

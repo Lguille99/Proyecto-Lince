@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,10 +35,11 @@ fun ResumenCoordinacionScreen(
     onEquipo: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
-    val resumen = vm.resumen
+    val estado by vm.uiState.collectAsStateWithLifecycle()
+    val resumen = estado.resumen
     val snackbar = remember { SnackbarHostState() }
     var sincronizando by remember { mutableStateOf(false) }
-    val mensaje = vm.mensaje
+    val mensaje = estado.mensaje
 
     LaunchedEffect(mensaje) {
         if (mensaje != null) {
@@ -58,7 +60,7 @@ fun ResumenCoordinacionScreen(
         topBar = {
             BarraSuperior(
                 titulo = "Resumen operativo",
-                subtitulo = if (vm.modoRemoto) "Coordinación · Supabase" else "Coordinación · Datos locales",
+                subtitulo = if (estado.modoRemoto) "Coordinación · Supabase" else "Coordinación · Datos locales",
                 acciones = {
                     IconButton(onClick = onCerrarSesion) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")
@@ -146,7 +148,7 @@ fun ResumenCoordinacionScreen(
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    vm.equipo.take(4).forEach { persona ->
+                    estado.equipo.take(4).forEach { persona ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -169,7 +171,7 @@ fun ResumenCoordinacionScreen(
                 cargando = sincronizando
             )
             Text(
-                "Última simulación: ${vm.ultimaSincronizacion ?: "sin sincronizar"}",
+                "Última simulación: ${estado.ultimaSincronizacion ?: "sin sincronizar"}",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

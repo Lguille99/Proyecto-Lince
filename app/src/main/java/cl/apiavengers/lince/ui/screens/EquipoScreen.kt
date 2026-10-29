@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -40,8 +41,9 @@ fun EquipoScreen(
     onNavigateToEquipo: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
+    val estado by vm.uiState.collectAsStateWithLifecycle()
     var busqueda by remember { mutableStateOf("") }
-    val equipo = vm.equipo.filter { it.nombre.contains(busqueda, true) || it.rol.etiqueta.contains(busqueda, true) }
+    val equipo = estado.equipo.filter { it.nombre.contains(busqueda, true) || it.rol.etiqueta.contains(busqueda, true) }
 
     Scaffold(
         topBar = {

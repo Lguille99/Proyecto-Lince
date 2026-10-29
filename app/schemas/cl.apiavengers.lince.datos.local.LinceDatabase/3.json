@@ -1,0 +1,205 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "70a650ee21243cfa2c15c87dc37c77a6",
+    "entities": [
+      {
+        "tableName": "disponibilidad",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cuenta` TEXT NOT NULL, `fecha` TEXT NOT NULL, PRIMARY KEY(`cuenta`, `fecha`))",
+        "fields": [
+          {
+            "fieldPath": "cuenta",
+            "columnName": "cuenta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cuenta",
+            "fecha"
+          ]
+        }
+      },
+      {
+        "tableName": "agendas_importadas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cuenta` TEXT NOT NULL, PRIMARY KEY(`cuenta`))",
+        "fields": [
+          {
+            "fieldPath": "cuenta",
+            "columnName": "cuenta",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cuenta"
+          ]
+        }
+      },
+      {
+        "tableName": "estado_servicios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `estado` TEXT NOT NULL, `asignadoA` TEXT NOT NULL, `acompananteId` TEXT, `respondidoPor` TEXT, `respondidoEn` TEXT, `motivoRechazo` TEXT, `inicioEn` TEXT, `terminoEn` TEXT, `inicioPor` TEXT, `ubicacionInicio` TEXT, `observaciones` TEXT NOT NULL, `puntaje` INTEGER, `calificadoPor` TEXT, `calificadoEn` TEXT, `reasignadoPor` TEXT, `reasignadoEn` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "asignadoA",
+            "columnName": "asignadoA",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "acompananteId",
+            "columnName": "acompananteId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "respondidoPor",
+            "columnName": "respondidoPor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "respondidoEn",
+            "columnName": "respondidoEn",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "motivoRechazo",
+            "columnName": "motivoRechazo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "inicioEn",
+            "columnName": "inicioEn",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "terminoEn",
+            "columnName": "terminoEn",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "inicioPor",
+            "columnName": "inicioPor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ubicacionInicio",
+            "columnName": "ubicacionInicio",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "puntaje",
+            "columnName": "puntaje",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "calificadoPor",
+            "columnName": "calificadoPor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "calificadoEn",
+            "columnName": "calificadoEn",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reasignadoPor",
+            "columnName": "reasignadoPor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reasignadoEn",
+            "columnName": "reasignadoEn",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "perfiles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `correo` TEXT NOT NULL, `telefono` TEXT NOT NULL, `zona` TEXT NOT NULL, `idiomas` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "correo",
+            "columnName": "correo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zona",
+            "columnName": "zona",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idiomas",
+            "columnName": "idiomas",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '70a650ee21243cfa2c15c87dc37c77a6')"
+    ]
+  }
+}

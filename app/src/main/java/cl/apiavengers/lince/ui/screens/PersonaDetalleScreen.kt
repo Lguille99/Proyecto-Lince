@@ -14,6 +14,8 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,10 +38,11 @@ fun PersonaDetalleScreen(
     onBack: () -> Unit,
     onServicioClick: (String) -> Unit
 ) {
-    val persona = remember(vm.equipo) { vm.obtenerPersona(personaId) }
-    val servicios = remember(vm.servicios) { vm.serviciosDe(personaId) }
-    val calificacion = remember(vm.historial) { vm.promedioCalificacion(personaId) }
-    val total = remember(vm.historial, vm.servicios) { vm.totalGanado(personaId) }
+    val estado by vm.uiState.collectAsStateWithLifecycle()
+    val persona = remember(estado.equipo) { vm.obtenerPersona(personaId) }
+    val servicios = remember(estado.servicios) { vm.serviciosDe(personaId) }
+    val calificacion = remember(estado.historial) { vm.promedioCalificacion(personaId) }
+    val total = remember(estado.historial, estado.servicios) { vm.totalGanado(personaId) }
 
     Scaffold(
         topBar = {

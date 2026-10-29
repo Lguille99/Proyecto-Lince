@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +48,8 @@ fun EjecucionScreen(
     onNavigateToEquipo: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
-    val servicio = remember(vm.servicios, vm.historial) { vm.obtenerServicio(servicioId) }
+    val estado by vm.uiState.collectAsStateWithLifecycle()
+    val servicio = remember(estado.servicios, estado.historial) { vm.obtenerServicio(servicioId) }
     val snackbar = remember { SnackbarHostState() }
     val alcance = rememberCoroutineScope()
     var ubicacion by remember { mutableStateOf("") }
@@ -61,7 +63,7 @@ fun EjecucionScreen(
             ahora = LocalDateTime.now()
         }
     }
-    val mensaje = vm.mensaje
+    val mensaje = estado.mensaje
     LaunchedEffect(mensaje) {
         if (mensaje != null) {
             snackbar.showSnackbar(mensaje)
@@ -92,7 +94,7 @@ fun EjecucionScreen(
             }
             return@Scaffold
         }
-        val titular = remember(vm.equipo) { vm.obtenerPersona(servicio.asignadoA) }
+        val titular = remember(estado.equipo) { vm.obtenerPersona(servicio.asignadoA) }
         val inicioPermitido = servicio.inicioProgramado.minusMinutes(15)
         val puedeIniciar = servicio.estado == EstadoServicio.CONFIRMADA &&
             servicio.inicioEn == null && !ahora.isBefore(inicioPermitido)
@@ -168,7 +170,7 @@ fun EjecucionScreen(
                         Text("Ver ficha del titular")
                     }
                     val acompanante = servicio.acompananteId?.let {
-                        remember(vm.equipo) { vm.obtenerPersona(it) }
+                        remember(estado.equipo) { vm.obtenerPersona(it) }
                     }
                     if (acompanante != null) {
                         Text("Acompañante: ${acompanante.nombre}", fontSize = 14.sp)

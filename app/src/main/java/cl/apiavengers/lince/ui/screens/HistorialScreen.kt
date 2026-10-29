@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -41,9 +42,10 @@ fun HistorialScreen(
     onNavigateToEquipo: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
+    val estado by vm.uiState.collectAsStateWithLifecycle()
     var filtro by remember { mutableStateOf<EstadoServicio?>(null) }
-    val registros = vm.historial.filter { filtro == null || it.estado == filtro }
-    val usuario = vm.usuario
+    val registros = estado.historial.filter { filtro == null || it.estado == filtro }
+    val usuario = estado.usuario
 
     Scaffold(
         topBar = {
@@ -80,7 +82,7 @@ fun HistorialScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
-                        if (vm.esCoordinador()) "${vm.historial.size} servicios registrados"
+                        if (vm.esCoordinador()) "${estado.historial.size} servicios registrados"
                         else montoClp(usuario?.let { vm.totalGanado(it.id) } ?: 0),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,

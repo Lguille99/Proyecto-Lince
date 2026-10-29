@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,15 +35,31 @@ fun PerfilScreen(
     onNavigateToAgenda: () -> Unit = {},
     onNavigateToEquipo: () -> Unit = {}
 ) {
-    val usuario = vm.usuario
+    val estado by vm.uiState.collectAsStateWithLifecycle()
+    val usuario = estado.usuario
     val snackbar = remember { SnackbarHostState() }
     var nombre by rememberSaveable(usuario?.id) { mutableStateOf(usuario?.nombre.orEmpty()) }
     var correo by rememberSaveable(usuario?.id) { mutableStateOf(usuario?.correo.orEmpty()) }
     var telefono by rememberSaveable(usuario?.id) { mutableStateOf(usuario?.telefono.orEmpty()) }
     var zona by rememberSaveable(usuario?.id) { mutableStateOf(usuario?.zona.orEmpty()) }
     var idiomas by remember(usuario?.id) { mutableStateOf(usuario?.idiomas ?: listOf(Idioma.ESPANOL)) }
+    var mostrarErrores by rememberSaveable(usuario?.id) { mutableStateOf(false) }
 
-    val mensaje = vm.mensaje
+    val nombreError = when {
+        nombre.trim().length !in 2..60 -> "El nombre debe tener entre 2 y 60 caracteres."
+        else -> null
+    }
+    val correoError = if (correo.trim().let { it.contains("@") && it.substringAfter("@").contains(".") }) {
+        null
+    } else {
+        "Ingresa un correo válido."
+    }
+    val telefonoError = if (telefono.trim().length >= 8) null else "Ingresa un teléfono válido."
+    val zonaError = if (zona.trim().isNotEmpty()) null else "Indica tu zona de trabajo."
+    val idiomasError = if (idiomas.isNotEmpty()) null else "Selecciona al menos un idioma."
+    val formularioValido = listOf(nombreError, correoError, telefonoError, zonaError, idiomasError).all { it == null }
+
+    val mensaje = estado.mensaje
     LaunchedEffect(mensaje) {
         if (mensaje != null) {
             snackbar.showSnackbar(mensaje)
@@ -124,6 +141,10 @@ fun PerfilScreen(
                 onValueChange = { nombre = it },
                 label = { Text("Nombre") },
                 singleLine = true,
+                isError = mostrarErrores && nombreError != null,
+                supportingText = {
+                    if (mostrarErrores && nombreError != null) Text(nombreError)
+                },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -133,6 +154,10 @@ fun PerfilScreen(
                 label = { Text("Correo") },
                 singleLine = true,
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Email),
+                isError = mostrarErrores && correoError != null,
+                supportingText = {
+                    if (mostrarErrores && correoError != null) Text(correoError)
+                },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -142,6 +167,10 @@ fun PerfilScreen(
                 label = { Text("Teléfono") },
                 singleLine = true,
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Phone),
+                isError = mostrarErrores && telefonoError != null,
+                supportingText = {
+                    if (mostrarErrores && telefonoError != null) Text(telefonoError)
+                },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -150,6 +179,10 @@ fun PerfilScreen(
                 onValueChange = { zona = it },
                 label = { Text("Zona de trabajo") },
                 singleLine = true,
+                isError = mostrarErrores && zonaError != null,
+                supportingText = {
+                    if (mostrarErrores && zonaError != null) Text(zonaError)
+                },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -171,14 +204,23 @@ fun PerfilScreen(
                 }
             }
 
+            if (mostrarErrores && idiomasError != null) {
+                Text(idiomasError, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+            }
+
             BotonPrincipal(
                 texto = "Guardar cambios",
-                onClick = { vm.guardarPerfil(nombre, correo, telefono, zona, idiomas) }
+                onClick = {
+                    mostrarErrores = true
+                    if (formularioValido) {
+                        vm.guardarPerfil(nombre, correo, telefono, zona, idiomas)
+                    }
+                }
             )
             BotonSecundario(texto = "Ver equipo", onClick = onNavigateToEquipo)
 
             Text(
-                if (vm.modoRemoto) {
+                if (estado.modoRemoto) {
                     "Los datos se guardan en Supabase. La cuenta y el rol no se pueden modificar."
                 } else {
                     "Los datos se guardan en este dispositivo. La cuenta y el rol no se pueden modificar."

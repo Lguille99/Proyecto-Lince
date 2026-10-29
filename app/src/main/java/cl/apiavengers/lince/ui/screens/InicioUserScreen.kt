@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -30,9 +31,10 @@ fun InicioUserScreen(
     onNavigateToHistorial: () -> Unit = {},
     onServicioClick: (String) -> Unit = {}
 ) {
-    val usuario = vm.usuario
-    val pendientes = vm.servicios.count { it.estado == EstadoServicio.PENDIENTE }
-    val proximo = vm.servicios.sortedWith(compareBy({ it.fecha }, { it.hora })).firstOrNull()
+    val estado by vm.uiState.collectAsStateWithLifecycle()
+    val usuario = estado.usuario
+    val pendientes = estado.servicios.count { it.estado == EstadoServicio.PENDIENTE }
+    val proximo = estado.servicios.sortedWith(compareBy({ it.fecha }, { it.hora })).firstOrNull()
     val deHoy = vm.serviciosDeHoy().filter { !vm.esCoordinador() }
 
     Scaffold(

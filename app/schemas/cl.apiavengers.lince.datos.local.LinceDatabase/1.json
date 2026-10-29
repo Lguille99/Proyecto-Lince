@@ -1,0 +1,56 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "3090c037f3f96e73e3815c1fe028e68f",
+    "entities": [
+      {
+        "tableName": "disponibilidad",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cuenta` TEXT NOT NULL, `fecha` TEXT NOT NULL, PRIMARY KEY(`cuenta`, `fecha`))",
+        "fields": [
+          {
+            "fieldPath": "cuenta",
+            "columnName": "cuenta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cuenta",
+            "fecha"
+          ]
+        }
+      },
+      {
+        "tableName": "agendas_importadas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cuenta` TEXT NOT NULL, PRIMARY KEY(`cuenta`))",
+        "fields": [
+          {
+            "fieldPath": "cuenta",
+            "columnName": "cuenta",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cuenta"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3090c037f3f96e73e3815c1fe028e68f')"
+    ]
+  }
+}

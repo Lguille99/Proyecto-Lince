@@ -32,8 +32,10 @@ import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.fechaLarga
 import cl.apiavengers.lince.viewmodel.DisponibilidadViewModel
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -51,7 +53,15 @@ fun DisponibilidadScreen(
     val state by vm.uiState.collectAsState()
     val esRemoto = SesionSupabase.activa
     var mes by remember { mutableStateOf(YearMonth.now()) }
+    var mostrarSelector by remember { mutableStateOf(false) }
     val hoy = LocalDate.now()
+    val hoyMillis = remember(hoy) { hoy.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() }
+    val fechasSeleccionables = remember(hoyMillis) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean = utcTimeMillis >= hoyMillis
+            override fun isSelectableYear(year: Int): Boolean = year >= hoy.year
+        }
+    }
     val nombresMes = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "CL"))
 
     Scaffold(
@@ -178,6 +188,11 @@ fun DisponibilidadScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Día seleccionado", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     Text(fechaLarga(state.fecha.toString()), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    TextButton(onClick = { mostrarSelector = true }) {
+                        Icon(Icons.Filled.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Elegir otra fecha")
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -218,6 +233,33 @@ fun DisponibilidadScreen(
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+
+    if (mostrarSelector) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = state.fecha.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+            selectableDates = fechasSeleccionables
+        )
+        DatePickerDialog(
+            onDismissRequest = { mostrarSelector = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val fecha = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                            mes = YearMonth.from(fecha)
+                            vm.seleccionarFecha(fecha)
+                        }
+                        mostrarSelector = false
+                    }
+                ) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarSelector = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 }

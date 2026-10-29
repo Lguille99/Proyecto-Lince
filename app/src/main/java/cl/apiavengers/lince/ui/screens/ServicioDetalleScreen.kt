@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -46,7 +47,8 @@ fun ServicioDetalleScreen(
     onNavigateToEquipo: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
-    val servicio = remember(vm.servicios, vm.historial) { vm.obtenerServicio(servicioId) }
+    val estado by vm.uiState.collectAsStateWithLifecycle()
+    val servicio = remember(estado.servicios, estado.historial) { vm.obtenerServicio(servicioId) }
     val snackbar = remember { SnackbarHostState() }
     var motivo by remember { mutableStateOf("") }
     var errorMotivo by remember { mutableStateOf<String?>(null) }
@@ -55,10 +57,10 @@ fun ServicioDetalleScreen(
     var calificarDialogo by remember { mutableStateOf(false) }
     var puntaje by remember { mutableStateOf(0) }
 
-    val mensaje = vm.mensaje
+    val mensaje = estado.mensaje
     LaunchedEffect(mensaje) {
         if (mensaje != null) {
-            if (!vm.esError) {
+            if (!estado.esError) {
                 motivo = ""
                 errorMotivo = null
                 confirmarDialogo = false
@@ -93,8 +95,8 @@ fun ServicioDetalleScreen(
             }
             return@Scaffold
         }
-        val titular = remember(vm.equipo) { vm.obtenerPersona(servicio.asignadoA) }
-        val acompanante = remember(vm.equipo, servicio.acompananteId) {
+        val titular = remember(estado.equipo) { vm.obtenerPersona(servicio.asignadoA) }
+        val acompanante = remember(estado.equipo, servicio.acompananteId) {
             servicio.acompananteId?.let { vm.obtenerPersona(it) }
         }
 
@@ -177,7 +179,7 @@ fun ServicioDetalleScreen(
 
             if (servicio.respondidoPor != null || servicio.inicioEn != null || servicio.reasignadoPor != null) {
                 Seccion("Trazabilidad") {
-                    val autor = servicio.respondidoPor?.let { remember(vm.equipo) { vm.obtenerPersona(it) } }
+                    val autor = servicio.respondidoPor?.let { remember(estado.equipo) { vm.obtenerPersona(it) } }
                     if (servicio.respondidoEn != null) {
                         FilaDato(
                             if (servicio.estado == EstadoServicio.RECHAZADA) "Rechazada" else "Confirmada",
@@ -196,7 +198,7 @@ fun ServicioDetalleScreen(
                     }
                     servicio.terminoEn?.let { FilaDato("Check-out", selloFechaHora(it)) }
                     servicio.reasignadoEn?.let {
-                        val quien = servicio.reasignadoPor?.let { id -> remember(vm.equipo) { vm.obtenerPersona(id) } }
+                        val quien = servicio.reasignadoPor?.let { id -> remember(estado.equipo) { vm.obtenerPersona(id) } }
                         FilaDato("Reasignado", "${selloFechaHora(it)} · ${quien?.nombre ?: "Coordinación"}")
                     }
                     servicio.puntaje?.let {
@@ -277,7 +279,7 @@ fun ServicioDetalleScreen(
     }
 
     if (reasignarDialogo && servicio != null) {
-        val candidatos = remember(servicio.id, vm.equipo) { vm.candidatosReasignacion(servicio.id) }
+        val candidatos = remember(servicio.id, estado.equipo) { vm.candidatosReasignacion(servicio.id) }
         var seleccionado by remember { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { reasignarDialogo = false },
