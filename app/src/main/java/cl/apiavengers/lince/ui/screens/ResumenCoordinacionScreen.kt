@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cl.apiavengers.lince.ui.components.BarraInferior
 import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.components.BotonSecundario
@@ -33,6 +34,7 @@ fun ResumenCoordinacionScreen(
     onServicios: () -> Unit,
     onHistorial: () -> Unit,
     onEquipo: () -> Unit,
+    onPerfil: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
@@ -66,6 +68,16 @@ fun ResumenCoordinacionScreen(
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")
                     }
                 }
+            )
+        },
+        bottomBar = {
+            BarraInferior(
+                esCoordinador = true,
+                seleccion = "Inicio",
+                onInicio = {},
+                onServicios = onServicios,
+                onEquipo = onEquipo,
+                onPerfil = onPerfil
             )
         }
     ) { innerPadding ->

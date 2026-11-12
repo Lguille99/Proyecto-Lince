@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -113,7 +114,13 @@ fun InicioUserScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("No tienes servicios activos por ahora.", Modifier.padding(16.dp), fontSize = 14.sp)
+                    EstadoVacio(
+                        titulo = "Sin servicios activos",
+                        mensaje = "No tienes servicios asignados por ahora.",
+                        icono = Icons.Default.DateRange,
+                        accionTexto = "Actualizar mi agenda",
+                        onAccion = onNavigateToAgenda
+                    )
                 }
             }
 

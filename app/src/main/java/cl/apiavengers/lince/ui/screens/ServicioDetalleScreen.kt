@@ -115,7 +115,10 @@ fun ServicioDetalleScreen(
                 Text("ID ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(servicio.titulo, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 ChipSuave(
                     servicio.tipo,
                     contenedor = MaterialTheme.colorScheme.primaryContainer,

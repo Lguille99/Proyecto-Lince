@@ -40,10 +40,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.Disponibilidad
@@ -78,19 +79,12 @@ fun BotonPrincipal(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
         modifier = modifier.fillMaxWidth().heightIn(min = 52.dp)
     ) {
-        if (cargando) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        } else {
-            if (icono != null) {
-                Icon(icono, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-            }
-            Text(texto, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        }
+        ContenidoBoton(
+            texto = texto,
+            cargando = cargando,
+            icono = icono,
+            colorCargando = MaterialTheme.colorScheme.onPrimary
+        )
     }
 }
 
@@ -122,18 +116,47 @@ fun BotonSecundario(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
         modifier = modifier.fillMaxWidth().heightIn(min = 52.dp)
     ) {
-        if (cargando) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        } else {
+        ContenidoBoton(
+            texto = texto,
+            cargando = cargando,
+            icono = icono,
+            colorCargando = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    }
+}
+
+@Composable
+private fun ContenidoBoton(
+    texto: String,
+    cargando: Boolean,
+    icono: ImageVector?,
+    colorCargando: Color
+) {
+    if (cargando) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(18.dp),
+            strokeWidth = 2.dp,
+            color = colorCargando
+        )
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (icono != null) {
                 Icon(icono, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
             }
-            Text(texto, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                texto,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
         }
     }
 }
@@ -165,11 +188,12 @@ fun BotonPeligro(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
         modifier = modifier.fillMaxWidth().heightIn(min = 52.dp)
     ) {
-        if (icono != null) {
-            Icon(icono, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(texto, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        ContenidoBoton(
+            texto = texto,
+            cargando = false,
+            icono = icono,
+            colorCargando = MaterialTheme.colorScheme.onErrorContainer
+        )
     }
 }
 
@@ -276,7 +300,7 @@ fun BarraSuperior(
     onBack: (() -> Unit)? = null,
     acciones: @Composable RowScope.() -> Unit = {}
 ) {
-    Column(Modifier.fillMaxWidth().shadow(2.dp)) {
+    Column(Modifier.fillMaxWidth()) {
         TopAppBar(
             title = {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -335,7 +359,7 @@ fun BarraInferior(
         }
         add(ItemBarra("Perfil", Icons.Default.Face, onPerfil))
     }
-    Column(Modifier.fillMaxWidth().shadow(3.dp)) {
+    Column(Modifier.fillMaxWidth()) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         NavigationBar(
             containerColor = MaterialTheme.colorScheme.surface,

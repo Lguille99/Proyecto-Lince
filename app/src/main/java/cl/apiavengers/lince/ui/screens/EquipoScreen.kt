@@ -28,6 +28,7 @@ import cl.apiavengers.lince.ui.components.BarraInferior
 import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
 import cl.apiavengers.lince.ui.components.ChipIdioma
+import cl.apiavengers.lince.ui.components.EstadoVacio
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -87,7 +88,13 @@ fun EquipoScreen(
                 )
             }
             if (equipo.isEmpty()) {
-                Text("No se encontraron personas con ese criterio.", fontSize = 14.sp)
+                EstadoVacio(
+                    titulo = "Sin coincidencias",
+                    mensaje = "No se encontraron personas con ese criterio.",
+                    icono = Icons.Default.Person,
+                    accionTexto = if (busqueda.isNotBlank()) "Limpiar búsqueda" else null,
+                    onAccion = if (busqueda.isNotBlank()) ({ busqueda = "" }) else null
+                )
             }
         }
     }
@@ -122,7 +129,10 @@ fun TarjetaPersona(persona: Usuario, calificacion: Double?, onClick: () -> Unit)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(persona.nombre, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text("${persona.rol.etiqueta} · ${persona.zona}", fontSize = 12.sp)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     persona.idiomas.forEach { ChipIdioma(it) }
                 }
                 if (calificacion != null) {

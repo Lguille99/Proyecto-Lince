@@ -83,7 +83,10 @@ fun PersonaDetalleScreen(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 persona.idiomas.forEach { ChipIdioma(it) }
             }
 

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -87,7 +88,11 @@ fun ServiciosScreen(
                 shape = RoundedCornerShape(50),
                 modifier = Modifier.fillMaxWidth()
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text("Todas") })
                 FilterChip(
                     selected = filtro == EstadoServicio.PENDIENTE,
@@ -108,7 +113,16 @@ fun ServiciosScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("No hay servicios que coincidan con el filtro.", Modifier.padding(16.dp))
+                    EstadoVacio(
+                        titulo = "Sin resultados",
+                        mensaje = "No hay servicios que coincidan con el filtro.",
+                        icono = Icons.Default.Search,
+                        accionTexto = "Limpiar filtros",
+                        onAccion = {
+                            filtro = null
+                            busqueda = ""
+                        }
+                    )
                 }
             }
             filtrados.forEach { servicio ->

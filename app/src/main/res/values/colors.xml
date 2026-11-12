@@ -1,4 +1,4 @@
 <resources>
     <color name="fondo_lince">#E3EEF4</color>
-    <color name="barra_lince">#FFFFFF</color>
+    <color name="fondo_lince_oscuro">#0D171D</color>
 </resources>

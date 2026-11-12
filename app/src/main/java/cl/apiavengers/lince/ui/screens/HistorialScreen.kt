@@ -26,6 +26,7 @@ import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.ui.components.BarraInferior
 import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
+import cl.apiavengers.lince.ui.components.EstadoVacio
 import cl.apiavengers.lince.ui.fechaNumerica
 import cl.apiavengers.lince.ui.montoClp
 import cl.apiavengers.lince.ui.selloFechaHora
@@ -97,7 +98,10 @@ fun HistorialScreen(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text("Todos") })
                 FilterChip(
                     selected = filtro == EstadoServicio.COMPLETADA,
@@ -119,7 +123,13 @@ fun HistorialScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Todavía no hay servicios en tu historial.", Modifier.padding(16.dp))
+                    EstadoVacio(
+                        titulo = "Historial vacío",
+                        mensaje = "Todavía no hay servicios en tu historial.",
+                        icono = Icons.AutoMirrored.Filled.List,
+                        accionTexto = if (filtro != null) "Ver todos" else null,
+                        onAccion = if (filtro != null) ({ filtro = null }) else null
+                    )
                 }
             }
 

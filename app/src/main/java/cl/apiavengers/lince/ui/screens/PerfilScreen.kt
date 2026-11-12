@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.Idioma
 import cl.apiavengers.lince.ui.components.*
 import cl.apiavengers.lince.ui.montoClp
+import cl.apiavengers.lince.ui.theme.ModoTema
+import cl.apiavengers.lince.ui.theme.PreferenciaTema
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -37,6 +39,7 @@ fun PerfilScreen(
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
     val usuario = estado.usuario
+    val modoTema by PreferenciaTema.modo.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var nombre by rememberSaveable(usuario?.id) { mutableStateOf(usuario?.nombre.orEmpty()) }
     var correo by rememberSaveable(usuario?.id) { mutableStateOf(usuario?.correo.orEmpty()) }
@@ -188,7 +191,10 @@ fun PerfilScreen(
             )
 
             Text("Idiomas que dominas", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Idioma.values().forEach { idioma ->
                     FilterChip(
                         selected = idioma in idiomas,
@@ -218,6 +224,25 @@ fun PerfilScreen(
                 }
             )
             BotonSecundario(texto = "Ver equipo", onClick = onNavigateToEquipo)
+
+            Text("Apariencia", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ModoTema.values().forEach { opcion ->
+                    FilterChip(
+                        selected = modoTema == opcion,
+                        onClick = { PreferenciaTema.fijar(opcion) },
+                        label = { Text(opcion.etiqueta) }
+                    )
+                }
+            }
+            Text(
+                "Elige cómo se ve la aplicación en este dispositivo.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Text(
                 if (estado.modoRemoto) {

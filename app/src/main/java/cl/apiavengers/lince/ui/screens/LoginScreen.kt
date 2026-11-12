@@ -1,8 +1,10 @@
 package cl.apiavengers.lince.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -46,12 +49,12 @@ fun LoginScreen(
                 Surface(
                     shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(68.dp)
+                    modifier = Modifier.size(84.dp)
                 ) {
                     Image(
                         painterResource(R.drawable.ic_lince),
                         "Logo Lince",
-                        Modifier.fillMaxSize().padding(10.dp)
+                        Modifier.fillMaxSize().padding(12.dp)
                     )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -113,6 +116,7 @@ fun LoginScreen(
                         label = { Text("Usuario") },
                         singleLine = true,
                         shape = MaterialTheme.shapes.medium,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
@@ -123,10 +127,25 @@ fun LoginScreen(
                         shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = if (verClave) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                if (cuenta.isNotBlank() && clave.isNotBlank() && !cargando) {
+                                    onLogin(cuenta, clave)
+                                }
+                            }
+                        ),
                         trailingIcon = {
-                            TextButton(onClick = { verClave = !verClave }) {
-                                Text(if (verClave) "Ocultar" else "Mostrar", fontSize = 12.sp)
+                            IconButton(onClick = { verClave = !verClave }) {
+                                Icon(
+                                    painter = painterResource(
+                                        if (verClave) R.drawable.ic_visibility_off else R.drawable.ic_visibility
+                                    ),
+                                    contentDescription = if (verClave) "Ocultar contraseña" else "Mostrar contraseña"
+                                )
                             }
                         }
                     )
@@ -151,9 +170,22 @@ fun LoginScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text("Cuentas de prueba · clave Lince123", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Toca una cuenta para completar el ingreso.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     HorizontalDivider()
                     DatosPrueba.usuarios.forEach { usuario ->
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable {
+                                    cuenta = usuario.cuenta
+                                    clave = "Lince123"
+                                }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
                             Icon(
                                 Icons.Default.Email,
                                 contentDescription = null,
@@ -161,7 +193,17 @@ fun LoginScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("${usuario.rol.etiqueta}: ${usuario.cuenta}", fontSize = 13.sp)
+                            Text(
+                                "${usuario.rol.etiqueta}: ${usuario.cuenta}",
+                                fontSize = 13.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                "Usar",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
