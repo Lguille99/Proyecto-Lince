@@ -1,0 +1,915 @@
+openapi: 3.0.3
+info:
+  title: Lince Backend API
+  version: 0.1.0
+  description: >
+    Persistencia de operación de la app Lince. Este backend es el único destino de
+    escrituras (hitos, geocercas, disponibilidad e incidencias). Los servicios y
+    personas se consultan en Southbound en modo solo lectura; aquí solo se guardan
+    referencias por servicioId. Autenticación JWT con roles GUIA, TRANSPORTISTA y
+    COORDINACION. Los errores incluyen requestId para trazabilidad.
+servers:
+  - url: http://localhost:8080
+    description: Desarrollo local
+tags:
+  - name: Auth
+  - name: Hitos
+  - name: Geocercas
+  - name: Disponibilidad
+  - name: Incidencias
+  - name: Coordinacion
+paths:
+  /health:
+    get:
+      tags: [Auth]
+      summary: Estado del servicio
+      security: []
+      responses:
+        '200':
+          description: Servicio activo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Salud'
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Obtiene un JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Token emitido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '422':
+          $ref: '#/components/responses/Invalido'
+  /api/v1/hitos:
+    get:
+      tags: [Hitos]
+      summary: Lista hitos
+      description: COORDINACION ve todos; GUIA y TRANSPORTISTA solo los propios.
+      parameters:
+        - $ref: '#/components/parameters/ServicioIdQuery'
+        - name: tipo
+          in: query
+          schema:
+            $ref: '#/components/schemas/TipoHito'
+        - name: usuarioId
+          in: query
+          description: Solo aplica a COORDINACION
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de hitos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+    post:
+      tags: [Hitos]
+      summary: Registra confirmación, rechazo o posición
+      description: >
+        No usar para CHECK_IN ni CHECK_OUT; esos tienen endpoints dedicados con
+        validación de geocerca y puntualidad.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HitoRequest'
+      responses:
+        '201':
+          description: Hito creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hito'
+        '400':
+          $ref: '#/components/responses/Invalido'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '422':
+          $ref: '#/components/responses/Invalido'
+  /api/v1/hitos/check-in:
+    post:
+      tags: [Hitos]
+      summary: Check-in dentro de geocerca y a tiempo
+      description: >
+        GUIA o TRANSPORTISTA. Requiere estar dentro del radio de la geocerca
+        (150 m por defecto, configurable) y registrar al menos 15 minutos antes
+        del pickup. Calcula y guarda distancia Haversine y precisión GPS.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      responses:
+        '201':
+          description: Check-in registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          description: FUERA_DE_GEOCERCA, CHECK_IN_TARDIO, GEOCERCA_NO_DEFINIDA o COORDENADAS_REQUERIDAS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/hitos/check-out:
+    post:
+      tags: [Hitos]
+      summary: Check-out con ubicación de dropoff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckOutRequest'
+      responses:
+        '201':
+          description: Check-out registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '409':
+          description: SIN_CHECK_IN o CHECK_OUT_DUPLICADO
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Invalido'
+  /api/v1/hitos/{id}:
+    get:
+      tags: [Hitos]
+      summary: Obtiene un hito
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Hito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    put:
+      tags: [Hitos]
+      summary: Actualiza observaciones o motivo de rechazo
+      description: Solo COORDINACION.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarHitoRequest'
+      responses:
+        '200':
+          description: Hito actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hito'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    delete:
+      tags: [Hitos]
+      summary: Elimina un hito
+      description: Solo COORDINACION.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Eliminado
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /api/v1/geocercas:
+    get:
+      tags: [Geocercas]
+      summary: Lista geocercas
+      parameters:
+        - $ref: '#/components/parameters/ServicioIdQuery'
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Geocerca'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+    post:
+      tags: [Geocercas]
+      summary: Crea geocerca de hotel o pickup
+      description: Solo COORDINACION. Radio por defecto 150 m.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeocercaRequest'
+      responses:
+        '201':
+          description: Creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Geocerca'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '422':
+          $ref: '#/components/responses/Invalido'
+  /api/v1/geocercas/{id}:
+    get:
+      tags: [Geocercas]
+      summary: Obtiene una geocerca
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Geocerca
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Geocerca'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    put:
+      tags: [Geocercas]
+      summary: Actualiza geocerca
+      description: Solo COORDINACION.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeocercaRequest'
+      responses:
+        '200':
+          description: Actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Geocerca'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/Invalido'
+    delete:
+      tags: [Geocercas]
+      summary: Elimina geocerca
+      description: Solo COORDINACION.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Eliminada
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /api/v1/disponibilidad:
+    get:
+      tags: [Disponibilidad]
+      summary: Lista bloqueos de días
+      description: COORDINACION puede filtrar por usuarioId; el resto solo ve los propios.
+      parameters:
+        - name: usuarioId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Disponibilidad'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+    post:
+      tags: [Disponibilidad]
+      summary: Bloquea un día
+      description: >
+        Exige al menos 7 días de anticipación y rechaza fechas con servicios
+        asignados. La app envía la misma validación antes de llamar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisponibilidadRequest'
+      responses:
+        '201':
+          description: Bloqueo creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Disponibilidad'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '409':
+          description: DIA_CON_SERVICIO o YA_BLOQUEADO
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: ANTICIPACION_INSUFICIENTE o FECHA_INVALIDA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/disponibilidad/{id}:
+    delete:
+      tags: [Disponibilidad]
+      summary: Elimina un bloqueo
+      description: El dueño o COORDINACION.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Eliminado
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /api/v1/incidencias:
+    get:
+      tags: [Incidencias]
+      summary: Lista incidencias
+      description: COORDINACION ve todas; el resto solo las propias.
+      parameters:
+        - $ref: '#/components/parameters/ServicioIdQuery'
+        - name: usuarioId
+          in: query
+          description: Solo aplica a COORDINACION
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Incidencia'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+    post:
+      tags: [Incidencias]
+      summary: Reporta una incidencia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidenciaRequest'
+      responses:
+        '201':
+          description: Creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incidencia'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/Invalido'
+  /api/v1/incidencias/{id}:
+    get:
+      tags: [Incidencias]
+      summary: Obtiene una incidencia
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Incidencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incidencia'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    put:
+      tags: [Incidencias]
+      summary: Cambia el estado de una incidencia
+      description: Solo COORDINACION.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarIncidenciaRequest'
+      responses:
+        '200':
+          description: Actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incidencia'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '422':
+          $ref: '#/components/responses/Invalido'
+    delete:
+      tags: [Incidencias]
+      summary: Elimina una incidencia
+      description: Solo COORDINACION.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Eliminada
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /api/v1/coordinacion/servicios/{servicioId}/ultima-posicion:
+    get:
+      tags: [Coordinacion]
+      summary: Última posición reportada de un servicio activo
+      description: >
+        Solo COORDINACION. Se construye con hitos discretos (check-in o reporte
+        manual); no existe rastreo continuo en segundo plano. Devuelve 404 si el
+        servicio no está activo o no tiene posición.
+      parameters:
+        - name: servicioId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Posición
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UltimaPosicion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    ServicioIdQuery:
+      name: servicioId
+      in: query
+      schema:
+        type: string
+  responses:
+    NoAutenticado:
+      description: Token ausente o inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    SinPermiso:
+      description: El rol no permite la operación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NoEncontrado:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflicto:
+      description: Conflicto con el estado actual
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Invalido:
+      description: Datos inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo:
+          type: string
+          example: FUERA_DE_GEOCERCA
+        mensaje:
+          type: string
+        requestId:
+          type: string
+          description: Identificador de la solicitud para trazabilidad
+          example: 8a0c3f7e-1a2b-4c5d-9e8f-0123456789ab
+    Salud:
+      type: object
+      properties:
+        estado:
+          type: string
+          example: ok
+        version:
+          type: string
+          example: 0.1.0
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: guia@lince.local
+        password:
+          type: string
+          format: password
+          example: Lince123
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        expiraEn:
+          type: string
+          format: date-time
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        nombre:
+          type: string
+        rol:
+          type: string
+          enum: [GUIA, TRANSPORTISTA, COORDINACION]
+    TipoHito:
+      type: string
+      enum: [CHECK_IN, CHECK_OUT, CONFIRMACION, RECHAZO, REPORTE_POSICION]
+    HitoRequest:
+      type: object
+      required: [servicioId, tipo]
+      properties:
+        servicioId:
+          type: string
+          example: LIN-001
+        tipo:
+          $ref: '#/components/schemas/TipoHito'
+        geocercaId:
+          type: string
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        precisionM:
+          type: number
+          format: double
+        ocurridoEn:
+          type: string
+          format: date-time
+        observaciones:
+          type: string
+          maxLength: 500
+        motivoRechazo:
+          type: string
+          maxLength: 300
+    CheckInRequest:
+      type: object
+      required: [servicioId, lat, lng]
+      properties:
+        servicioId:
+          type: string
+          example: LIN-001
+        geocercaId:
+          type: string
+        lat:
+          type: number
+          format: double
+          example: -33.4372
+        lng:
+          type: number
+          format: double
+          example: -70.6506
+        precisionM:
+          type: number
+          format: double
+          example: 8.5
+        observaciones:
+          type: string
+          maxLength: 500
+    CheckOutRequest:
+      type: object
+      required: [servicioId, lat, lng]
+      properties:
+        servicioId:
+          type: string
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        precisionM:
+          type: number
+          format: double
+        observaciones:
+          type: string
+          maxLength: 500
+    ActualizarHitoRequest:
+      type: object
+      properties:
+        observaciones:
+          type: string
+        motivoRechazo:
+          type: string
+    Hito:
+      type: object
+      properties:
+        id:
+          type: string
+        servicioId:
+          type: string
+        geocercaId:
+          type: string
+          nullable: true
+        usuarioId:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoHito'
+        lat:
+          type: number
+          nullable: true
+        lng:
+          type: number
+          nullable: true
+        precisionM:
+          type: number
+          nullable: true
+        distanciaM:
+          type: number
+          nullable: true
+          description: Distancia Haversine al centro de la geocerca
+        ocurridoEn:
+          type: string
+          format: date-time
+        observaciones:
+          type: string
+          nullable: true
+        motivoRechazo:
+          type: string
+          nullable: true
+        requestId:
+          type: string
+          nullable: true
+        estadoSync:
+          type: string
+          enum: [PENDING, SYNCED, FAILED]
+    GeocercaRequest:
+      type: object
+      required: [tipo, nombre, lat, lng]
+      properties:
+        servicioId:
+          type: string
+          nullable: true
+          example: LIN-001
+        tipo:
+          type: string
+          enum: [HOTEL, PICKUP]
+        nombre:
+          type: string
+          maxLength: 120
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        radioM:
+          type: integer
+          minimum: 10
+          maximum: 5000
+          default: 150
+    Geocerca:
+      allOf:
+        - $ref: '#/components/schemas/GeocercaRequest'
+        - type: object
+          properties:
+            id:
+              type: string
+            creadoPor:
+              type: string
+            creadoEn:
+              type: string
+              format: date-time
+            actualizadoEn:
+              type: string
+              format: date-time
+    DisponibilidadRequest:
+      type: object
+      required: [fecha]
+      properties:
+        usuarioId:
+          type: string
+          description: Solo COORDINACION puede indicar otro usuario
+        fecha:
+          type: string
+          format: date
+          example: '2026-12-01'
+        motivo:
+          type: string
+          maxLength: 200
+    Disponibilidad:
+      type: object
+      properties:
+        id:
+          type: string
+        usuarioId:
+          type: string
+        fecha:
+          type: string
+          format: date
+        motivo:
+          type: string
+          nullable: true
+        creadoEn:
+          type: string
+          format: date-time
+        estado:
+          type: string
+          enum: [ACTIVO]
+    IncidenciaRequest:
+      type: object
+      required: [servicioId, categoria, descripcion]
+      properties:
+        servicioId:
+          type: string
+        categoria:
+          type: string
+          maxLength: 60
+          example: VEHICULO
+        descripcion:
+          type: string
+          maxLength: 500
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+        ocurridoEn:
+          type: string
+          format: date-time
+    ActualizarIncidenciaRequest:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          type: string
+          enum: [ABIERTA, EN_PROCESO, CERRADA]
+    Incidencia:
+      type: object
+      properties:
+        id:
+          type: string
+        servicioId:
+          type: string
+        usuarioId:
+          type: string
+        categoria:
+          type: string
+        descripcion:
+          type: string
+        lat:
+          type: number
+          nullable: true
+        lng:
+          type: number
+          nullable: true
+        ocurridoEn:
+          type: string
+          format: date-time
+        creadoEn:
+          type: string
+          format: date-time
+        estado:
+          type: string
+          enum: [ABIERTA, EN_PROCESO, CERRADA]
+    UltimaPosicion:
+      type: object
+      properties:
+        servicioId:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        precisionM:
+          type: number
+          nullable: true
+        reportadoEn:
+          type: string
+          format: date-time
+        tipoEvento:
+          type: string
+          enum: [CHECK_IN, REPORTE_POSICION]
+        usuarioId:
+          type: string
+security:
+  - bearerAuth: []
