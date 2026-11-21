@@ -7,5 +7,6 @@ dependencyResolutionManagement {
 }
 rootProject.name = "ProyectoLince"
 include(":dominio")
+include(":backend")
 // Permite practicar y probar las reglas Kotlin sin instalar Android.
 if (!providers.gradleProperty("soloDominio").isPresent) include(":app")

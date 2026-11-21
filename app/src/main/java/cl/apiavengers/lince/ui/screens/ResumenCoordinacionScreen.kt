@@ -20,10 +20,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cl.apiavengers.lince.ui.components.BarraInferior
 import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.components.BotonSecundario
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 import kotlinx.coroutines.delay
 
@@ -33,9 +35,11 @@ fun ResumenCoordinacionScreen(
     onServicios: () -> Unit,
     onHistorial: () -> Unit,
     onEquipo: () -> Unit,
+    onPerfil: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
+    val t = textos()
     val resumen = estado.resumen
     val snackbar = remember { SnackbarHostState() }
     var sincronizando by remember { mutableStateOf(false) }
@@ -59,13 +63,23 @@ fun ResumenCoordinacionScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             BarraSuperior(
-                titulo = "Resumen operativo",
-                subtitulo = if (estado.modoRemoto) "Coordinación · Supabase" else "Coordinación · Datos locales",
+                titulo = t.summaryTitle,
+                subtitulo = if (estado.modoRemoto) t.coordinationRemote else t.coordinationLocal,
                 acciones = {
                     IconButton(onClick = onCerrarSesion) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = t.logout)
                     }
                 }
+            )
+        },
+        bottomBar = {
+            BarraInferior(
+                esCoordinador = true,
+                seleccion = "Inicio",
+                onInicio = {},
+                onServicios = onServicios,
+                onEquipo = onEquipo,
+                onPerfil = onPerfil
             )
         }
     ) { innerPadding ->
@@ -84,37 +98,39 @@ fun ResumenCoordinacionScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text("Estado de las asignaciones", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text(t.assignmentStatus, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     FilaResumen(
                         valor = resumen?.pendientes ?: 0,
-                        etiqueta = "Pendientes de respuesta",
+                        etiqueta = t.pendingResponse,
                         contenedor = MaterialTheme.colorScheme.primaryContainer,
                         contenido = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     FilaResumen(
                         valor = resumen?.confirmadas ?: 0,
-                        etiqueta = "Confirmadas",
+                        etiqueta = t.confirmedPlural,
                         contenedor = MaterialTheme.colorScheme.secondaryContainer,
                         contenido = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     FilaResumen(
                         valor = resumen?.rechazadas ?: 0,
-                        etiqueta = "Rechazadas",
+                        etiqueta = t.rejectedPlural,
                         contenedor = MaterialTheme.colorScheme.errorContainer,
                         contenido = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Text(
-                        "${resumen?.serviciosActivos ?: 0} servicios activos · " +
-                            "${resumen?.enEjecucion ?: 0} en ejecución · " +
-                            "${resumen?.historialTotal ?: 0} en historial",
+                        t.activeSummary(
+                            resumen?.serviciosActivos ?: 0,
+                            resumen?.enEjecucion ?: 0,
+                            resumen?.historialTotal ?: 0
+                        ),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            BotonPrincipal(texto = "Ver todos los servicios", onClick = onServicios)
-            BotonSecundario(texto = "Consultar historial", onClick = onHistorial)
+            BotonPrincipal(texto = t.viewAllServices, onClick = onServicios)
+            BotonSecundario(texto = t.consultHistory, onClick = onHistorial)
 
             OutlinedCard(
                 shape = RoundedCornerShape(18.dp),
@@ -127,7 +143,7 @@ fun ResumenCoordinacionScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Disponibilidad de recursos", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(t.resourceAvailability, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Text(
                             "${resumen?.personasDisponibles ?: 0}/${resumen?.personasEquipo ?: 0}",
                             fontSize = 13.sp,
@@ -144,7 +160,7 @@ fun ResumenCoordinacionScreen(
                         trackColor = MaterialTheme.colorScheme.secondaryContainer
                     )
                     Text(
-                        "$disponibles de $totalEquipo disponibles ahora",
+                        t.availableNow(disponibles, totalEquipo),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -156,22 +172,22 @@ fun ResumenCoordinacionScreen(
                         ) {
                             Column {
                                 Text(persona.nombre, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                                Text(persona.rol.etiqueta, fontSize = 12.sp)
+                                Text(t.rol(persona.rol), fontSize = 12.sp)
                             }
                             ChipDisponibilidad(persona.disponibilidad)
                         }
                     }
-                    TextButton(onClick = onEquipo) { Text("Ver equipo completo") }
+                    TextButton(onClick = onEquipo) { Text(t.viewFullTeam) }
                 }
             }
 
             BotonPrincipal(
-                texto = if (sincronizando) "Sincronizando..." else "Simular sincronización",
+                texto = if (sincronizando) t.syncing else t.simulateSync,
                 onClick = { sincronizando = true },
                 cargando = sincronizando
             )
             Text(
-                "Última simulación: ${estado.ultimaSincronizacion ?: "sin sincronizar"}",
+                t.lastSimulation(estado.ultimaSincronizacion ?: t.notSynced),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

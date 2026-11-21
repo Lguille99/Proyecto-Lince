@@ -1,5 +1,7 @@
 package cl.apiavengers.lince.ui
 
+import cl.apiavengers.lince.ui.idioma.IdiomaApp
+import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -7,21 +9,29 @@ import java.time.format.DateTimeParseException
 import java.util.Locale
 
 private val LOCALE_CL = Locale("es", "CL")
+private val LOCALE_EN = Locale("en", "US")
+
+private fun localeActual(): Locale =
+    if (PreferenciaIdioma.idioma.value == IdiomaApp.INGLES) LOCALE_EN else LOCALE_CL
 
 fun fechaLargaHoy(): String = fechaLarga(LocalDate.now().toString())
 
 fun fechaLarga(iso: String): String = try {
     val fecha = LocalDate.parse(iso)
-    val texto = fecha.format(DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", LOCALE_CL))
-    texto.replaceFirstChar { if (it.isLowerCase()) it.titlecase(LOCALE_CL) else it.toString() }
+    val locale = localeActual()
+    val patron = if (locale == LOCALE_EN) "EEEE, MMMM d" else "EEEE d 'de' MMMM"
+    val texto = fecha.format(DateTimeFormatter.ofPattern(patron, locale))
+    texto.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
 } catch (_: DateTimeParseException) {
     iso
 }
 
 fun fechaCorta(iso: String): String = try {
-    LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("d MMM", LOCALE_CL))
-        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(LOCALE_CL) else it.toString() }
-        .uppercase(LOCALE_CL)
+    val locale = localeActual()
+    val patron = if (locale == LOCALE_EN) "MMM d" else "d MMM"
+    LocalDate.parse(iso).format(DateTimeFormatter.ofPattern(patron, locale))
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+        .uppercase(locale)
 } catch (_: DateTimeParseException) {
     iso
 }

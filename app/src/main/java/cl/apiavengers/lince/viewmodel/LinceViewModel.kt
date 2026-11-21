@@ -22,6 +22,7 @@ import cl.apiavengers.lince.modelo.ResumenCoordinador
 import cl.apiavengers.lince.modelo.Rol
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
+import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -40,6 +41,8 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
     private var remoto: ClienteSupabase? = null
     private var repositorioLocal: RepositorioLince? = null
     private var sesion = 0
+
+    private val t get() = PreferenciaIdioma.actuales()
 
     fun iniciarSesion(cuenta: String, clave: String) {
         if (_uiState.value.cargando) return
@@ -67,10 +70,10 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
                     throw cancelacion
                 } catch (problema: ErrorSupabase) {
                     cliente.cerrarSesion()
-                    errorRemoto = problema.message
+                    errorRemoto = PreferenciaIdioma.traducir(problema.message)
                 } catch (problema: Exception) {
                     cliente.cerrarSesion()
-                    errorRemoto = "Supabase no está disponible en este momento."
+                    errorRemoto = t.msgSupabaseUnavailable
                 }
             }
 
@@ -84,15 +87,15 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (problema: IllegalArgumentException) {
-                errorLocal = problema.message
+                errorLocal = PreferenciaIdioma.traducir(problema.message)
                 null
             }
 
             if (token != sesion) return@launch
             _uiState.value = estadoIniciado?.copy(
-                mensaje = errorRemoto?.let { "Modo local: $it" }
+                mensaje = errorRemoto?.let { t.msgLocalMode(it) }
             ) ?: LinceUiState(
-                error = errorLocal ?: errorRemoto ?: "Usuario o contraseña incorrectos."
+                error = errorLocal ?: errorRemoto ?: t.msgIncorrectCredentials
             )
         }
     }
@@ -116,7 +119,7 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         val cliente = remoto
         if (cliente == null) {
             accionLocal(
-                exito = "Resumen actualizado con los datos locales.",
+                exito = t.msgSummaryUpdatedLocal,
                 ultimaSincronizacion = LocalDateTime.now().format(HORA)
             ) { _, usuario -> usuario }
             return
@@ -128,12 +131,12 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
                 cliente.simularSincronizacion()
                 val panel = cliente.cargarPanel()
                 val usuario = cliente.usuario ?: _uiState.value.usuario
-                    ?: throw ErrorSupabase("Debes iniciar sesión nuevamente.")
+                    ?: throw ErrorSupabase(t.msgSignInAgain)
                 if (token == sesion) {
                     _uiState.value = estadoRemoto(
                         usuario = usuario,
                         panel = panel,
-                        mensaje = "Sincronización simulada en Supabase.",
+                        mensaje = t.msgSyncSimulated,
                         ultimaSincronizacion = LocalDateTime.now().format(HORA)
                     )
                 }
@@ -151,12 +154,12 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
 
     fun confirmar(servicioId: String) {
         if (remoto == null) {
-            accionLocal("Asignación confirmada.") { repositorio, usuario ->
+            accionLocal(t.msgAssignmentConfirmed) { repositorio, usuario ->
                 repositorio.confirmarServicio(servicioId)
                 usuario
             }
         } else {
-            accionRemota("Asignación confirmada.") { cliente ->
+            accionRemota(t.msgAssignmentConfirmed) { cliente ->
                 cliente.responder(servicioId, true, null)
             }
         }
@@ -164,12 +167,12 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
 
     fun rechazar(servicioId: String, motivo: String) {
         if (remoto == null) {
-            accionLocal("Asignación rechazada.") { repositorio, usuario ->
+            accionLocal(t.msgAssignmentRejected) { repositorio, usuario ->
                 repositorio.rechazarServicio(servicioId, motivo)
                 usuario
             }
         } else {
-            accionRemota("Asignación rechazada.") { cliente ->
+            accionRemota(t.msgAssignmentRejected) { cliente ->
                 cliente.responder(servicioId, false, motivo)
             }
         }
@@ -177,12 +180,12 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
 
     fun registrarCheckIn(servicioId: String, ubicacion: String, observaciones: String = "") {
         if (remoto == null) {
-            accionLocal("Check-in registrado.") { repositorio, usuario ->
+            accionLocal(t.msgCheckinRegistered) { repositorio, usuario ->
                 repositorio.registrarCheckIn(servicioId, ubicacion, observaciones)
                 usuario
             }
         } else {
-            accionRemota("Check-in registrado.") { cliente ->
+            accionRemota(t.msgCheckinRegistered) { cliente ->
                 cliente.registrarCheckIn(servicioId, ubicacion, observaciones)
             }
         }
@@ -190,12 +193,12 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
 
     fun registrarCheckOut(servicioId: String, observaciones: String = "") {
         if (remoto == null) {
-            accionLocal("Servicio finalizado.") { repositorio, usuario ->
+            accionLocal(t.msgServiceFinished) { repositorio, usuario ->
                 repositorio.registrarCheckOut(servicioId, observaciones)
                 usuario
             }
         } else {
-            accionRemota("Servicio finalizado.") { cliente ->
+            accionRemota(t.msgServiceFinished) { cliente ->
                 cliente.registrarCheckOut(servicioId, observaciones)
             }
         }
@@ -203,12 +206,12 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
 
     fun calificar(servicioId: String, puntaje: Int) {
         if (remoto == null) {
-            accionLocal("Calificación guardada.") { repositorio, usuario ->
+            accionLocal(t.msgRatingSaved) { repositorio, usuario ->
                 repositorio.calificarServicio(servicioId, puntaje)
                 usuario
             }
         } else {
-            accionRemota("Calificación guardada.") { cliente ->
+            accionRemota(t.msgRatingSaved) { cliente ->
                 cliente.calificar(servicioId, puntaje)
             }
         }
@@ -216,12 +219,12 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
 
     fun reasignar(servicioId: String, nuevoUsuarioId: String) {
         if (remoto == null) {
-            accionLocal("Servicio reasignado.") { repositorio, usuario ->
+            accionLocal(t.msgServiceReassigned) { repositorio, usuario ->
                 repositorio.reasignarServicio(servicioId, nuevoUsuarioId)
                 usuario
             }
         } else {
-            accionRemota("Servicio reasignado.") { cliente ->
+            accionRemota(t.msgServiceReassigned) { cliente ->
                 cliente.reasignar(servicioId, nuevoUsuarioId)
             }
         }
@@ -235,11 +238,11 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         idiomas: List<Idioma>
     ) {
         if (remoto == null) {
-            accionLocal("Perfil actualizado.") { repositorio, _ ->
+            accionLocal(t.msgProfileUpdated) { repositorio, _ ->
                 repositorio.actualizarPerfil(nombre, correo, telefono, zona, idiomas)
             }
         } else {
-            accionRemota("Perfil actualizado.") { cliente ->
+            accionRemota(t.msgProfileUpdated) { cliente ->
                 cliente.actualizarPerfil(nombre, correo, telefono, zona, idiomas)
             }
         }
@@ -413,7 +416,7 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
                 bloque(cliente)
                 val panel = cliente.cargarPanel()
                 val usuario = cliente.usuario ?: _uiState.value.usuario
-                    ?: throw ErrorSupabase("Debes iniciar sesión nuevamente.")
+                    ?: throw ErrorSupabase(t.msgSignInAgain)
                 if (token == sesion) {
                     _uiState.value = estadoRemoto(usuario, panel, mensaje = exito)
                 }
@@ -440,10 +443,10 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun mensajeError(error: Exception): String = when {
         error is IllegalArgumentException || error is IllegalStateException -> {
-            error.message ?: "No se pudo completar la operación."
+            PreferenciaIdioma.traducir(error.message) ?: t.msgOperationFailed
         }
-        error is ErrorSupabase -> error.message ?: "No se pudo completar la operación."
-        else -> "No se pudo acceder a los datos. Intenta nuevamente."
+        error is ErrorSupabase -> PreferenciaIdioma.traducir(error.message) ?: t.msgOperationFailed
+        else -> t.msgDataAccessFailed
     }
 
     private fun resumenDesde(servicios: List<Servicio>, equipo: List<Usuario>): ResumenCoordinador {

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +27,7 @@ import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.ui.components.*
 import cl.apiavengers.lince.ui.esFechaHoy
 import cl.apiavengers.lince.ui.fechaCorta
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -39,6 +41,7 @@ fun ServiciosScreen(
     onNavigateToPerfil: () -> Unit = {}
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
+    val t = textos()
     var filtro by remember { mutableStateOf<EstadoServicio?>(null) }
     var busqueda by remember { mutableStateOf("") }
     val usuario = estado.usuario
@@ -46,17 +49,17 @@ fun ServiciosScreen(
     val filtrados = propios.filter { servicio ->
         (filtro == null || servicio.estado == filtro) &&
             (busqueda.isBlank() || servicio.titulo.contains(busqueda, true) ||
-                servicio.fecha.contains(busqueda) || servicio.modalidad.etiqueta.contains(busqueda, true))
+                servicio.fecha.contains(busqueda) || t.modalidad(servicio.modalidad).contains(busqueda, true))
     }
     Scaffold(
         topBar = {
             BarraSuperior(
-                titulo = "Servicios",
-                subtitulo = if (vm.esCoordinador()) "Todos los servicios del sistema" else "Tus asignaciones",
+                titulo = t.servicesTitle,
+                subtitulo = if (vm.esCoordinador()) t.servicesAllSubtitle else t.servicesMineSubtitle,
                 onBack = onBack,
                 acciones = {
                     IconButton(onClick = onEquipoClick) {
-                        Icon(Icons.Default.Person, contentDescription = "Equipo")
+                        Icon(Icons.Default.Person, contentDescription = t.navTeam)
                     }
                 }
             )
@@ -82,22 +85,26 @@ fun ServiciosScreen(
             OutlinedTextField(
                 value = busqueda,
                 onValueChange = { busqueda = it },
-                label = { Text("Buscar por fecha, estado o tipo") },
+                label = { Text(t.servicesSearch) },
                 singleLine = true,
                 shape = RoundedCornerShape(50),
                 modifier = Modifier.fillMaxWidth()
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text("Todas") })
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text(t.servicesAllFilter) })
                 FilterChip(
                     selected = filtro == EstadoServicio.PENDIENTE,
                     onClick = { filtro = EstadoServicio.PENDIENTE },
-                    label = { Text("Pendientes") }
+                    label = { Text(t.servicesPendingFilter) }
                 )
                 FilterChip(
                     selected = filtro == EstadoServicio.CONFIRMADA,
                     onClick = { filtro = EstadoServicio.CONFIRMADA },
-                    label = { Text("Confirmadas") }
+                    label = { Text(t.servicesConfirmedFilter) }
                 )
             }
             if (filtrados.isEmpty()) {
@@ -108,7 +115,16 @@ fun ServiciosScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("No hay servicios que coincidan con el filtro.", Modifier.padding(16.dp))
+                    EstadoVacio(
+                        titulo = t.servicesNoResults,
+                        mensaje = t.servicesNoMatch,
+                        icono = Icons.Default.Search,
+                        accionTexto = t.servicesClearFilters,
+                        onAccion = {
+                            filtro = null
+                            busqueda = ""
+                        }
+                    )
                 }
             }
             filtrados.forEach { servicio ->
@@ -120,6 +136,7 @@ fun ServiciosScreen(
 
 @Composable
 private fun TarjetaServicio(servicio: Servicio, onClick: () -> Unit) {
+    val t = textos()
     OutlinedCard(
         shape = RoundedCornerShape(18.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -139,7 +156,7 @@ private fun TarjetaServicio(servicio: Servicio, onClick: () -> Unit) {
                 )
                 if (esFechaHoy(servicio.fecha)) {
                     ChipSuave(
-                        "HOY",
+                        t.today,
                         contenedor = MaterialTheme.colorScheme.tertiaryContainer,
                         contenido = MaterialTheme.colorScheme.onTertiaryContainer
                     )
@@ -157,10 +174,10 @@ private fun TarjetaServicio(servicio: Servicio, onClick: () -> Unit) {
                 ChipIdioma(servicio.idiomaRequerido)
             }
             if (servicio.almuerzoIncluido) {
-                Text("Almuerzo incluido", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                Text(t.lunchIncluded, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
             }
             Text(
-                "ID ${servicio.id}",
+                "${t.id} ${servicio.id}",
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -30,6 +30,7 @@ import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
 import cl.apiavengers.lince.ui.components.*
 import cl.apiavengers.lince.ui.fechaNumerica
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
 import cl.apiavengers.lince.ui.selloFechaHora
 import cl.apiavengers.lince.viewmodel.LinceViewModel
@@ -48,6 +49,7 @@ fun ServicioDetalleScreen(
     onNavigateToPerfil: () -> Unit = {}
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
+    val t = textos()
     val servicio = remember(estado.servicios, estado.historial) { vm.obtenerServicio(servicioId) }
     val snackbar = remember { SnackbarHostState() }
     var motivo by remember { mutableStateOf("") }
@@ -75,7 +77,7 @@ fun ServicioDetalleScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            BarraSuperior(titulo = "Detalle del servicio", onBack = onBack)
+            BarraSuperior(titulo = t.detailTitle, onBack = onBack)
         },
         bottomBar = {
             BarraInferior(
@@ -91,7 +93,7 @@ fun ServicioDetalleScreen(
     ) { innerPadding ->
         if (servicio == null) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("No se encontró el servicio.")
+                Text(t.serviceNotFound)
             }
             return@Scaffold
         }
@@ -112,10 +114,13 @@ fun ServicioDetalleScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ChipEstadoServicio(servicio.estado)
-                Text("ID ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${t.id} ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(servicio.titulo, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 ChipSuave(
                     servicio.tipo,
                     contenedor = MaterialTheme.colorScheme.primaryContainer,
@@ -125,28 +130,28 @@ fun ServicioDetalleScreen(
                 ChipIdioma(servicio.idiomaRequerido)
             }
 
-            Seccion("Información del servicio") {
-                FilaDato("Fecha", fechaNumerica(servicio.fecha))
-                FilaDato("Hora", servicio.hora)
-                FilaDato("Punto de salida", servicio.recogida)
-                FilaDato("Destino", servicio.destino)
+            Seccion(t.serviceInfo) {
+                FilaDato(t.date, fechaNumerica(servicio.fecha))
+                FilaDato(t.time, servicio.hora)
+                FilaDato(t.pickupPoint, servicio.recogida)
+                FilaDato(t.destination, servicio.destino)
                 if (servicio.hotelRecogida.isNotBlank() && servicio.hotelRecogida != servicio.recogida) {
-                    FilaDato("Hotel de recogida", servicio.hotelRecogida)
+                    FilaDato(t.pickupHotel, servicio.hotelRecogida)
                 }
-                FilaDato("Pasajeros", "${servicio.pasajeros}")
-                FilaDato("Días de tour", "${servicio.diasTour}")
-                FilaDato("Almuerzo", if (servicio.almuerzoIncluido) "Incluido" else "No incluido")
-                FilaDato("Tarifa", montoClp(servicio.tarifa))
+                FilaDato(t.passengers, "${servicio.pasajeros}")
+                FilaDato(t.tourDays, "${servicio.diasTour}")
+                FilaDato(t.lunch, if (servicio.almuerzoIncluido) t.included else t.notIncluded)
+                FilaDato(t.fare, montoClp(servicio.tarifa))
             }
 
             if (servicio.resenaHistorica.isNotBlank()) {
-                Seccion("Para tu recorrido") {
+                Seccion(t.forYourTrip) {
                     Text(servicio.resenaHistorica, fontSize = 14.sp)
                 }
             }
 
             if (servicio.itinerario.isNotEmpty()) {
-                Seccion("Itinerario") {
+                Seccion(t.itinerary) {
                     servicio.itinerario.forEachIndexed { index, paso ->
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
@@ -161,16 +166,16 @@ fun ServicioDetalleScreen(
                 }
             }
 
-            Seccion("Equipo asignado") {
+            Seccion(t.assignedTeam) {
                 FilaPersona(
-                    rol = "Titular",
+                    rol = t.holder,
                     persona = titular,
                     onClick = { titular?.let { onPersonaClick(it.id) } }
                 )
                 if (acompanante != null) {
                     HorizontalDivider()
                     FilaPersona(
-                        rol = "Acompañante",
+                        rol = t.companionRole,
                         persona = acompanante,
                         onClick = { onPersonaClick(acompanante.id) }
                     )
@@ -178,17 +183,17 @@ fun ServicioDetalleScreen(
             }
 
             if (servicio.respondidoPor != null || servicio.inicioEn != null || servicio.reasignadoPor != null) {
-                Seccion("Trazabilidad") {
+                Seccion(t.traceability) {
                     val autor = servicio.respondidoPor?.let { remember(estado.equipo) { vm.obtenerPersona(it) } }
                     if (servicio.respondidoEn != null) {
                         FilaDato(
-                            if (servicio.estado == EstadoServicio.RECHAZADA) "Rechazada" else "Confirmada",
+                            if (servicio.estado == EstadoServicio.RECHAZADA) t.rejected else t.confirmed,
                             "${selloFechaHora(servicio.respondidoEn)} · ${autor?.nombre ?: servicio.respondidoPor.orEmpty()}"
                         )
                     }
                     if (!servicio.motivoRechazo.isNullOrBlank()) {
                         Text(
-                            "Motivo: ${servicio.motivoRechazo}",
+                            t.reason(servicio.motivoRechazo.orEmpty()),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -199,23 +204,23 @@ fun ServicioDetalleScreen(
                     servicio.terminoEn?.let { FilaDato("Check-out", selloFechaHora(it)) }
                     servicio.reasignadoEn?.let {
                         val quien = servicio.reasignadoPor?.let { id -> remember(estado.equipo) { vm.obtenerPersona(id) } }
-                        FilaDato("Reasignado", "${selloFechaHora(it)} · ${quien?.nombre ?: "Coordinación"}")
+                        FilaDato(t.reassigned, "${selloFechaHora(it)} · ${quien?.nombre ?: t.coordination}")
                     }
                     servicio.puntaje?.let {
-                        FilaDato("Calificación", "$it/5 · ${selloFechaHora(servicio.calificadoEn)}")
+                        FilaDato(t.ratingLabel, "$it/5 · ${selloFechaHora(servicio.calificadoEn)}")
                     }
                 }
             }
 
             if (vm.puedeResponder(servicio)) {
-                Text("Responde la asignación", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text(t.respondAssignment, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = motivo,
                     onValueChange = {
                         motivo = it
                         if (errorMotivo != null) errorMotivo = null
                     },
-                    label = { Text("Observación o motivo de rechazo (opcional)") },
+                    label = { Text(t.observationLabel) },
                     minLines = 2,
                     isError = errorMotivo != null,
                     supportingText = { errorMotivo?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
@@ -223,16 +228,16 @@ fun ServicioDetalleScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 BotonPrincipal(
-                    texto = "Confirmar asignación",
+                    texto = t.confirmAssignment,
                     icono = Icons.Default.Check,
                     onClick = { confirmarDialogo = true }
                 )
                 BotonPeligro(
-                    texto = "Rechazar asignación",
+                    texto = t.rejectAssignment,
                     icono = Icons.Default.Close,
                     onClick = {
                         if (motivo.isBlank()) {
-                            errorMotivo = "Para rechazar, indica el motivo."
+                            errorMotivo = t.rejectReasonRequired
                         } else {
                             vm.rechazar(servicio.id, motivo)
                         }
@@ -242,22 +247,22 @@ fun ServicioDetalleScreen(
 
             if (vm.puedeIniciar(servicio)) {
                 BotonPrincipal(
-                    texto = "Iniciar servicio (check-in)",
+                    texto = t.startService,
                     icono = Icons.Default.PlayArrow,
                     onClick = { onIniciar(servicio.id) }
                 )
             }
 
             if (vm.esCoordinador() && (servicio.estado == EstadoServicio.PENDIENTE || servicio.estado == EstadoServicio.RECHAZADA)) {
-                BotonSecundario(texto = "Reasignar servicio", onClick = { reasignarDialogo = true })
+                BotonSecundario(texto = t.reassignService, onClick = { reasignarDialogo = true })
             }
 
             if (vm.esCoordinador() && servicio.estado == EstadoServicio.COMPLETADA && servicio.puntaje == null) {
-                BotonSecundario(texto = "Calificar servicio", onClick = { calificarDialogo = true })
+                BotonSecundario(texto = t.rateService, onClick = { calificarDialogo = true })
             }
 
             Text(
-                "Cada respuesta queda registrada con autor y fecha para mantener la trazabilidad.",
+                t.traceabilityNote,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -267,13 +272,13 @@ fun ServicioDetalleScreen(
     if (confirmarDialogo && servicio != null) {
         AlertDialog(
             onDismissRequest = { confirmarDialogo = false },
-            title = { Text("Confirmar asignación") },
-            text = { Text("Se notificará al coordinador que aceptaste el servicio ${servicio.id}.") },
+            title = { Text(t.confirmAssignment) },
+            text = { Text(t.confirmAssignmentText(servicio.id)) },
             confirmButton = {
-                TextButton(onClick = { vm.confirmar(servicio.id) }) { Text("Confirmar") }
+                TextButton(onClick = { vm.confirmar(servicio.id) }) { Text(t.confirm) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmarDialogo = false }) { Text("Cancelar") }
+                TextButton(onClick = { confirmarDialogo = false }) { Text(t.cancel) }
             }
         )
     }
@@ -283,13 +288,13 @@ fun ServicioDetalleScreen(
         var seleccionado by remember { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { reasignarDialogo = false },
-            title = { Text("Reasignar servicio") },
+            title = { Text(t.reassignService) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (candidatos.isEmpty()) {
-                        Text("No hay candidatos disponibles con el mismo rol e idioma.")
+                        Text(t.noCandidates)
                     } else {
-                        Text("Selecciona al nuevo titular:")
+                        Text(t.selectNewHolder)
                         candidatos.forEach { persona ->
                             Row(
                                 modifier = Modifier.fillMaxWidth()
@@ -314,10 +319,10 @@ fun ServicioDetalleScreen(
                         seleccionado?.let { vm.reasignar(servicio.id, it) }
                     },
                     enabled = seleccionado != null
-                ) { Text("Reasignar") }
+                ) { Text(t.reassign) }
             },
             dismissButton = {
-                TextButton(onClick = { reasignarDialogo = false }) { Text("Cancelar") }
+                TextButton(onClick = { reasignarDialogo = false }) { Text(t.cancel) }
             }
         )
     }
@@ -325,15 +330,15 @@ fun ServicioDetalleScreen(
     if (calificarDialogo && servicio != null) {
         AlertDialog(
             onDismissRequest = { calificarDialogo = false },
-            title = { Text("Calificar servicio") },
+            title = { Text(t.rateDialogTitle) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("¿Cómo fue el desempeño del titular?")
+                    Text(t.rateQuestion)
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         (1..5).forEach { valor ->
                             Icon(
                                 Icons.Default.Star,
-                                contentDescription = "$valor estrellas",
+                                contentDescription = t.stars(valor),
                                 tint = if (valor <= puntaje) MaterialTheme.colorScheme.secondary
                                 else MaterialTheme.colorScheme.outlineVariant,
                                 modifier = Modifier.size(32.dp).clickable { puntaje = valor }
@@ -346,10 +351,10 @@ fun ServicioDetalleScreen(
                 TextButton(
                     onClick = { vm.calificar(servicio.id, puntaje) },
                     enabled = puntaje in 1..5
-                ) { Text("Guardar") }
+                ) { Text(t.save) }
             },
             dismissButton = {
-                TextButton(onClick = { calificarDialogo = false }) { Text("Cancelar") }
+                TextButton(onClick = { calificarDialogo = false }) { Text(t.cancel) }
             }
         )
     }
@@ -390,7 +395,7 @@ private fun FilaPersona(rol: String, persona: Usuario?, onClick: () -> Unit) {
         Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         Column(Modifier.weight(1f)) {
             Text(rol, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(persona?.nombre ?: "Sin asignar", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text(persona?.nombre ?: textos().unassigned, fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
         if (persona != null) {
             Text(persona.telefono, fontSize = 12.sp)

@@ -26,7 +26,9 @@ import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.ui.components.BarraInferior
 import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
+import cl.apiavengers.lince.ui.components.EstadoVacio
 import cl.apiavengers.lince.ui.fechaNumerica
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
 import cl.apiavengers.lince.ui.selloFechaHora
 import cl.apiavengers.lince.viewmodel.LinceViewModel
@@ -43,13 +45,14 @@ fun HistorialScreen(
     onNavigateToPerfil: () -> Unit = {}
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
+    val t = textos()
     var filtro by remember { mutableStateOf<EstadoServicio?>(null) }
     val registros = estado.historial.filter { filtro == null || it.estado == filtro }
     val usuario = estado.usuario
 
     Scaffold(
         topBar = {
-            BarraSuperior(titulo = "Historial", onBack = onBack)
+            BarraSuperior(titulo = t.historyTitle, onBack = onBack)
         },
         bottomBar = {
             BarraInferior(
@@ -76,38 +79,40 @@ fun HistorialScreen(
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        if (vm.esCoordinador()) "HISTORIAL GENERAL" else "ACUMULADO",
+                        if (vm.esCoordinador()) t.historyGeneral else t.historyAccumulated,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
-                        if (vm.esCoordinador()) "${estado.historial.size} servicios registrados"
+                        if (vm.esCoordinador()) t.historyRegistered(estado.historial.size)
                         else montoClp(usuario?.let { vm.totalGanado(it.id) } ?: 0),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
-                        if (vm.esCoordinador()) "Incluye completados y rechazados."
-                        else "Servicios confirmados y completados.",
+                        if (vm.esCoordinador()) t.historyIncludes else t.historyConfirmedCompleted,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text("Todos") })
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text(t.all) })
                 FilterChip(
                     selected = filtro == EstadoServicio.COMPLETADA,
                     onClick = { filtro = EstadoServicio.COMPLETADA },
-                    label = { Text("Completados") }
+                    label = { Text(t.historyCompletedFilter) }
                 )
                 FilterChip(
                     selected = filtro == EstadoServicio.RECHAZADA,
                     onClick = { filtro = EstadoServicio.RECHAZADA },
-                    label = { Text("Rechazados") }
+                    label = { Text(t.historyRejectedFilter) }
                 )
             }
 
@@ -119,7 +124,13 @@ fun HistorialScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Todavía no hay servicios en tu historial.", Modifier.padding(16.dp))
+                    EstadoVacio(
+                        titulo = t.historyEmpty,
+                        mensaje = t.historyEmptyMessage,
+                        icono = Icons.AutoMirrored.Filled.List,
+                        accionTexto = if (filtro != null) t.viewAll else null,
+                        onAccion = if (filtro != null) ({ filtro = null }) else null
+                    )
                 }
             }
 
@@ -136,6 +147,7 @@ fun HistorialScreen(
 
 @Composable
 private fun TarjetaHistorial(servicio: Servicio, autor: String, onClick: () -> Unit) {
+    val t = textos()
     OutlinedCard(
         shape = RoundedCornerShape(18.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -148,7 +160,7 @@ private fun TarjetaHistorial(servicio: Servicio, autor: String, onClick: () -> U
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "ID ${servicio.id}",
+                    "${t.id} ${servicio.id}",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -161,23 +173,23 @@ private fun TarjetaHistorial(servicio: Servicio, autor: String, onClick: () -> U
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text("Responsable: $autor", fontSize = 13.sp)
+            Text(t.responsible(autor), fontSize = 13.sp)
             HorizontalDivider()
             if (servicio.respondidoEn != null) {
                 Text(
-                    if (servicio.estado == EstadoServicio.RECHAZADA) "Rechazado: ${selloFechaHora(servicio.respondidoEn)}"
-                    else "Confirmado: ${selloFechaHora(servicio.respondidoEn)}",
+                    if (servicio.estado == EstadoServicio.RECHAZADA) t.rejectedAt(selloFechaHora(servicio.respondidoEn))
+                    else t.confirmedAt(selloFechaHora(servicio.respondidoEn)),
                     fontSize = 12.sp
                 )
             }
             servicio.inicioEn?.let { Text("Check-in: ${selloFechaHora(it)}", fontSize = 12.sp) }
             servicio.terminoEn?.let { Text("Check-out: ${selloFechaHora(it)}", fontSize = 12.sp) }
-            servicio.puntaje?.let { Text("Calificación: $it/5", fontSize = 12.sp) }
+            servicio.puntaje?.let { Text(t.rating("$it/5"), fontSize = 12.sp) }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Tarifa", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t.fare, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(montoClp(servicio.tarifa), fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }

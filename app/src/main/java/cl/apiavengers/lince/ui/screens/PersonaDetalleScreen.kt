@@ -28,6 +28,7 @@ import cl.apiavengers.lince.ui.components.ChipDisponibilidad
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
 import cl.apiavengers.lince.ui.components.ChipIdioma
 import cl.apiavengers.lince.ui.fechaNumerica
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
@@ -39,6 +40,7 @@ fun PersonaDetalleScreen(
     onServicioClick: (String) -> Unit
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
+    val t = textos()
     val persona = remember(estado.equipo) { vm.obtenerPersona(personaId) }
     val servicios = remember(estado.servicios) { vm.serviciosDe(personaId) }
     val calificacion = remember(estado.historial) { vm.promedioCalificacion(personaId) }
@@ -46,12 +48,12 @@ fun PersonaDetalleScreen(
 
     Scaffold(
         topBar = {
-            BarraSuperior(titulo = "Ficha del equipo", onBack = onBack)
+            BarraSuperior(titulo = t.personTitle, onBack = onBack)
         }
     ) { innerPadding ->
         if (persona == null) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("No se encontró la persona.")
+                Text(t.personNotFound)
             }
             return@Scaffold
         }
@@ -78,12 +80,15 @@ fun PersonaDetalleScreen(
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(persona.nombre, fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                    Text("${persona.rol.etiqueta} · ${persona.id}", fontSize = 13.sp)
+                    Text("${t.rol(persona.rol)} · ${persona.id}", fontSize = 13.sp)
                     ChipDisponibilidad(persona.disponibilidad)
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 persona.idiomas.forEach { ChipIdioma(it) }
             }
 
@@ -96,10 +101,10 @@ fun PersonaDetalleScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Contacto", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Fila("Correo", persona.correo)
-                    Fila("Teléfono", persona.telefono)
-                    Fila("Zona", persona.zona)
+                    Text(t.contact, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Fila(t.email, persona.correo)
+                    Fila(t.phone, persona.telefono)
+                    Fila(t.area, persona.zona)
                 }
             }
 
@@ -109,7 +114,7 @@ fun PersonaDetalleScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Desempeño", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(t.performance, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Star,
@@ -118,17 +123,17 @@ fun PersonaDetalleScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            if (calificacion != null) " ${"%.1f".format(calificacion)}/5" else " Sin calificaciones",
+                            if (calificacion != null) " ${"%.1f".format(calificacion)}/5" else " ${t.noRatings}",
                             fontSize = 14.sp
                         )
                     }
-                    Fila("Acumulado", montoClp(total))
+                    Fila(t.accumulatedLabel, montoClp(total))
                 }
             }
 
-            Text("Servicios activos", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(t.activeServices, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             if (servicios.isEmpty()) {
-                Text("Sin servicios activos asignados.", fontSize = 14.sp)
+                Text(t.noActiveServicesAssigned, fontSize = 14.sp)
             }
             servicios.forEach { servicio ->
                 OutlinedCard(
@@ -154,7 +159,7 @@ fun PersonaDetalleScreen(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(14.dp))
-                Text(" Toca un servicio para ver el detalle.", fontSize = 12.sp)
+                Text(" ${t.tapService}", fontSize = 12.sp)
             }
         }
     }

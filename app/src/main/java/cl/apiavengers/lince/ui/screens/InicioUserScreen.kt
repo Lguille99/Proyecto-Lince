@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -19,6 +20,7 @@ import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.ui.components.*
 import cl.apiavengers.lince.ui.fechaCorta
 import cl.apiavengers.lince.ui.fechaLargaHoy
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -32,6 +34,7 @@ fun InicioUserScreen(
     onServicioClick: (String) -> Unit = {}
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
+    val t = textos()
     val usuario = estado.usuario
     val pendientes = estado.servicios.count { it.estado == EstadoServicio.PENDIENTE }
     val proximo = estado.servicios.sortedWith(compareBy({ it.fecha }, { it.hora })).firstOrNull()
@@ -58,7 +61,7 @@ fun InicioUserScreen(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    "Hola, ${usuario?.nombre ?: "usuario"}",
+                    t.homeGreeting(usuario?.nombre ?: t.homeUserFallback),
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -76,19 +79,19 @@ fun InicioUserScreen(
             ) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        "TU JORNADA",
+                        t.homeDay,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
-                        "$pendientes servicios por revisar",
+                        t.homePending(pendientes),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
-                        "Hoy tienes ${deHoy.size} servicio(s) asignado(s).",
+                        t.homeTodayAssigned(deHoy.size),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
@@ -96,13 +99,13 @@ fun InicioUserScreen(
             }
 
             if (deHoy.isNotEmpty()) {
-                Text("Servicios de hoy", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(t.homeTodayServices, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 deHoy.forEach { servicio ->
                     TarjetaResumenServicio(servicio, onClick = { onServicioClick(servicio.id) })
                 }
             }
 
-            Text("Próximo servicio", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(t.homeNextService, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             if (proximo != null) {
                 TarjetaResumenServicio(proximo, onClick = { onServicioClick(proximo.id) })
             } else {
@@ -113,13 +116,19 @@ fun InicioUserScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("No tienes servicios activos por ahora.", Modifier.padding(16.dp), fontSize = 14.sp)
+                    EstadoVacio(
+                        titulo = t.homeNoActive,
+                        mensaje = t.homeNoActiveMessage,
+                        icono = Icons.Default.DateRange,
+                        accionTexto = t.homeUpdateAgenda,
+                        onAccion = onNavigateToAgenda
+                    )
                 }
             }
 
-            BotonPrincipal(texto = "Ver mis servicios", onClick = onNavigateToServicios)
-            BotonSecundario(texto = "Consultar historial", onClick = onNavigateToHistorial)
-            BotonSecundario(texto = "Ver equipo (guías y conductores)", onClick = onNavigateToEquipo)
+            BotonPrincipal(texto = t.homeViewServices, onClick = onNavigateToServicios)
+            BotonSecundario(texto = t.homeViewHistory, onClick = onNavigateToHistorial)
+            BotonSecundario(texto = t.homeViewTeam, onClick = onNavigateToEquipo)
 
             OutlinedCard(
                 shape = RoundedCornerShape(16.dp),
@@ -130,13 +139,13 @@ fun InicioUserScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Disponibilidad", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text(t.homeAvailability, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        "Recuerda bloquear con 7 días de anticipación los días en que no puedas trabajar.",
+                        t.homeAvailabilityHint,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    TextButton(onClick = onNavigateToAgenda) { Text("Actualizar mi agenda") }
+                    TextButton(onClick = onNavigateToAgenda) { Text(t.homeUpdateAgenda) }
                 }
             }
         }
@@ -175,7 +184,7 @@ private fun TarjetaResumenServicio(servicio: cl.apiavengers.lince.modelo.Servici
             }
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Ver detalle",
+                contentDescription = textos().viewDetails,
                 tint = MaterialTheme.colorScheme.primary
             )
         }

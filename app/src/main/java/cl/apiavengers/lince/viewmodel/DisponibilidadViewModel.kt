@@ -12,6 +12,7 @@ import cl.apiavengers.lince.datos.SesionSupabase
 import cl.apiavengers.lince.modelo.DisponibilidadUiState
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
+import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,8 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
     val uiState = _uiState.asStateFlow()
     private var usuarioActual: Usuario? = null
 
+    private val t get() = PreferenciaIdioma.actuales()
+
     fun cargar(usuario: Usuario) {
         usuarioActual = usuario
         _uiState.value = DisponibilidadUiState()
@@ -44,7 +47,7 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (error: Exception) {
-                _uiState.update { it.copy(cargando = false, esError = true, mensaje = "No se pudo leer tu agenda. Intenta nuevamente.") }
+                _uiState.update { it.copy(cargando = false, esError = true, mensaje = t.msgAgendaReadFailed) }
             }
         }
     }
@@ -78,7 +81,7 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
                         it.copy(
                             diasBloqueados = dias,
                             cargando = false,
-                            mensaje = "Disponibilidad guardada en Supabase."
+                            mensaje = t.msgAvailabilitySavedRemote
                         )
                     }
                 } else {
@@ -89,7 +92,7 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
                         it.copy(
                             diasBloqueados = dias,
                             cargando = false,
-                            mensaje = "Disponibilidad guardada en este dispositivo."
+                            mensaje = t.msgAvailabilitySavedLocal
                         )
                     }
                 }
@@ -97,9 +100,9 @@ class DisponibilidadViewModel(application: Application) : AndroidViewModel(appli
                 throw cancelacion
             } catch (error: Exception) {
                 val mensaje = when {
-                    error is IllegalArgumentException -> error.message
-                    error is ErrorSupabase -> error.message
-                    else -> "No se pudo guardar. Intenta nuevamente."
+                    error is IllegalArgumentException -> PreferenciaIdioma.traducir(error.message)
+                    error is ErrorSupabase -> PreferenciaIdioma.traducir(error.message)
+                    else -> t.msgSaveFailed
                 }
                 _uiState.update { it.copy(cargando = false, mensaje = mensaje, esError = true) }
             }

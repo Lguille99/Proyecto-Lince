@@ -40,16 +40,18 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.Disponibilidad
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Idioma
 import cl.apiavengers.lince.modelo.Modalidad
+import cl.apiavengers.lince.ui.idioma.textos
 
 @Composable
 fun BotonPrincipal(
@@ -78,19 +80,12 @@ fun BotonPrincipal(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
         modifier = modifier.fillMaxWidth().heightIn(min = 52.dp)
     ) {
-        if (cargando) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        } else {
-            if (icono != null) {
-                Icon(icono, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-            }
-            Text(texto, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        }
+        ContenidoBoton(
+            texto = texto,
+            cargando = cargando,
+            icono = icono,
+            colorCargando = MaterialTheme.colorScheme.onPrimary
+        )
     }
 }
 
@@ -122,18 +117,47 @@ fun BotonSecundario(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
         modifier = modifier.fillMaxWidth().heightIn(min = 52.dp)
     ) {
-        if (cargando) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        } else {
+        ContenidoBoton(
+            texto = texto,
+            cargando = cargando,
+            icono = icono,
+            colorCargando = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    }
+}
+
+@Composable
+private fun ContenidoBoton(
+    texto: String,
+    cargando: Boolean,
+    icono: ImageVector?,
+    colorCargando: Color
+) {
+    if (cargando) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(18.dp),
+            strokeWidth = 2.dp,
+            color = colorCargando
+        )
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (icono != null) {
                 Icon(icono, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
             }
-            Text(texto, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                texto,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
         }
     }
 }
@@ -165,11 +189,12 @@ fun BotonPeligro(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
         modifier = modifier.fillMaxWidth().heightIn(min = 52.dp)
     ) {
-        if (icono != null) {
-            Icon(icono, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(texto, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        ContenidoBoton(
+            texto = texto,
+            cargando = false,
+            icono = icono,
+            colorCargando = MaterialTheme.colorScheme.onErrorContainer
+        )
     }
 }
 
@@ -225,7 +250,7 @@ fun ChipEstadoServicio(estado: EstadoServicio) {
             MaterialTheme.colorScheme.onErrorContainer
         )
     }
-    ChipSuave(estado.etiqueta, contenedor = fondo, contenido = tinta, icono = icono)
+    ChipSuave(textos().estado(estado), contenedor = fondo, contenido = tinta, icono = icono)
 }
 
 @Composable
@@ -247,13 +272,13 @@ fun ChipDisponibilidad(disponibilidad: Disponibilidad) {
             MaterialTheme.colorScheme.onErrorContainer
         )
     }
-    ChipSuave(disponibilidad.etiqueta, contenedor = fondo, contenido = tinta, icono = icono)
+    ChipSuave(textos().disponibilidad(disponibilidad), contenedor = fondo, contenido = tinta, icono = icono)
 }
 
 @Composable
 fun ChipIdioma(idioma: Idioma) {
     ChipSuave(
-        idioma.etiqueta,
+        textos().idioma(idioma),
         contenedor = MaterialTheme.colorScheme.surfaceContainerHigh,
         contenido = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -262,7 +287,7 @@ fun ChipIdioma(idioma: Idioma) {
 @Composable
 fun ChipModalidad(modalidad: Modalidad) {
     ChipSuave(
-        modalidad.etiqueta,
+        textos().modalidad(modalidad),
         contenedor = MaterialTheme.colorScheme.primaryContainer,
         contenido = MaterialTheme.colorScheme.onPrimaryContainer
     )
@@ -276,7 +301,7 @@ fun BarraSuperior(
     onBack: (() -> Unit)? = null,
     acciones: @Composable RowScope.() -> Unit = {}
 ) {
-    Column(Modifier.fillMaxWidth().shadow(2.dp)) {
+    Column(Modifier.fillMaxWidth()) {
         TopAppBar(
             title = {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -293,7 +318,7 @@ fun BarraSuperior(
             navigationIcon = {
                 if (onBack != null) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = textos().back)
                     }
                 }
             },
@@ -310,6 +335,7 @@ fun BarraSuperior(
 }
 
 private data class ItemBarra(
+    val clave: String,
     val nombre: String,
     val icono: ImageVector,
     val accion: () -> Unit
@@ -325,17 +351,18 @@ fun BarraInferior(
     onAgenda: () -> Unit = {},
     onEquipo: () -> Unit = {}
 ) {
+    val t = textos()
     val items = buildList {
-        add(ItemBarra("Inicio", Icons.Default.Home, onInicio))
-        add(ItemBarra("Servicios", Icons.AutoMirrored.Filled.List, onServicios))
+        add(ItemBarra("Inicio", t.navHome, Icons.Default.Home, onInicio))
+        add(ItemBarra("Servicios", t.navServices, Icons.AutoMirrored.Filled.List, onServicios))
         if (esCoordinador) {
-            add(ItemBarra("Equipo", Icons.Default.Person, onEquipo))
+            add(ItemBarra("Equipo", t.navTeam, Icons.Default.Person, onEquipo))
         } else {
-            add(ItemBarra("Agenda", Icons.Default.DateRange, onAgenda))
+            add(ItemBarra("Agenda", t.navAgenda, Icons.Default.DateRange, onAgenda))
         }
-        add(ItemBarra("Perfil", Icons.Default.Face, onPerfil))
+        add(ItemBarra("Perfil", t.navProfile, Icons.Default.Face, onPerfil))
     }
-    Column(Modifier.fillMaxWidth().shadow(3.dp)) {
+    Column(Modifier.fillMaxWidth()) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         NavigationBar(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -345,7 +372,7 @@ fun BarraInferior(
                 NavigationBarItem(
                     icon = { Icon(item.icono, contentDescription = item.nombre) },
                     label = { Text(item.nombre) },
-                    selected = seleccion == item.nombre,
+                    selected = seleccion == item.clave,
                     onClick = item.accion,
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,

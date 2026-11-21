@@ -23,7 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.Idioma
 import cl.apiavengers.lince.ui.components.*
+import cl.apiavengers.lince.ui.idioma.IdiomaApp
+import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
+import cl.apiavengers.lince.ui.theme.ModoTema
+import cl.apiavengers.lince.ui.theme.PreferenciaTema
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -37,6 +42,9 @@ fun PerfilScreen(
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
     val usuario = estado.usuario
+    val modoTema by PreferenciaTema.modo.collectAsStateWithLifecycle()
+    val idiomaApp by PreferenciaIdioma.idioma.collectAsStateWithLifecycle()
+    val t = textos()
     val snackbar = remember { SnackbarHostState() }
     var nombre by rememberSaveable(usuario?.id) { mutableStateOf(usuario?.nombre.orEmpty()) }
     var correo by rememberSaveable(usuario?.id) { mutableStateOf(usuario?.correo.orEmpty()) }
@@ -46,17 +54,17 @@ fun PerfilScreen(
     var mostrarErrores by rememberSaveable(usuario?.id) { mutableStateOf(false) }
 
     val nombreError = when {
-        nombre.trim().length !in 2..60 -> "El nombre debe tener entre 2 y 60 caracteres."
+        nombre.trim().length !in 2..60 -> t.errorName
         else -> null
     }
     val correoError = if (correo.trim().let { it.contains("@") && it.substringAfter("@").contains(".") }) {
         null
     } else {
-        "Ingresa un correo válido."
+        t.errorEmail
     }
-    val telefonoError = if (telefono.trim().length >= 8) null else "Ingresa un teléfono válido."
-    val zonaError = if (zona.trim().isNotEmpty()) null else "Indica tu zona de trabajo."
-    val idiomasError = if (idiomas.isNotEmpty()) null else "Selecciona al menos un idioma."
+    val telefonoError = if (telefono.trim().length >= 8) null else t.errorPhone
+    val zonaError = if (zona.trim().isNotEmpty()) null else t.errorZone
+    val idiomasError = if (idiomas.isNotEmpty()) null else t.errorLanguages
     val formularioValido = listOf(nombreError, correoError, telefonoError, zonaError, idiomasError).all { it == null }
 
     val mensaje = estado.mensaje
@@ -71,10 +79,10 @@ fun PerfilScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             BarraSuperior(
-                titulo = "Mi perfil",
+                titulo = t.profileTitle,
                 acciones = {
                     IconButton(onClick = onCerrarSesion) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = t.logout)
                     }
                 }
             )
@@ -105,20 +113,20 @@ fun PerfilScreen(
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(usuario?.nombre.orEmpty(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                     Text(
-                        usuario?.rol?.etiqueta.orEmpty(),
+                        usuario?.rol?.let { t.rol(it) }.orEmpty(),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     if (usuario != null && !vm.esCoordinador()) {
                         Text(
-                            "Acumulado: ${montoClp(vm.totalGanado(usuario.id))}",
+                            t.accumulated(montoClp(vm.totalGanado(usuario.id))),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         vm.promedioCalificacion(usuario.id)?.let {
                             Text(
-                                "Calificación promedio: ${"%.1f".format(it)}/5",
+                                t.averageRating("%.1f".format(it)),
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
@@ -130,7 +138,7 @@ fun PerfilScreen(
             OutlinedTextField(
                 value = usuario?.id.orEmpty(),
                 onValueChange = {},
-                label = { Text("ID de usuario (solo lectura)") },
+                label = { Text(t.profileId) },
                 enabled = false,
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
@@ -139,7 +147,7 @@ fun PerfilScreen(
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre") },
+                label = { Text(t.profileName) },
                 singleLine = true,
                 isError = mostrarErrores && nombreError != null,
                 supportingText = {
@@ -151,7 +159,7 @@ fun PerfilScreen(
             OutlinedTextField(
                 value = correo,
                 onValueChange = { correo = it },
-                label = { Text("Correo") },
+                label = { Text(t.profileEmail) },
                 singleLine = true,
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Email),
                 isError = mostrarErrores && correoError != null,
@@ -164,7 +172,7 @@ fun PerfilScreen(
             OutlinedTextField(
                 value = telefono,
                 onValueChange = { telefono = it },
-                label = { Text("Teléfono") },
+                label = { Text(t.profilePhone) },
                 singleLine = true,
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Phone),
                 isError = mostrarErrores && telefonoError != null,
@@ -177,7 +185,7 @@ fun PerfilScreen(
             OutlinedTextField(
                 value = zona,
                 onValueChange = { zona = it },
-                label = { Text("Zona de trabajo") },
+                label = { Text(t.profileZone) },
                 singleLine = true,
                 isError = mostrarErrores && zonaError != null,
                 supportingText = {
@@ -187,8 +195,11 @@ fun PerfilScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Text("Idiomas que dominas", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(t.profileLanguages, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Idioma.values().forEach { idioma ->
                     FilterChip(
                         selected = idioma in idiomas,
@@ -199,7 +210,7 @@ fun PerfilScreen(
                                 idiomas + idioma
                             }
                         },
-                        label = { Text(idioma.etiqueta) }
+                        label = { Text(t.idioma(idioma)) }
                     )
                 }
             }
@@ -209,7 +220,7 @@ fun PerfilScreen(
             }
 
             BotonPrincipal(
-                texto = "Guardar cambios",
+                texto = t.profileSave,
                 onClick = {
                     mostrarErrores = true
                     if (formularioValido) {
@@ -217,18 +228,55 @@ fun PerfilScreen(
                     }
                 }
             )
-            BotonSecundario(texto = "Ver equipo", onClick = onNavigateToEquipo)
+            BotonSecundario(texto = t.profileViewTeam, onClick = onNavigateToEquipo)
 
+            Text(t.profileLanguage, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = idiomaApp == IdiomaApp.ESPANOL,
+                    onClick = { PreferenciaIdioma.fijar(IdiomaApp.ESPANOL) },
+                    label = { Text(t.languageSpanish) }
+                )
+                FilterChip(
+                    selected = idiomaApp == IdiomaApp.INGLES,
+                    onClick = { PreferenciaIdioma.fijar(IdiomaApp.INGLES) },
+                    label = { Text(t.languageEnglish) }
+                )
+            }
             Text(
-                if (estado.modoRemoto) {
-                    "Los datos se guardan en Supabase. La cuenta y el rol no se pueden modificar."
-                } else {
-                    "Los datos se guardan en este dispositivo. La cuenta y el rol no se pueden modificar."
-                },
+                t.profileLanguageHint,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            TextButton(onClick = onCerrarSesion) { Text("Cerrar sesión") }
+
+            Text(t.profileAppearance, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ModoTema.values().forEach { opcion ->
+                    FilterChip(
+                        selected = modoTema == opcion,
+                        onClick = { PreferenciaTema.fijar(opcion) },
+                        label = { Text(t.modoTema(opcion)) }
+                    )
+                }
+            }
+            Text(
+                t.profileAppearanceHint,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Text(
+                if (estado.modoRemoto) t.profileDataRemote else t.profileDataLocal,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(onClick = onCerrarSesion) { Text(t.logout) }
         }
     }
 }
