@@ -51,6 +51,7 @@ import cl.apiavengers.lince.modelo.Disponibilidad
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Idioma
 import cl.apiavengers.lince.modelo.Modalidad
+import cl.apiavengers.lince.ui.idioma.textos
 
 @Composable
 fun BotonPrincipal(
@@ -249,7 +250,7 @@ fun ChipEstadoServicio(estado: EstadoServicio) {
             MaterialTheme.colorScheme.onErrorContainer
         )
     }
-    ChipSuave(estado.etiqueta, contenedor = fondo, contenido = tinta, icono = icono)
+    ChipSuave(textos().estado(estado), contenedor = fondo, contenido = tinta, icono = icono)
 }
 
 @Composable
@@ -271,13 +272,13 @@ fun ChipDisponibilidad(disponibilidad: Disponibilidad) {
             MaterialTheme.colorScheme.onErrorContainer
         )
     }
-    ChipSuave(disponibilidad.etiqueta, contenedor = fondo, contenido = tinta, icono = icono)
+    ChipSuave(textos().disponibilidad(disponibilidad), contenedor = fondo, contenido = tinta, icono = icono)
 }
 
 @Composable
 fun ChipIdioma(idioma: Idioma) {
     ChipSuave(
-        idioma.etiqueta,
+        textos().idioma(idioma),
         contenedor = MaterialTheme.colorScheme.surfaceContainerHigh,
         contenido = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -286,7 +287,7 @@ fun ChipIdioma(idioma: Idioma) {
 @Composable
 fun ChipModalidad(modalidad: Modalidad) {
     ChipSuave(
-        modalidad.etiqueta,
+        textos().modalidad(modalidad),
         contenedor = MaterialTheme.colorScheme.primaryContainer,
         contenido = MaterialTheme.colorScheme.onPrimaryContainer
     )
@@ -317,7 +318,7 @@ fun BarraSuperior(
             navigationIcon = {
                 if (onBack != null) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = textos().back)
                     }
                 }
             },
@@ -334,6 +335,7 @@ fun BarraSuperior(
 }
 
 private data class ItemBarra(
+    val clave: String,
     val nombre: String,
     val icono: ImageVector,
     val accion: () -> Unit
@@ -349,15 +351,16 @@ fun BarraInferior(
     onAgenda: () -> Unit = {},
     onEquipo: () -> Unit = {}
 ) {
+    val t = textos()
     val items = buildList {
-        add(ItemBarra("Inicio", Icons.Default.Home, onInicio))
-        add(ItemBarra("Servicios", Icons.AutoMirrored.Filled.List, onServicios))
+        add(ItemBarra("Inicio", t.navHome, Icons.Default.Home, onInicio))
+        add(ItemBarra("Servicios", t.navServices, Icons.AutoMirrored.Filled.List, onServicios))
         if (esCoordinador) {
-            add(ItemBarra("Equipo", Icons.Default.Person, onEquipo))
+            add(ItemBarra("Equipo", t.navTeam, Icons.Default.Person, onEquipo))
         } else {
-            add(ItemBarra("Agenda", Icons.Default.DateRange, onAgenda))
+            add(ItemBarra("Agenda", t.navAgenda, Icons.Default.DateRange, onAgenda))
         }
-        add(ItemBarra("Perfil", Icons.Default.Face, onPerfil))
+        add(ItemBarra("Perfil", t.navProfile, Icons.Default.Face, onPerfil))
     }
     Column(Modifier.fillMaxWidth()) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -369,7 +372,7 @@ fun BarraInferior(
                 NavigationBarItem(
                     icon = { Icon(item.icono, contentDescription = item.nombre) },
                     label = { Text(item.nombre) },
-                    selected = seleccion == item.nombre,
+                    selected = seleccion == item.clave,
                     onClick = item.accion,
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,

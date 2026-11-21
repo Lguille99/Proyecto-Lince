@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.apiavengers.lince.datos.SesionSupabase
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
@@ -31,6 +32,9 @@ import cl.apiavengers.lince.ui.components.BarraInferior
 import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.fechaLarga
+import cl.apiavengers.lince.ui.idioma.IdiomaApp
+import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.viewmodel.DisponibilidadViewModel
 import java.time.Instant
 import java.time.LocalDate
@@ -51,6 +55,8 @@ fun DisponibilidadScreen(
     onNavigateToPerfil: () -> Unit = {}
 ) {
     val state by vm.uiState.collectAsState()
+    val t = textos()
+    val idioma by PreferenciaIdioma.idioma.collectAsStateWithLifecycle()
     val esRemoto = SesionSupabase.activa
     var mes by remember { mutableStateOf(YearMonth.now()) }
     var mostrarSelector by remember { mutableStateOf(false) }
@@ -62,11 +68,16 @@ fun DisponibilidadScreen(
             override fun isSelectableYear(year: Int): Boolean = year >= hoy.year
         }
     }
-    val nombresMes = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "CL"))
+    val localeMes = if (idioma == IdiomaApp.INGLES) {
+        Locale("en", "US")
+    } else {
+        Locale("es", "CL")
+    }
+    val nombresMes = DateTimeFormatter.ofPattern("MMMM yyyy", localeMes)
 
     Scaffold(
         topBar = {
-            BarraSuperior(titulo = "Mi disponibilidad", onBack = onBack)
+            BarraSuperior(titulo = t.availabilityTitle, onBack = onBack)
         },
         bottomBar = {
             BarraInferior(
@@ -86,7 +97,7 @@ fun DisponibilidadScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                "Marca los días en que no podrás trabajar. Los bloqueos requieren 7 días de anticipación.",
+                t.availabilityIntro,
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -106,20 +117,20 @@ fun DisponibilidadScreen(
                             onClick = { mes = mes.minusMonths(1) },
                             enabled = mes.isAfter(YearMonth.from(hoy))
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Mes anterior")
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = t.previousMonth)
                         }
                         Text(
                             mes.format(nombresMes)
-                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("es", "CL")) else it.toString() },
+                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(localeMes) else it.toString() },
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                         IconButton(onClick = { mes = mes.plusMonths(1) }) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Mes siguiente")
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = t.nextMonth)
                         }
                     }
                     Row(Modifier.fillMaxWidth()) {
-                        listOf("L", "M", "X", "J", "V", "S", "D").forEach { dia ->
+                        t.weekdays.forEach { dia ->
                             Text(
                                 dia,
                                 modifier = Modifier.weight(1f),
@@ -186,19 +197,19 @@ fun DisponibilidadScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Día seleccionado", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(t.selectedDay, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     Text(fechaLarga(state.fecha.toString()), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     TextButton(onClick = { mostrarSelector = true }) {
                         Icon(Icons.Filled.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Elegir otra fecha")
+                        Text(t.chooseAnotherDate)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Bloquear este día", fontSize = 14.sp)
+                        Text(t.blockDay, fontSize = 14.sp)
                         Switch(
                             checked = state.bloqueado,
                             onCheckedChange = { vm.cambiarBloqueo(it) },
@@ -206,13 +217,13 @@ fun DisponibilidadScreen(
                         )
                     }
                     if (state.bloqueado) {
-                        Text("No recibirás asignaciones para este día.", fontSize = 12.sp)
+                        Text(t.noAssignmentsThatDay, fontSize = 12.sp)
                     }
                 }
             }
 
             BotonPrincipal(
-                texto = "Guardar disponibilidad",
+                texto = t.saveAvailability,
                 onClick = { vm.guardar(serviciosAsignados) },
                 enabled = state.cargado,
                 cargando = state.cargando
@@ -225,11 +236,7 @@ fun DisponibilidadScreen(
                 )
             }
             Text(
-                if (esRemoto) {
-                    "Los cambios se guardan en Supabase. No puedes bloquear un día con un servicio asignado."
-                } else {
-                    "Los cambios se guardan en este dispositivo. No puedes bloquear un día con un servicio asignado."
-                },
+                if (esRemoto) t.changesRemote else t.changesLocal,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -253,10 +260,10 @@ fun DisponibilidadScreen(
                         }
                         mostrarSelector = false
                     }
-                ) { Text("Aceptar") }
+                ) { Text(t.accept) }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarSelector = false }) { Text("Cancelar") }
+                TextButton(onClick = { mostrarSelector = false }) { Text(t.cancel) }
             }
         ) {
             DatePicker(state = datePickerState)

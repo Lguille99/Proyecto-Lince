@@ -29,6 +29,7 @@ import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
 import cl.apiavengers.lince.ui.fechaNumerica
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.selloFechaHora
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 import kotlinx.coroutines.delay
@@ -49,6 +50,7 @@ fun EjecucionScreen(
     onNavigateToPerfil: () -> Unit = {}
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
+    val t = textos()
     val servicio = remember(estado.servicios, estado.historial) { vm.obtenerServicio(servicioId) }
     val snackbar = remember { SnackbarHostState() }
     val alcance = rememberCoroutineScope()
@@ -74,7 +76,7 @@ fun EjecucionScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            BarraSuperior(titulo = "Ejecución del servicio", onBack = onBack)
+            BarraSuperior(titulo = t.executionTitle, onBack = onBack)
         },
         bottomBar = {
             BarraInferior(
@@ -90,7 +92,7 @@ fun EjecucionScreen(
     ) { innerPadding ->
         if (servicio == null) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("No se encontró el servicio.")
+                Text(t.serviceNotFound)
             }
             return@Scaffold
         }
@@ -112,7 +114,7 @@ fun EjecucionScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ChipEstadoServicio(servicio.estado)
-                Text("ID ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${t.id} ${servicio.id}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(servicio.titulo, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text(
@@ -136,21 +138,21 @@ fun EjecucionScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Registro de hitos", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(t.executionMilestones, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Hito(
                         titulo = "Check-in",
                         detalle = servicio.inicioEn?.let {
                             "${selloFechaHora(it)} · ${servicio.ubicacionInicio.orEmpty()}"
-                        } ?: "Pendiente",
+                        } ?: t.pending,
                         completado = servicio.inicioEn != null
                     )
                     Hito(
                         titulo = "Check-out",
-                        detalle = servicio.terminoEn?.let { selloFechaHora(it) } ?: "Pendiente",
+                        detalle = servicio.terminoEn?.let { selloFechaHora(it) } ?: t.pending,
                         completado = servicio.terminoEn != null
                     )
                     if (servicio.observaciones.isNotBlank()) {
-                        Text("Observaciones: ${servicio.observaciones}", fontSize = 13.sp)
+                        Text(t.observations(servicio.observaciones), fontSize = 13.sp)
                     }
                 }
             }
@@ -161,19 +163,19 @@ fun EjecucionScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Responsable", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(t.responsibleTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        "${titular?.nombre ?: "Sin asignar"} · ${titular?.telefono ?: ""}",
+                        "${titular?.nombre ?: t.unassigned} · ${titular?.telefono ?: ""}",
                         fontSize = 14.sp
                     )
                     TextButton(onClick = { titular?.let { onPersonaClick(it.id) } }) {
-                        Text("Ver ficha del titular")
+                        Text(t.viewHolderProfile)
                     }
                     val acompanante = servicio.acompananteId?.let {
                         remember(estado.equipo) { vm.obtenerPersona(it) }
                     }
                     if (acompanante != null) {
-                        Text("Acompañante: ${acompanante.nombre}", fontSize = 14.sp)
+                        Text(t.companion(acompanante.nombre), fontSize = 14.sp)
                     }
                 }
             }
@@ -182,7 +184,7 @@ fun EjecucionScreen(
                 OutlinedTextField(
                     value = ubicacion,
                     onValueChange = { ubicacion = it },
-                    label = { Text("Ubicación de inicio (texto manual)") },
+                    label = { Text(t.startLocation) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -192,7 +194,7 @@ fun EjecucionScreen(
                 OutlinedTextField(
                     value = observaciones,
                     onValueChange = { observaciones = it },
-                    label = { Text("Observaciones del servicio (opcional)") },
+                    label = { Text(t.serviceNotes) },
                     minLines = 2,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -201,12 +203,12 @@ fun EjecucionScreen(
 
             if (puedeIniciar) {
                 BotonPrincipal(
-                    texto = "Registrar check-in",
+                    texto = t.registerCheckin,
                     icono = Icons.Default.PlayArrow,
                     cargando = enviando,
                     onClick = {
                         if (ubicacion.isBlank()) {
-                            alcance.launch { snackbar.showSnackbar("Ingresa la ubicación de inicio.") }
+                            alcance.launch { snackbar.showSnackbar(t.enterStartLocation) }
                         } else {
                             enviando = true
                             vm.registrarCheckIn(servicio.id, ubicacion, observaciones)
@@ -216,7 +218,10 @@ fun EjecucionScreen(
                 )
             } else if (servicio.estado == EstadoServicio.CONFIRMADA && servicio.inicioEn == null) {
                 Text(
-                    "El check-in se habilita 15 minutos antes (${servicio.inicioProgramado.minusMinutes(15).format(DateTimeFormatter.ofPattern("HH:mm"))}).",
+                    t.checkinEnabled(
+                        servicio.inicioProgramado.minusMinutes(15)
+                            .format(DateTimeFormatter.ofPattern("HH:mm"))
+                    ),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -224,7 +229,7 @@ fun EjecucionScreen(
 
             if (puedeTerminar) {
                 BotonPrincipal(
-                    texto = "Registrar check-out",
+                    texto = t.registerCheckout,
                     icono = Icons.Default.Check,
                     cargando = enviando,
                     onClick = {
@@ -237,7 +242,7 @@ fun EjecucionScreen(
 
             if (servicio.estado == EstadoServicio.COMPLETADA) {
                 Text(
-                    "Servicio completado. Ya está disponible en el historial.",
+                    t.serviceCompleted,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.secondary

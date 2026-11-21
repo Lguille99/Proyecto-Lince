@@ -9,11 +9,17 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.apiavengers.lince.navigation.AppNavigation
+import cl.apiavengers.lince.ui.idioma.IdiomaApp
+import cl.apiavengers.lince.ui.idioma.LocalTextos
+import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
+import cl.apiavengers.lince.ui.idioma.TextosEspanol
+import cl.apiavengers.lince.ui.idioma.TextosIngles
 import cl.apiavengers.lince.ui.theme.ModoTema
 import cl.apiavengers.lince.ui.theme.PreferenciaTema
 import cl.apiavengers.lince.ui.theme.TemaLince
@@ -21,6 +27,7 @@ import cl.apiavengers.lince.ui.theme.TemaLince
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         PreferenciaTema.iniciar(this)
+        PreferenciaIdioma.iniciar(this)
         val sistemaOscuro = (resources.configuration.uiMode and
             Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val splashOscuro = when (PreferenciaTema.modo.value) {
@@ -34,17 +41,21 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val modo by PreferenciaTema.modo.collectAsStateWithLifecycle()
+            val idioma by PreferenciaIdioma.idioma.collectAsStateWithLifecycle()
+            val textos = if (idioma == IdiomaApp.INGLES) TextosIngles else TextosEspanol
             val oscuro = when (modo) {
                 ModoTema.SISTEMA -> isSystemInDarkTheme()
                 ModoTema.CLARO -> false
                 ModoTema.OSCURO -> true
             }
-            TemaLince(darkTheme = oscuro) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    AppNavigation()
+            CompositionLocalProvider(LocalTextos provides textos) {
+                TemaLince(darkTheme = oscuro) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        AppNavigation()
+                    }
                 }
             }
         }

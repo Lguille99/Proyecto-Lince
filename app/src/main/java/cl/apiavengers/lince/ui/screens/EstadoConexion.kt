@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.viewmodel.ConexionViewModel
 
 @Composable
@@ -20,12 +21,13 @@ fun EstadoConexion(
     vm: ConexionViewModel = viewModel()
 ) {
     val conectado by vm.conectado.collectAsStateWithLifecycle()
+    val t = textos()
     Surface(color = if (conectado) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer) {
         Text(
             when {
-                !conectado -> "Sin Internet · trabajando en modo local"
-                modoRemoto -> "Con Internet · conectado a Supabase"
-                else -> "Con Internet · demostración local"
+                !conectado -> t.connectionOffline
+                modoRemoto -> t.connectionRemote
+                else -> t.connectionLocal
             },
             modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelMedium

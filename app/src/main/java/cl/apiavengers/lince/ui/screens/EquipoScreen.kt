@@ -29,6 +29,7 @@ import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
 import cl.apiavengers.lince.ui.components.ChipIdioma
 import cl.apiavengers.lince.ui.components.EstadoVacio
+import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -43,14 +44,17 @@ fun EquipoScreen(
     onNavigateToPerfil: () -> Unit = {}
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
+    val t = textos()
     var busqueda by remember { mutableStateOf("") }
-    val equipo = estado.equipo.filter { it.nombre.contains(busqueda, true) || it.rol.etiqueta.contains(busqueda, true) }
+    val equipo = estado.equipo.filter {
+        it.nombre.contains(busqueda, true) || t.rol(it.rol).contains(busqueda, true)
+    }
 
     Scaffold(
         topBar = {
             BarraSuperior(
-                titulo = "Equipo",
-                subtitulo = "Guías y conductores disponibles",
+                titulo = t.teamTitle,
+                subtitulo = t.teamSubtitle,
                 onBack = onBack
             )
         },
@@ -75,7 +79,7 @@ fun EquipoScreen(
             OutlinedTextField(
                 value = busqueda,
                 onValueChange = { busqueda = it },
-                label = { Text("Buscar por nombre o rol") },
+                label = { Text(t.teamSearch) },
                 singleLine = true,
                 shape = RoundedCornerShape(50),
                 modifier = Modifier.fillMaxWidth()
@@ -89,10 +93,10 @@ fun EquipoScreen(
             }
             if (equipo.isEmpty()) {
                 EstadoVacio(
-                    titulo = "Sin coincidencias",
-                    mensaje = "No se encontraron personas con ese criterio.",
+                    titulo = t.teamNoMatches,
+                    mensaje = t.teamNoCriteria,
                     icono = Icons.Default.Person,
-                    accionTexto = if (busqueda.isNotBlank()) "Limpiar búsqueda" else null,
+                    accionTexto = if (busqueda.isNotBlank()) t.clearSearch else null,
                     onAccion = if (busqueda.isNotBlank()) ({ busqueda = "" }) else null
                 )
             }
@@ -102,6 +106,7 @@ fun EquipoScreen(
 
 @Composable
 fun TarjetaPersona(persona: Usuario, calificacion: Double?, onClick: () -> Unit) {
+    val t = textos()
     OutlinedCard(
         shape = RoundedCornerShape(18.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -128,7 +133,7 @@ fun TarjetaPersona(persona: Usuario, calificacion: Double?, onClick: () -> Unit)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(persona.nombre, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text("${persona.rol.etiqueta} · ${persona.zona}", fontSize = 12.sp)
+                Text("${t.rol(persona.rol)} · ${persona.zona}", fontSize = 12.sp)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
