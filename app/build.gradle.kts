@@ -23,6 +23,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "SOUTHBOUND_API_KEY", "\"${valorConfiguracion("SOUTHBOUND_API_KEY")}\"")
         buildConfigField("String", "SUPABASE_URL", "\"${valorConfiguracion("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_KEY", "\"${valorConfiguracion("SUPABASE_KEY")}\"")
     }

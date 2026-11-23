@@ -32,6 +32,8 @@ import cl.apiavengers.lince.ui.screens.ResumenCoordinacionScreen
 import cl.apiavengers.lince.ui.screens.ServicioDetalleScreen
 import cl.apiavengers.lince.ui.screens.ServiciosScreen
 import cl.apiavengers.lince.viewmodel.DisponibilidadViewModel
+import cl.apiavengers.lince.viewmodel.SouthboundViewModel
+import cl.apiavengers.lince.ui.screens.SouthboundScreen
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -144,12 +146,38 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                     } else {
                         ServiciosScreen(
                             vm = vm,
+                            onSouthbound = { navController.navigate("southbound") },
                             onBack = { navController.popBackStack() },
                             onServicioClick = { id -> navController.navigate("servicio_detalle/$id") },
                             onEquipoClick = { navController.navigate("equipo") { launchSingleTop = true } },
                             onNavigateToInicio = irInicio,
                             onNavigateToAgenda = irAgenda,
                             onNavigateToPerfil = irPerfil
+                        )
+                    }
+                }
+
+                composable("southbound") {
+                    if (estado.usuario != null) {
+                        val southboundVm: SouthboundViewModel = viewModel()
+                        SouthboundScreen(
+                            vm = southboundVm,
+                            onBack = { navController.popBackStack() },
+                            onDetalle = { navController.navigate("southbound/$it") }
+                        )
+                    }
+                }
+
+                composable(
+                    "southbound/{id}",
+                    arguments = listOf(navArgument("id") { type = NavType.IntType })
+                ) { entrada ->
+                    if (estado.usuario != null) {
+                        val southboundVm: SouthboundViewModel = viewModel()
+                        SouthboundScreen(
+                            vm = southboundVm,
+                            servicioId = entrada.arguments?.getInt("id"),
+                            onBack = { navController.popBackStack() }
                         )
                     }
                 }
