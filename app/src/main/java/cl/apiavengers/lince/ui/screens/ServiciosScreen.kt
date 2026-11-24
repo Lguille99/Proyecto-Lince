@@ -36,6 +36,7 @@ fun ServiciosScreen(
     onBack: () -> Unit,
     onServicioClick: (String) -> Unit,
     onEquipoClick: () -> Unit,
+    onSouthbound: () -> Unit = {},
     onNavigateToInicio: () -> Unit = {},
     onNavigateToAgenda: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
@@ -82,6 +83,9 @@ fun ServiciosScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Button(onClick = onSouthbound, modifier = Modifier.fillMaxWidth()) {
+                Text(textoSouthbound("Consultar servicios Southbound", "Browse Southbound services"))
+            }
             OutlinedTextField(
                 value = busqueda,
                 onValueChange = { busqueda = it },

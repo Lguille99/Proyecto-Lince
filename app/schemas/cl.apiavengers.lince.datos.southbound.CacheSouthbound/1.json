@@ -1,0 +1,43 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "1e44cc66e8e50e24cdc75e48ffff7cdf",
+    "entities": [
+      {
+        "tableName": "consultas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ruta` TEXT NOT NULL, `contenido` TEXT NOT NULL, `guardadoEn` INTEGER NOT NULL, PRIMARY KEY(`ruta`))",
+        "fields": [
+          {
+            "fieldPath": "ruta",
+            "columnName": "ruta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contenido",
+            "columnName": "contenido",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "guardadoEn",
+            "columnName": "guardadoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ruta"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1e44cc66e8e50e24cdc75e48ffff7cdf')"
+    ]
+  }
+}
