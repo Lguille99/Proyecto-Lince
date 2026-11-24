@@ -112,7 +112,7 @@ object DatosPrueba {
                 hotelRecogida = "Hotel de prueba", tarifa = 30_000, pasajeros = 1,
                 resenaHistorica = "Traslado nocturno; confirmar vuelo y terminal antes de salir."
             )
-        )
+        ).map(::conGeocerca)
     }
 
     fun historial(hoy: LocalDate): List<Servicio> {
@@ -175,6 +175,28 @@ object DatosPrueba {
                 inicioPor = "DRV-001", ubicacionInicio = "Aeropuerto de prueba", puntaje = 4,
                 calificadoPor = "COO-003", calificadoEn = sello(hoy.minusDays(6), "23:30")
             )
+        ).map(::conGeocerca)
+    }
+
+    private val coordenadasRecogida = mapOf(
+        "Hotel Plaza" to (-33.4425 to -70.6540),
+        "Plaza de prueba" to (-33.4372 to -70.6506),
+        "Hotel de prueba" to (-33.4263 to -70.6166),
+        "Museo de prueba" to (-33.4379 to -70.6328),
+        "Hotel Marina" to (-33.0366 to -71.6260),
+        "Terminal de prueba" to (-33.4521 to -70.6790),
+        "Centro de prueba" to (-33.4410 to -70.6400),
+        "Aeropuerto de prueba" to (-33.3930 to -70.7858)
+    )
+
+    private fun conGeocerca(servicio: Servicio): Servicio {
+        val punto = coordenadasRecogida[servicio.hotelRecogida]
+            ?: coordenadasRecogida[servicio.recogida]
+            ?: return servicio
+        return servicio.copy(
+            latitudRecogida = punto.first,
+            longitudRecogida = punto.second,
+            radioGeocercaMetros = RADIO_GEOCERCA_PREDETERMINADO_METROS
         )
     }
 }

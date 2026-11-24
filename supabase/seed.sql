@@ -81,6 +81,20 @@ on conflict(codigo) do update set
     pasajeros = excluded.pasajeros,
     dias_tour = excluded.dias_tour;
 
+update public.servicios s
+set latitud_recogida = v.latitud,
+    longitud_recogida = v.longitud,
+    radio_geocerca_metros = 150
+from (values
+    ('LIN-001', -33.4425, -70.6540),
+    ('LIN-002', -33.4425, -70.6540),
+    ('LIN-003', -33.4425, -70.6540),
+    ('LIN-004', -33.4372, -70.6506),
+    ('LIN-005', -33.4379, -70.6328),
+    ('LIN-006', -33.4263, -70.6166)
+) as v(codigo, latitud, longitud)
+where s.codigo = v.codigo;
+
 insert into public.asignaciones(
     servicio_id, usuario_id, acompanante_id, estado, motivo_rechazo, respondido_en
 )

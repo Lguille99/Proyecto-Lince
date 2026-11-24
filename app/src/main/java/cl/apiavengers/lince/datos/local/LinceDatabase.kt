@@ -14,7 +14,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         EstadoServicioEntity::class,
         PerfilEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class LinceDatabase : RoomDatabase() {
@@ -63,6 +63,23 @@ abstract class LinceDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRACION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN ubicacionTermino TEXT")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN latitudInicio REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN longitudInicio REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN precisionInicioMetros REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN distanciaInicioMetros REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN latitudTermino REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN longitudTermino REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN precisionTerminoMetros REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN ultimaLatitud REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN ultimaLongitud REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN ultimaPrecisionMetros REAL")
+                db.execSQL("ALTER TABLE estado_servicios ADD COLUMN ultimaUbicacionEn TEXT")
+            }
+        }
+
         @Volatile private var instancia: LinceDatabase? = null
 
         fun obtener(context: Context): LinceDatabase = instancia ?: synchronized(this) {
@@ -70,7 +87,7 @@ abstract class LinceDatabase : RoomDatabase() {
                 context.applicationContext,
                 LinceDatabase::class.java,
                 "lince.db"
-            ).addMigrations(MIGRACION_1_2, MIGRACION_2_3).build().also { instancia = it }
+            ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4).build().also { instancia = it }
         }
     }
 }

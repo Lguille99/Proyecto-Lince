@@ -49,6 +49,21 @@ data class Servicio(
     val terminoEn: String? = null,
     val inicioPor: String? = null,
     val ubicacionInicio: String? = null,
+    val ubicacionTermino: String? = null,
+    val latitudRecogida: Double? = null,
+    val longitudRecogida: Double? = null,
+    val radioGeocercaMetros: Int = RADIO_GEOCERCA_PREDETERMINADO_METROS,
+    val latitudInicio: Double? = null,
+    val longitudInicio: Double? = null,
+    val precisionInicioMetros: Double? = null,
+    val distanciaInicioMetros: Double? = null,
+    val latitudTermino: Double? = null,
+    val longitudTermino: Double? = null,
+    val precisionTerminoMetros: Double? = null,
+    val ultimaLatitud: Double? = null,
+    val ultimaLongitud: Double? = null,
+    val ultimaPrecisionMetros: Double? = null,
+    val ultimaUbicacionEn: String? = null,
     val observaciones: String = "",
     val puntaje: Int? = null,
     val calificadoPor: String? = null,
@@ -63,6 +78,9 @@ data class Servicio(
         asignadoA == usuarioId || acompananteId == usuarioId
 
     fun esTitular(usuarioId: String): Boolean = asignadoA == usuarioId
+
+    val tieneGeocerca: Boolean
+        get() = latitudRecogida != null && longitudRecogida != null && radioGeocercaMetros > 0
 }
 
 data class ResumenCoordinador(

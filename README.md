@@ -8,7 +8,10 @@ Aplicación móvil académica para consultar, responder y ejecutar asignaciones 
 
 ## Estado del proyecto
 
+
+=======
 MVP Android implementado con datos ficticios y persistencia local en Room. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. La interfaz observa un `StateFlow` único y muestra el estado de la conexión; la agenda permite elegir una fecha con `DatePickerDialog`. Cuando `SUPABASE_URL` y `SUPABASE_KEY` están configurados, la app usa Supabase Auth, PostgREST y RPC con RLS; si no hay configuración, red validada o el acceso remoto no está disponible, conserva el modo local. La base Room guarda estado, perfiles y disponibilidad, e importa una sola vez los datos locales anteriores en JSON. El dominio cuenta con 40 pruebas unitarias, la app con 15 pruebas Room/conectividad/API y la migración SQL con 43 comprobaciones PGlite.
+
 
 Las imágenes de `docs/diseno/interfaces` son la referencia de diseño utilizada para construir las pantallas.
 
@@ -96,7 +99,8 @@ Aplicar en orden en el SQL Editor del proyecto o con Supabase CLI:
 1. `supabase/migrations/202610190001_estructura.sql`
 2. `supabase/migrations/202610190002_permisos_y_operaciones.sql`
 3. `supabase/migrations/202610280001_mvp_supabase.sql`
-4. `supabase/seed.sql`
+4. `supabase/migrations/202611220001_geocercas_ubicacion.sql`
+5. `supabase/seed.sql`
 
 La migración `202610280001_mvp_supabase.sql` es aditiva: agrega acompañante, reasignación, calificaciones, ubicación de check-in, funciones y políticas RLS sin borrar datos existentes. La publicación de cambios en la base remota requiere permisos de administración; la publishable key de la app no permite ejecutar DDL.
 
@@ -139,7 +143,7 @@ npm install
 npm test
 ```
 
-La suite levanta PGlite, aplica las migraciones y el seed, y comprueba 43 reglas de negocio, permisos y trazabilidad.
+La suite levanta PGlite, aplica las migraciones y el seed, y comprueba 45 reglas de negocio, permisos y trazabilidad.
 
 ## Identidad visual
 

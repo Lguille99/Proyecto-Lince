@@ -102,7 +102,8 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                             onHistorial = { navController.navigate("historial") { launchSingleTop = true } },
                             onEquipo = { navController.navigate("equipo") { launchSingleTop = true } },
                             onPerfil = irPerfil,
-                            onCerrarSesion = cerrarSesion
+                            onCerrarSesion = cerrarSesion,
+                            onServicioClick = { id -> navController.navigate("servicio_detalle/$id") }
                         )
                     }
                 }

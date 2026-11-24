@@ -2,40 +2,45 @@
 
 package cl.apiavengers.lince.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cl.apiavengers.lince.datos.UbicacionGps
 import cl.apiavengers.lince.modelo.EstadoServicio
-import cl.apiavengers.lince.ui.components.BarraInferior
-import cl.apiavengers.lince.ui.components.BarraSuperior
-import cl.apiavengers.lince.ui.components.BotonPrincipal
-import cl.apiavengers.lince.ui.components.ChipEstadoServicio
+import cl.apiavengers.lince.modelo.Ubicacion
+import cl.apiavengers.lince.modelo.evaluarLlegada
+import cl.apiavengers.lince.ui.components.*
+import cl.apiavengers.lince.ui.components.MapaUbicacion
+import cl.apiavengers.lince.ui.components.MarcaMapa
 import cl.apiavengers.lince.ui.fechaNumerica
 import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.selloFechaHora
 import cl.apiavengers.lince.viewmodel.LinceViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun EjecucionScreen(
@@ -54,16 +59,77 @@ fun EjecucionScreen(
     val servicio = remember(estado.servicios, estado.historial) { vm.obtenerServicio(servicioId) }
     val snackbar = remember { SnackbarHostState() }
     val alcance = rememberCoroutineScope()
-    var ubicacion by remember { mutableStateOf("") }
+    val contexto = LocalContext.current
+    val gps = remember(contexto) { UbicacionGps(contexto) }
+    var ubicacion by remember(servicio?.id) {
+        mutableStateOf(servicio?.hotelRecogida?.ifBlank { servicio.recogida }.orEmpty())
+    }
+    var ubicacionTermino by remember(servicio?.id) {
+        mutableStateOf(servicio?.destino.orEmpty())
+    }
     var observaciones by remember { mutableStateOf("") }
     var ahora by remember { mutableStateOf(LocalDateTime.now()) }
     var enviando by remember { mutableStateOf(false) }
+    var ubicacionActual by remember { mutableStateOf<Ubicacion?>(null) }
+    var cargandoUbicacion by remember { mutableStateOf(false) }
+    var errorUbicacion by remember { mutableStateOf<String?>(null) }
+
+    val obtenerUbicacion: suspend () -> Unit = {
+        cargandoUbicacion = true
+        errorUbicacion = null
+        try {
+            ubicacionActual = gps.obtenerUbicacion()
+        } catch (_: SecurityException) {
+            errorUbicacion = t.locationPermissionDenied
+        } catch (problema: Exception) {
+            errorUbicacion = t.traducir(problema.message) ?: t.locationUnavailable
+        } finally {
+            cargandoUbicacion = false
+        }
+    }
+
+    val lanzadorPermiso = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permisos ->
+        if (permisos.values.any { it } || gps.tienePermiso()) {
+            alcance.launch { obtenerUbicacion() }
+        } else {
+            errorUbicacion = t.locationPermissionDenied
+        }
+    }
+
+    val actualizarUbicacion: () -> Unit = {
+        if (gps.tienePermiso()) {
+            alcance.launch { obtenerUbicacion() }
+        } else {
+            lanzadorPermiso.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
+    LaunchedEffect(servicio?.id) {
+        val actual = servicio
+        if (actual != null &&
+            actual.estado == EstadoServicio.CONFIRMADA &&
+            actual.terminoEn == null &&
+            gps.tienePermiso()
+        ) {
+            obtenerUbicacion()
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
             delay(30_000)
             ahora = LocalDateTime.now()
         }
+    }
+    LaunchedEffect(estado.cargando) {
+        if (!estado.cargando) enviando = false
     }
     val mensaje = estado.mensaje
     LaunchedEffect(mensaje) {
@@ -98,8 +164,11 @@ fun EjecucionScreen(
         }
         val titular = remember(estado.equipo) { vm.obtenerPersona(servicio.asignadoA) }
         val inicioPermitido = servicio.inicioProgramado.minusMinutes(15)
+        val evaluacion = ubicacionActual?.let { evaluarLlegada(servicio, it, ahora) }
         val puedeIniciar = servicio.estado == EstadoServicio.CONFIRMADA &&
-            servicio.inicioEn == null && !ahora.isBefore(inicioPermitido)
+            servicio.inicioEn == null &&
+            !ahora.isBefore(inicioPermitido) &&
+            evaluacion?.dentro == true
         val puedeTerminar = servicio.inicioEn != null && servicio.terminoEn == null
 
         Column(
@@ -148,7 +217,9 @@ fun EjecucionScreen(
                     )
                     Hito(
                         titulo = "Check-out",
-                        detalle = servicio.terminoEn?.let { selloFechaHora(it) } ?: t.pending,
+                        detalle = servicio.terminoEn?.let {
+                            "${selloFechaHora(it)} · ${servicio.ubicacionTermino.orEmpty()}"
+                        } ?: t.pending,
                         completado = servicio.terminoEn != null
                     )
                     if (servicio.observaciones.isNotBlank()) {
@@ -180,6 +251,42 @@ fun EjecucionScreen(
                 }
             }
 
+            TarjetaUbicacion(
+                servicio = servicio,
+                ubicacion = ubicacionActual,
+                evaluacion = evaluacion,
+                cargando = cargandoUbicacion,
+                error = errorUbicacion,
+                tienePermiso = gps.tienePermiso(),
+                onActualizar = actualizarUbicacion
+            )
+
+            OutlinedCard(
+                shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(t.mapTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    MapaUbicacion(
+                        centroLatitud = servicio.latitudRecogida,
+                        centroLongitud = servicio.longitudRecogida,
+                        radioMetros = servicio.radioGeocercaMetros,
+                        marcadores = buildList {
+                            if (servicio.tieneGeocerca) {
+                                add(MarcaMapa(servicio.latitudRecogida!!, servicio.longitudRecogida!!, t.mapPickup))
+                            }
+                            ubicacionActual?.let {
+                                add(MarcaMapa(it.latitud, it.longitud, t.mapCurrentLocation))
+                            }
+                            if (servicio.ultimaLatitud != null && servicio.ultimaLongitud != null) {
+                                add(MarcaMapa(servicio.ultimaLatitud!!, servicio.ultimaLongitud!!, t.lastPositionTitle))
+                            }
+                        }
+                    )
+                }
+            }
+
             if (servicio.inicioEn == null) {
                 OutlinedTextField(
                     value = ubicacion,
@@ -200,6 +307,16 @@ fun EjecucionScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            if (puedeTerminar) {
+                OutlinedTextField(
+                    value = ubicacionTermino,
+                    onValueChange = { ubicacionTermino = it },
+                    label = { Text(t.dropoffLocation) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             if (puedeIniciar) {
                 BotonPrincipal(
@@ -207,35 +324,109 @@ fun EjecucionScreen(
                     icono = Icons.Default.PlayArrow,
                     cargando = enviando,
                     onClick = {
-                        if (ubicacion.isBlank()) {
-                            alcance.launch { snackbar.showSnackbar(t.enterStartLocation) }
-                        } else {
-                            enviando = true
-                            vm.registrarCheckIn(servicio.id, ubicacion, observaciones)
-                            enviando = false
+                        val posicion = ubicacionActual
+                        val revision = posicion?.let { evaluarLlegada(servicio, it, LocalDateTime.now()) }
+                        when {
+                            posicion == null -> {
+                                alcance.launch { snackbar.showSnackbar(t.locationRequired) }
+                                actualizarUbicacion()
+                            }
+                            revision == null -> {
+                                alcance.launch { snackbar.showSnackbar(t.locationNoGeofence) }
+                            }
+                            !revision.dentro -> {
+                                alcance.launch {
+                                    snackbar.showSnackbar(
+                                        t.locationOutsideValue(
+                                            revision.distanciaMetros.roundToInt(),
+                                            revision.radioMetros
+                                        )
+                                    )
+                                }
+                            }
+                            else -> {
+                                enviando = true
+                                vm.registrarCheckIn(
+                                    servicioId = servicio.id,
+                                    ubicacion = ubicacion.ifBlank { servicio.hotelRecogida },
+                                    observaciones = observaciones,
+                                    posicion = posicion
+                                )
+                            }
                         }
                     }
                 )
             } else if (servicio.estado == EstadoServicio.CONFIRMADA && servicio.inicioEn == null) {
                 Text(
-                    t.checkinEnabled(
-                        servicio.inicioProgramado.minusMinutes(15)
-                            .format(DateTimeFormatter.ofPattern("HH:mm"))
-                    ),
+                    if (!ahora.isBefore(inicioPermitido)) t.locationRequired else
+                        t.checkinEnabled(
+                            servicio.inicioProgramado.minusMinutes(15)
+                                .format(DateTimeFormatter.ofPattern("HH:mm"))
+                        ),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             if (puedeTerminar) {
+                val ultimaLatitud = servicio.ultimaLatitud
+                val ultimaLongitud = servicio.ultimaLongitud
+                if (ultimaLatitud != null && ultimaLongitud != null) {
+                    OutlinedCard(
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(t.lastPositionTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                t.lastPositionValue(
+                                    formatoCoordenada(ultimaLatitud),
+                                    formatoCoordenada(ultimaLongitud),
+                                    servicio.ultimaPrecisionMetros?.roundToInt()
+                                        ?.let(t::locationAccuracyValue) ?: "—",
+                                    selloFechaHora(servicio.ultimaUbicacionEn)
+                                ),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                BotonSecundario(
+                    texto = t.reportLocation,
+                    cargando = enviando,
+                    onClick = {
+                        val posicion = ubicacionActual
+                        if (posicion == null) {
+                            actualizarUbicacion()
+                        } else {
+                            enviando = true
+                            vm.reportarUbicacion(servicio.id, posicion)
+                        }
+                    }
+                )
                 BotonPrincipal(
-                    texto = t.registerCheckout,
+                    texto = t.checkoutWithLocation,
                     icono = Icons.Default.Check,
                     cargando = enviando,
                     onClick = {
-                        enviando = true
-                        vm.registrarCheckOut(servicio.id, observaciones)
-                        enviando = false
+                        val posicion = ubicacionActual
+                        if (posicion == null) {
+                            alcance.launch { snackbar.showSnackbar(t.locationRequired) }
+                            actualizarUbicacion()
+                        } else {
+                            enviando = true
+                            vm.registrarCheckOut(
+                                servicioId = servicio.id,
+                                observaciones = observaciones,
+                                posicion = posicion,
+                                ubicacionTermino = ubicacionTermino.ifBlank { servicio.destino }
+                            )
+                        }
                     }
                 )
             }
@@ -248,6 +439,127 @@ fun EjecucionScreen(
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun TarjetaUbicacion(
+    servicio: cl.apiavengers.lince.modelo.Servicio,
+    ubicacion: Ubicacion?,
+    evaluacion: cl.apiavengers.lince.modelo.EvaluacionGeocerca?,
+    cargando: Boolean,
+    error: String?,
+    tienePermiso: Boolean,
+    onActualizar: () -> Unit
+) {
+    val t = textos()
+    OutlinedCard(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(t.locationTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "${t.geofenceRadius}: ${t.geofenceRadiusValue(servicio.radioGeocercaMetros)}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                servicio.hotelRecogida.ifBlank { servicio.recogida },
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (!servicio.tieneGeocerca) {
+                Text(t.locationNoGeofence, fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+            } else if (cargando) {
+                Text(t.locationGetting, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else if (ubicacion != null) {
+                Text(t.locationGps, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    t.locationCoordinates(
+                        formatoCoordenada(ubicacion.latitud),
+                        formatoCoordenada(ubicacion.longitud)
+                    ),
+                    fontSize = 13.sp
+                )
+                Text(
+                    "${t.locationAccuracy}: ${ubicacion.precisionMetros?.roundToInt()?.let(t::locationAccuracyValue) ?: "—"}",
+                    fontSize = 13.sp
+                )
+                if (ubicacion.obtenidaEn != null) {
+                    Text(
+                        "${t.locationTime}: ${selloFechaHora(ubicacion.obtenidaEn)}",
+                        fontSize = 13.sp
+                    )
+                }
+                if (evaluacion != null) {
+                    Text(
+                        "${t.locationDistance}: ${t.locationDistanceValue(evaluacion.distanciaMetros.roundToInt())}",
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        if (evaluacion.dentro) {
+                            t.locationInsideValue(
+                                evaluacion.distanciaMetros.roundToInt(),
+                                evaluacion.radioMetros
+                            )
+                        } else {
+                            t.locationOutsideValue(
+                                evaluacion.distanciaMetros.roundToInt(),
+                                evaluacion.radioMetros
+                            )
+                        },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (evaluacion.dentro) MaterialTheme.colorScheme.secondary
+                        else MaterialTheme.colorScheme.error
+                    )
+                    if (servicio.inicioEn == null) {
+                        if (evaluacion.tardanza) {
+                            Text(
+                                t.arrivalLateValue(abs(evaluacion.minutosAntes).toInt()),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else {
+                            Text(
+                                t.arrivalOnTimeValue(evaluacion.minutosAntes.toInt().coerceAtLeast(0)),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                    if (evaluacion.precisionBaja) {
+                        Text(
+                            "${t.locationAccuracy}: " +
+                                (evaluacion.precisionMetros?.roundToInt()
+                                    ?.let(t::locationAccuracyValue) ?: ""),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            } else if (error != null) {
+                Text(error, fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+            } else {
+                Text(t.locationUnavailable, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            BotonSecundario(
+                texto = if (tienePermiso) t.locationRefresh else t.locationRequestPermission,
+                onClick = onActualizar
+            )
         }
     }
 }
@@ -280,3 +592,6 @@ private fun Hito(titulo: String, detalle: String, completado: Boolean) {
         }
     }
 }
+
+private fun formatoCoordenada(valor: Double): String =
+    String.format(Locale.US, "%.5f", valor)

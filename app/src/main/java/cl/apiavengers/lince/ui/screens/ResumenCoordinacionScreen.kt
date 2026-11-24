@@ -3,6 +3,7 @@
 package cl.apiavengers.lince.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -26,7 +27,10 @@ import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.components.BotonSecundario
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
 import cl.apiavengers.lince.ui.idioma.textos
+import cl.apiavengers.lince.ui.selloFechaHora
 import cl.apiavengers.lince.viewmodel.LinceViewModel
+import java.util.Locale
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
 @Composable
@@ -36,7 +40,8 @@ fun ResumenCoordinacionScreen(
     onHistorial: () -> Unit,
     onEquipo: () -> Unit,
     onPerfil: () -> Unit,
-    onCerrarSesion: () -> Unit
+    onCerrarSesion: () -> Unit,
+    onServicioClick: (String) -> Unit
 ) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
     val t = textos()
@@ -178,6 +183,58 @@ fun ResumenCoordinacionScreen(
                         }
                     }
                     TextButton(onClick = onEquipo) { Text(t.viewFullTeam) }
+                }
+            }
+
+            val enEjecucion = estado.servicios.filter {
+                it.inicioEn != null && it.terminoEn == null
+            }
+            if (enEjecucion.isNotEmpty()) {
+                OutlinedCard(
+                    shape = RoundedCornerShape(18.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(t.lastPositionTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        enEjecucion.forEach { servicio ->
+                            val persona = estado.equipo.find { it.id == servicio.asignadoA }
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                                    .clickable { onServicioClick(servicio.id) }
+                                    .padding(vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    "${servicio.titulo} · ${persona?.nombre ?: t.unassigned}",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                val latitud = servicio.ultimaLatitud
+                                val longitud = servicio.ultimaLongitud
+                                if (latitud != null && longitud != null) {
+                                    Text(
+                                        t.lastPositionValue(
+                                            String.format(Locale.US, "%.5f", latitud),
+                                            String.format(Locale.US, "%.5f", longitud),
+                                            servicio.ultimaPrecisionMetros?.roundToInt()
+                                                ?.let(t::locationAccuracyValue) ?: "—",
+                                            selloFechaHora(servicio.ultimaUbicacionEn)
+                                        ),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                } else {
+                                    Text(
+                                        t.lastPositionNone,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        }
+                    }
                 }
             }
 

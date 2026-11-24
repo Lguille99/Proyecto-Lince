@@ -21,6 +21,7 @@ import cl.apiavengers.lince.modelo.LinceUiState
 import cl.apiavengers.lince.modelo.ResumenCoordinador
 import cl.apiavengers.lince.modelo.Rol
 import cl.apiavengers.lince.modelo.Servicio
+import cl.apiavengers.lince.modelo.Ubicacion
 import cl.apiavengers.lince.modelo.Usuario
 import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import java.time.LocalDate
@@ -178,28 +179,51 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun registrarCheckIn(servicioId: String, ubicacion: String, observaciones: String = "") {
+    fun registrarCheckIn(
+        servicioId: String,
+        ubicacion: String,
+        observaciones: String = "",
+        posicion: Ubicacion? = null
+    ) {
         if (remoto == null) {
             accionLocal(t.msgCheckinRegistered) { repositorio, usuario ->
-                repositorio.registrarCheckIn(servicioId, ubicacion, observaciones)
+                repositorio.registrarCheckIn(servicioId, ubicacion, observaciones, posicion)
                 usuario
             }
         } else {
             accionRemota(t.msgCheckinRegistered) { cliente ->
-                cliente.registrarCheckIn(servicioId, ubicacion, observaciones)
+                cliente.registrarCheckIn(servicioId, ubicacion, observaciones, posicion)
             }
         }
     }
 
-    fun registrarCheckOut(servicioId: String, observaciones: String = "") {
+    fun registrarCheckOut(
+        servicioId: String,
+        observaciones: String = "",
+        posicion: Ubicacion? = null,
+        ubicacionTermino: String = ""
+    ) {
         if (remoto == null) {
             accionLocal(t.msgServiceFinished) { repositorio, usuario ->
-                repositorio.registrarCheckOut(servicioId, observaciones)
+                repositorio.registrarCheckOut(servicioId, observaciones, posicion, ubicacionTermino)
                 usuario
             }
         } else {
             accionRemota(t.msgServiceFinished) { cliente ->
-                cliente.registrarCheckOut(servicioId, observaciones)
+                cliente.registrarCheckOut(servicioId, observaciones, posicion, ubicacionTermino)
+            }
+        }
+    }
+
+    fun reportarUbicacion(servicioId: String, posicion: Ubicacion) {
+        if (remoto == null) {
+            accionLocal(t.msgLocationReported) { repositorio, usuario ->
+                repositorio.reportarUbicacion(servicioId, posicion)
+                usuario
+            }
+        } else {
+            accionRemota(t.msgLocationReported) { cliente ->
+                cliente.reportarUbicacion(servicioId, posicion)
             }
         }
     }

@@ -5,8 +5,10 @@ import cl.apiavengers.lince.modelo.Disponibilidad
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Idioma
 import cl.apiavengers.lince.modelo.Modalidad
+import cl.apiavengers.lince.modelo.RADIO_GEOCERCA_PREDETERMINADO_METROS
 import cl.apiavengers.lince.modelo.Rol
 import cl.apiavengers.lince.modelo.Servicio
+import cl.apiavengers.lince.modelo.Ubicacion
 import cl.apiavengers.lince.modelo.Usuario
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -196,22 +198,50 @@ class ClienteSupabase {
         rpc("responder_asignacion", cuerpo)
     }
 
-    suspend fun registrarCheckIn(servicioId: String, ubicacion: String, observaciones: String) {
+    suspend fun registrarCheckIn(
+        servicioId: String,
+        ubicacion: String,
+        observaciones: String,
+        posicion: Ubicacion?
+    ) {
         rpc(
             "registrar_check_in",
             JSONObject()
                 .put("p_asignacion", asignacion(servicioId))
                 .put("p_ubicacion", ubicacion.trim())
                 .put("p_observaciones", observaciones.trim())
+                .put("p_latitud", posicion?.latitud ?: JSONObject.NULL)
+                .put("p_longitud", posicion?.longitud ?: JSONObject.NULL)
+                .put("p_precision", posicion?.precisionMetros ?: JSONObject.NULL)
         )
     }
 
-    suspend fun registrarCheckOut(servicioId: String, observaciones: String) {
+    suspend fun registrarCheckOut(
+        servicioId: String,
+        observaciones: String,
+        posicion: Ubicacion?,
+        ubicacionTermino: String
+    ) {
         rpc(
             "registrar_check_out",
             JSONObject()
                 .put("p_asignacion", asignacion(servicioId))
                 .put("p_observaciones", observaciones.trim())
+                .put("p_ubicacion_termino", ubicacionTermino.trim())
+                .put("p_latitud", posicion?.latitud ?: JSONObject.NULL)
+                .put("p_longitud", posicion?.longitud ?: JSONObject.NULL)
+                .put("p_precision", posicion?.precisionMetros ?: JSONObject.NULL)
+        )
+    }
+
+    suspend fun reportarUbicacion(servicioId: String, posicion: Ubicacion) {
+        rpc(
+            "reportar_ubicacion",
+            JSONObject()
+                .put("p_asignacion", asignacion(servicioId))
+                .put("p_latitud", posicion.latitud)
+                .put("p_longitud", posicion.longitud)
+                .put("p_precision", posicion.precisionMetros ?: JSONObject.NULL)
         )
     }
 
@@ -441,6 +471,22 @@ class ClienteSupabase {
             terminoEn = terminoEn,
             inicioPor = if (inicioEn != null) perfilesPorUuid[usuarioId]?.id else null,
             ubicacionInicio = ejecucion?.let { texto(it, "ubicacion_inicio") },
+            ubicacionTermino = ejecucion?.let { texto(it, "ubicacion_termino") },
+            latitudRecogida = numero(servicio, "latitud_recogida"),
+            longitudRecogida = numero(servicio, "longitud_recogida"),
+            radioGeocercaMetros = servicio.optInt("radio_geocerca_metros", RADIO_GEOCERCA_PREDETERMINADO_METROS)
+                .takeIf { it > 0 } ?: RADIO_GEOCERCA_PREDETERMINADO_METROS,
+            latitudInicio = ejecucion?.let { numero(it, "latitud_inicio") },
+            longitudInicio = ejecucion?.let { numero(it, "longitud_inicio") },
+            precisionInicioMetros = ejecucion?.let { numero(it, "precision_inicio") },
+            distanciaInicioMetros = ejecucion?.let { numero(it, "distancia_inicio") },
+            latitudTermino = ejecucion?.let { numero(it, "latitud_termino") },
+            longitudTermino = ejecucion?.let { numero(it, "longitud_termino") },
+            precisionTerminoMetros = ejecucion?.let { numero(it, "precision_termino") },
+            ultimaLatitud = ejecucion?.let { numero(it, "ultima_latitud") },
+            ultimaLongitud = ejecucion?.let { numero(it, "ultima_longitud") },
+            ultimaPrecisionMetros = ejecucion?.let { numero(it, "ultima_precision") },
+            ultimaUbicacionEn = ejecucion?.let { fechaHora(texto(it, "ultima_ubicacion_en")) },
             observaciones = observacionesTermino.ifBlank { observacionesInicio },
             puntaje = calificacion?.optInt("puntaje", 0)?.takeIf { it in 1..5 },
             calificadoPor = calificacion?.let { codigoDe(texto(it, "calificado_por")) },
@@ -487,6 +533,12 @@ class ClienteSupabase {
     private fun texto(objeto: JSONObject, clave: String): String? {
         if (!objeto.has(clave) || objeto.isNull(clave)) return null
         return objeto.optString(clave)
+    }
+
+    private fun numero(objeto: JSONObject, clave: String): Double? {
+        if (!objeto.has(clave) || objeto.isNull(clave)) return null
+        val valor = objeto.optDouble(clave)
+        return if (valor.isNaN() || valor.isInfinite()) null else valor
     }
 
     private fun codigoDe(uuid: String?): String? = uuid?.let { perfilesPorUuid[it]?.id }
