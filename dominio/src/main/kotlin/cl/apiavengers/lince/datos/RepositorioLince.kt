@@ -129,7 +129,12 @@ class RepositorioLince(
         )
     }
 
-    fun registrarCheckIn(servicioId: String, ubicacion: String, observaciones: String = "") {
+    fun registrarCheckIn(
+        servicioId: String,
+        ubicacion: String,
+        observaciones: String = "",
+        posicion: Ubicacion? = null
+    ) {
         val usuario = exigirSesion()
         require(usuario.rol != Rol.COORDINADOR) { "Solo el personal asignado registra la ejecución." }
         val servicio = servicioInterno(servicioId)
@@ -143,17 +148,41 @@ class RepositorioLince(
         require(!ahora.isBefore(limite)) {
             "El check-in se habilita 15 minutos antes de la hora asignada."
         }
+        val evaluacion = posicion?.let { ubicacionGps ->
+            require(ubicacionGps.valida) { "La ubicación GPS recibida no es válida." }
+            require(servicio.tieneGeocerca) { "La geocerca del hotel de recogida no está configurada." }
+            val resultado = evaluarLlegada(servicio, ubicacionGps, ahora)
+                ?: throw IllegalArgumentException("La geocerca del hotel de recogida no está configurada.")
+            require(resultado.dentro) {
+                "Check-in fuera de la geocerca: estás a ${resultado.distanciaMetros.toInt()} m " +
+                    "y el radio permitido es de ${resultado.radioMetros} m."
+            }
+            resultado
+        }
         persistir(
             servicio.copy(
                 inicioEn = ahora.toString(),
                 inicioPor = usuario.id,
                 ubicacionInicio = lugar,
+                latitudInicio = posicion?.latitud,
+                longitudInicio = posicion?.longitud,
+                precisionInicioMetros = posicion?.precisionMetros,
+                distanciaInicioMetros = evaluacion?.distanciaMetros,
+                ultimaLatitud = posicion?.latitud,
+                ultimaLongitud = posicion?.longitud,
+                ultimaPrecisionMetros = posicion?.precisionMetros,
+                ultimaUbicacionEn = posicion?.let { ahora.toString() },
                 observaciones = observaciones.trim().take(500)
             )
         )
     }
 
-    fun registrarCheckOut(servicioId: String, observaciones: String = "") {
+    fun registrarCheckOut(
+        servicioId: String,
+        observaciones: String = "",
+        posicion: Ubicacion? = null,
+        ubicacionTermino: String = ""
+    ) {
         val usuario = exigirSesion()
         require(usuario.rol != Rol.COORDINADOR) { "Solo el personal asignado registra la ejecución." }
         val servicio = servicioInterno(servicioId)
@@ -164,11 +193,42 @@ class RepositorioLince(
         val ahora = LocalDateTime.now(reloj).withNano(0)
         val inicio = parsear(servicio.inicioEn) ?: ahora
         require(!ahora.isBefore(inicio)) { "El término no puede ser anterior al inicio." }
+        posicion?.let { require(it.valida) { "La ubicación GPS recibida no es válida." } }
+        val lugarTermino = ubicacionTermino.trim().ifBlank { servicio.destino }
         persistir(
             servicio.copy(
                 estado = EstadoServicio.COMPLETADA,
                 terminoEn = ahora.toString(),
+                ubicacionTermino = lugarTermino,
+                latitudTermino = posicion?.latitud,
+                longitudTermino = posicion?.longitud,
+                precisionTerminoMetros = posicion?.precisionMetros,
+                ultimaLatitud = posicion?.latitud ?: servicio.ultimaLatitud,
+                ultimaLongitud = posicion?.longitud ?: servicio.ultimaLongitud,
+                ultimaPrecisionMetros = posicion?.precisionMetros ?: servicio.ultimaPrecisionMetros,
+                ultimaUbicacionEn = posicion?.let { ahora.toString() } ?: servicio.ultimaUbicacionEn,
                 observaciones = if (observaciones.isBlank()) servicio.observaciones else observaciones.trim().take(500)
+            )
+        )
+    }
+
+    fun reportarUbicacion(servicioId: String, posicion: Ubicacion) {
+        val usuario = exigirSesion()
+        require(usuario.rol != Rol.COORDINADOR) { "Solo el personal asignado reporta su ubicación." }
+        require(posicion.valida) { "La ubicación GPS recibida no es válida." }
+        val servicio = servicioInterno(servicioId)
+        require(servicio.esTitular(usuario.id)) { "Solo el titular reporta su ubicación." }
+        require(servicio.estado == EstadoServicio.CONFIRMADA) { "El servicio debe estar confirmado." }
+        require(servicio.inicioEn != null && servicio.terminoEn == null) {
+            "Solo se reporta la ubicación durante un servicio activo."
+        }
+        val ahora = LocalDateTime.now(reloj).withNano(0)
+        persistir(
+            servicio.copy(
+                ultimaLatitud = posicion.latitud,
+                ultimaLongitud = posicion.longitud,
+                ultimaPrecisionMetros = posicion.precisionMetros,
+                ultimaUbicacionEn = ahora.toString()
             )
         )
     }
@@ -214,6 +274,18 @@ class RepositorioLince(
                 terminoEn = null,
                 inicioPor = null,
                 ubicacionInicio = null,
+                ubicacionTermino = null,
+                latitudInicio = null,
+                longitudInicio = null,
+                precisionInicioMetros = null,
+                distanciaInicioMetros = null,
+                latitudTermino = null,
+                longitudTermino = null,
+                precisionTerminoMetros = null,
+                ultimaLatitud = null,
+                ultimaLongitud = null,
+                ultimaPrecisionMetros = null,
+                ultimaUbicacionEn = null,
                 observaciones = "",
                 puntaje = null,
                 calificadoPor = null,
@@ -308,6 +380,18 @@ class RepositorioLince(
             terminoEn = cambio.terminoEn,
             inicioPor = cambio.inicioPor,
             ubicacionInicio = cambio.ubicacionInicio,
+            ubicacionTermino = cambio.ubicacionTermino,
+            latitudInicio = cambio.latitudInicio,
+            longitudInicio = cambio.longitudInicio,
+            precisionInicioMetros = cambio.precisionInicioMetros,
+            distanciaInicioMetros = cambio.distanciaInicioMetros,
+            latitudTermino = cambio.latitudTermino,
+            longitudTermino = cambio.longitudTermino,
+            precisionTerminoMetros = cambio.precisionTerminoMetros,
+            ultimaLatitud = cambio.ultimaLatitud,
+            ultimaLongitud = cambio.ultimaLongitud,
+            ultimaPrecisionMetros = cambio.ultimaPrecisionMetros,
+            ultimaUbicacionEn = cambio.ultimaUbicacionEn,
             observaciones = cambio.observaciones,
             puntaje = cambio.puntaje,
             calificadoPor = cambio.calificadoPor,
@@ -343,6 +427,18 @@ class RepositorioLince(
             terminoEn = servicio.terminoEn,
             inicioPor = servicio.inicioPor,
             ubicacionInicio = servicio.ubicacionInicio,
+            ubicacionTermino = servicio.ubicacionTermino,
+            latitudInicio = servicio.latitudInicio,
+            longitudInicio = servicio.longitudInicio,
+            precisionInicioMetros = servicio.precisionInicioMetros,
+            distanciaInicioMetros = servicio.distanciaInicioMetros,
+            latitudTermino = servicio.latitudTermino,
+            longitudTermino = servicio.longitudTermino,
+            precisionTerminoMetros = servicio.precisionTerminoMetros,
+            ultimaLatitud = servicio.ultimaLatitud,
+            ultimaLongitud = servicio.ultimaLongitud,
+            ultimaPrecisionMetros = servicio.ultimaPrecisionMetros,
+            ultimaUbicacionEn = servicio.ultimaUbicacionEn,
             observaciones = servicio.observaciones,
             puntaje = servicio.puntaje,
             calificadoPor = servicio.calificadoPor,

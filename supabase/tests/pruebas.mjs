@@ -11,7 +11,8 @@ grant execute on function auth.uid() to authenticated, anon;`);
 for (const archivo of [
   'migrations/202610190001_estructura.sql',
   'migrations/202610190002_permisos_y_operaciones.sql',
-  'migrations/202610280001_mvp_supabase.sql'
+  'migrations/202610280001_mvp_supabase.sql',
+  'migrations/202611220001_geocercas_ubicacion.sql'
 ]) {
   await db.exec(await readFile(new URL('../'+archivo, import.meta.url),'utf8'));
 }
@@ -81,12 +82,32 @@ await verificar('confirma servicio propio',async()=>{
 });
 await verificar('no admite segunda respuesta',()=>falla('select responder_asignacion($1,true)',[ids['LIN-003']]));
 await verificar('check-in exige ubicación',()=>falla('select registrar_check_in($1,$2)',[ids['LIN-003'],' ']));
-await verificar('registra check-in con ubicación',async()=>{
-  const r=await db.query('select (registrar_check_in($1,$2)).ubicacion_inicio ubicacion',[ids['LIN-003'],ubicacion]);
-  assert.equal(r.rows[0].ubicacion,ubicacion);
+await verificar('check-in fuera de geocerca rechazado',()=>falla(
+  'select registrar_check_in($1,$2,$3,$4,$5,$6)',
+  [ids['LIN-003'],ubicacion,'',-33.0,-70.0,10]
+));
+await verificar('registra check-in con ubicación y geocerca',async()=>{
+  const r=await db.query(
+    'select (registrar_check_in($1,$2,$3,$4,$5,$6)).distancia_inicio distancia',
+    [ids['LIN-003'],ubicacion,'',-33.4425,-70.6540,8]
+  );
+  assert.ok(r.rows[0].distancia < 150);
+});
+await verificar('reporta última ubicación durante servicio activo',async()=>{
+  const r=await db.query(
+    'select (reportar_ubicacion($1,$2,$3,$4)).ultima_latitud latitud',
+    [ids['LIN-003'],-33.4426,-70.6541,7]
+  );
+  assert.equal(Number(r.rows[0].latitud),-33.4426);
 });
 await verificar('no repite check-in',()=>falla('select registrar_check_in($1,$2)',[ids['LIN-003'],ubicacion]));
-await verificar('registra check-out',()=>db.query('select registrar_check_out($1)',[ids['LIN-003']]));
+await verificar('registra check-out con dropoff y ubicación',async()=>{
+  const r=await db.query(
+    'select (registrar_check_out($1,$2,$3,$4,$5,$6)).ubicacion_termino ubicacion',
+    [ids['LIN-003'],'Fin','Terminal de prueba',-33.4521,-70.6790,9]
+  );
+  assert.equal(r.rows[0].ubicacion,'Terminal de prueba');
+});
 await verificar('no repite check-out',()=>falla('select registrar_check_out($1)',[ids['LIN-003']]));
 await verificar('registra rechazo',()=>db.query('select responder_asignacion($1,false,$2)',[ids['LIN-006'],'No disponible']));
 await verificar('no inicia servicio rechazado',()=>falla('select registrar_check_in($1,$2)',[ids['LIN-006'],ubicacion]));

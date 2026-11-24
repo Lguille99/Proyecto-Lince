@@ -181,6 +181,41 @@ interface Textos {
     fun checkinEnabled(hora: String): String
     val registerCheckout: String
     val serviceCompleted: String
+    val locationTitle: String
+    val mapTitle: String
+    val mapPickup: String
+    val mapCurrentLocation: String
+    val locationGps: String
+    val locationRefresh: String
+    val locationRequestPermission: String
+    val locationPermissionDenied: String
+    val locationUnavailable: String
+    val locationAccuracy: String
+    val locationDistance: String
+    val locationInside: String
+    val locationOutside: String
+    val locationTime: String
+    val locationNoGeofence: String
+    val locationGetting: String
+    val lateArrival: String
+    val onTimeArrival: String
+    val lastPositionTitle: String
+    val lastPositionNone: String
+    val reportLocation: String
+    val dropoffLocation: String
+    val checkoutWithLocation: String
+    val geofenceRadius: String
+    val outsideZoneAlert: String
+    val locationRequired: String
+    fun locationAccuracyValue(metros: Int): String
+    fun locationDistanceValue(metros: Int): String
+    fun locationOutsideValue(metros: Int, radio: Int): String
+    fun locationInsideValue(metros: Int, radio: Int): String
+    fun locationCoordinates(latitud: String, longitud: String): String
+    fun geofenceRadiusValue(metros: Int): String
+    fun arrivalLateValue(minutos: Int): String
+    fun arrivalOnTimeValue(minutos: Int): String
+    fun lastPositionValue(latitud: String, longitud: String, precision: String, hora: String): String
 
     val detailTitle: String
     val serviceInfo: String
@@ -277,6 +312,7 @@ interface Textos {
     val msgAssignmentConfirmed: String
     val msgAssignmentRejected: String
     val msgCheckinRegistered: String
+    val msgLocationReported: String
     val msgServiceFinished: String
     val msgRatingSaved: String
     val msgServiceReassigned: String
@@ -457,6 +493,51 @@ object TextosEspanol : Textos {
         "El check-in se habilita 15 minutos antes ($hora)."
     override val registerCheckout = "Registrar check-out"
     override val serviceCompleted = "Servicio completado. Ya está disponible en el historial."
+    override val locationTitle = "Ubicación y geocerca"
+    override val mapTitle = "Mapa"
+    override val mapPickup = "Punto de recogida"
+    override val mapCurrentLocation = "Tu ubicación"
+    override val locationGps = "Ubicación GPS"
+    override val locationRefresh = "Actualizar ubicación"
+    override val locationRequestPermission = "Permitir ubicación"
+    override val locationPermissionDenied =
+        "Permiso de ubicación denegado. Actívalo para registrar el check-in."
+    override val locationUnavailable = "No se pudo obtener la ubicación. Inténtalo nuevamente."
+    override val locationAccuracy = "Precisión GPS"
+    override val locationDistance = "Distancia a la geocerca"
+    override val locationInside = "Dentro de la geocerca"
+    override val locationOutside = "Fuera de la geocerca"
+    override val locationTime = "Hora de la ubicación"
+    override val locationNoGeofence = "La geocerca del hotel de recogida no está configurada."
+    override val locationGetting = "Obteniendo ubicación..."
+    override val lateArrival = "Tardanza"
+    override val onTimeArrival = "Llegada a tiempo"
+    override val lastPositionTitle = "Última posición reportada"
+    override val lastPositionNone = "Sin posición reportada."
+    override val reportLocation = "Reportar ubicación"
+    override val dropoffLocation = "Ubicación de dropoff"
+    override val checkoutWithLocation = "Registrar check-out con ubicación"
+    override val geofenceRadius = "Radio de geocerca"
+    override val outsideZoneAlert = "Fuera de zona"
+    override val locationRequired = "Se necesita la ubicación GPS para continuar."
+    override fun locationAccuracyValue(metros: Int) = "± $metros m"
+    override fun locationDistanceValue(metros: Int) = "$metros m"
+    override fun locationOutsideValue(metros: Int, radio: Int) =
+        "Fuera de la geocerca: $metros m (radio $radio m)"
+    override fun locationInsideValue(metros: Int, radio: Int) =
+        "Dentro de la geocerca: $metros m (radio $radio m)"
+    override fun locationCoordinates(latitud: String, longitud: String) = "$latitud, $longitud"
+    override fun geofenceRadiusValue(metros: Int) = "$metros m"
+    override fun arrivalLateValue(minutos: Int) =
+        "Tardanza: llegada $minutos min después del pickup."
+    override fun arrivalOnTimeValue(minutos: Int) =
+        "Llegada $minutos min antes del pickup."
+    override fun lastPositionValue(
+        latitud: String,
+        longitud: String,
+        precision: String,
+        hora: String
+    ) = "Lat $latitud · Lon $longitud · Precisión $precision · $hora"
 
     override val detailTitle = "Detalle del servicio"
     override val serviceInfo = "Información del servicio"
@@ -559,6 +640,7 @@ object TextosEspanol : Textos {
     override val msgAssignmentConfirmed = "Asignación confirmada."
     override val msgAssignmentRejected = "Asignación rechazada."
     override val msgCheckinRegistered = "Check-in registrado."
+    override val msgLocationReported = "Ubicación reportada."
     override val msgServiceFinished = "Servicio finalizado."
     override val msgRatingSaved = "Calificación guardada."
     override val msgServiceReassigned = "Servicio reasignado."
@@ -739,6 +821,51 @@ object TextosIngles : Textos {
         "Check-in opens 15 minutes before ($hora)."
     override val registerCheckout = "Register check-out"
     override val serviceCompleted = "Service completed. It is now available in history."
+    override val locationTitle = "Location and geofence"
+    override val mapTitle = "Map"
+    override val mapPickup = "Pickup point"
+    override val mapCurrentLocation = "Your location"
+    override val locationGps = "GPS location"
+    override val locationRefresh = "Refresh location"
+    override val locationRequestPermission = "Allow location"
+    override val locationPermissionDenied =
+        "Location permission denied. Enable it to register check-in."
+    override val locationUnavailable = "Could not get the location. Please try again."
+    override val locationAccuracy = "GPS accuracy"
+    override val locationDistance = "Distance to geofence"
+    override val locationInside = "Inside the geofence"
+    override val locationOutside = "Outside the geofence"
+    override val locationTime = "Location time"
+    override val locationNoGeofence = "The pickup hotel geofence is not configured."
+    override val locationGetting = "Getting location..."
+    override val lateArrival = "Late arrival"
+    override val onTimeArrival = "On-time arrival"
+    override val lastPositionTitle = "Last reported position"
+    override val lastPositionNone = "No reported position."
+    override val reportLocation = "Report location"
+    override val dropoffLocation = "Drop-off location"
+    override val checkoutWithLocation = "Register check-out with location"
+    override val geofenceRadius = "Geofence radius"
+    override val outsideZoneAlert = "Outside zone"
+    override val locationRequired = "GPS location is required to continue."
+    override fun locationAccuracyValue(metros: Int) = "± $metros m"
+    override fun locationDistanceValue(metros: Int) = "$metros m"
+    override fun locationOutsideValue(metros: Int, radio: Int) =
+        "Outside the geofence: $metros m (radius $radio m)"
+    override fun locationInsideValue(metros: Int, radio: Int) =
+        "Inside the geofence: $metros m (radius $radio m)"
+    override fun locationCoordinates(latitud: String, longitud: String) = "$latitud, $longitud"
+    override fun geofenceRadiusValue(metros: Int) = "$metros m"
+    override fun arrivalLateValue(minutos: Int) =
+        "Late: arrival $minutos min after pickup."
+    override fun arrivalOnTimeValue(minutos: Int) =
+        "Arrival $minutos min before pickup."
+    override fun lastPositionValue(
+        latitud: String,
+        longitud: String,
+        precision: String,
+        hora: String
+    ) = "Lat $latitud · Lon $longitud · Accuracy $precision · $hora"
 
     override val detailTitle = "Service details"
     override val serviceInfo = "Service information"
@@ -841,6 +968,7 @@ object TextosIngles : Textos {
     override val msgAssignmentConfirmed = "Assignment confirmed."
     override val msgAssignmentRejected = "Assignment rejected."
     override val msgCheckinRegistered = "Check-in registered."
+    override val msgLocationReported = "Location reported."
     override val msgServiceFinished = "Service completed."
     override val msgRatingSaved = "Rating saved."
     override val msgServiceReassigned = "Service reassigned."
@@ -873,6 +1001,13 @@ object TextosIngles : Textos {
             texto == "El servicio ya tiene un check-in registrado." -> "The service already has a check-in."
             texto == "Indica la ubicación donde comienza el servicio." -> "Enter the location where the service starts."
             texto == "El check-in se habilita 15 minutos antes de la hora asignada." -> "Check-in opens 15 minutes before the scheduled time."
+            texto == "La geocerca del hotel de recogida no está configurada." -> "The pickup hotel geofence is not configured."
+            texto == "La ubicación GPS recibida no es válida." -> "The GPS location is not valid."
+            texto == "Solo el personal asignado reporta su ubicación." -> "Only assigned staff can report their location."
+            texto == "Solo el titular reporta su ubicación." -> "Only the lead can report their location."
+            texto == "Solo se reporta la ubicación durante un servicio activo." -> "Location can only be reported during an active service."
+            texto.startsWith("Check-in fuera de la geocerca:") ->
+                "Check-in outside the geofence:" + texto.removePrefix("Check-in fuera de la geocerca:")
             texto == "Primero debes registrar el inicio." -> "You must register the start first."
             texto == "El servicio ya tiene un check-out registrado." -> "The service already has a check-out."
             texto == "El término no puede ser anterior al inicio." -> "The end time cannot be before the start time."

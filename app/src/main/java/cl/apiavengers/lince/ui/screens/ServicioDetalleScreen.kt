@@ -29,11 +29,15 @@ import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
 import cl.apiavengers.lince.ui.components.*
+import cl.apiavengers.lince.ui.components.MapaUbicacion
+import cl.apiavengers.lince.ui.components.MarcaMapa
 import cl.apiavengers.lince.ui.fechaNumerica
 import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
 import cl.apiavengers.lince.ui.selloFechaHora
 import cl.apiavengers.lince.viewmodel.LinceViewModel
+import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun ServicioDetalleScreen(
@@ -138,6 +142,9 @@ fun ServicioDetalleScreen(
                 if (servicio.hotelRecogida.isNotBlank() && servicio.hotelRecogida != servicio.recogida) {
                     FilaDato(t.pickupHotel, servicio.hotelRecogida)
                 }
+                if (servicio.tieneGeocerca) {
+                    FilaDato(t.geofenceRadius, t.geofenceRadiusValue(servicio.radioGeocercaMetros))
+                }
                 FilaDato(t.passengers, "${servicio.pasajeros}")
                 FilaDato(t.tourDays, "${servicio.diasTour}")
                 FilaDato(t.lunch, if (servicio.almuerzoIncluido) t.included else t.notIncluded)
@@ -199,9 +206,78 @@ fun ServicioDetalleScreen(
                         )
                     }
                     servicio.inicioEn?.let {
-                        FilaDato("Check-in", "${selloFechaHora(it)} · ${servicio.ubicacionInicio.orEmpty()}")
+                        val detalle = buildString {
+                            append(selloFechaHora(it))
+                            append(" · ")
+                            append(servicio.ubicacionInicio.orEmpty())
+                            servicio.distanciaInicioMetros?.let { distancia ->
+                                append(" · ")
+                                append(t.locationDistanceValue(distancia.roundToInt()))
+                            }
+                            servicio.precisionInicioMetros?.let { precision ->
+                                append(" · ")
+                                append(t.locationAccuracyValue(precision.roundToInt()))
+                            }
+                        }
+                        FilaDato("Check-in", detalle)
                     }
-                    servicio.terminoEn?.let { FilaDato("Check-out", selloFechaHora(it)) }
+                    servicio.terminoEn?.let {
+                        val detalle = buildString {
+                            append(selloFechaHora(it))
+                            if (!servicio.ubicacionTermino.isNullOrBlank()) {
+                                append(" · ")
+                                append(servicio.ubicacionTermino)
+                            }
+                            servicio.precisionTerminoMetros?.let { precision ->
+                                append(" · ")
+                                append(t.locationAccuracyValue(precision.roundToInt()))
+                            }
+                        }
+                        FilaDato("Check-out", detalle)
+                    }
+                    if (servicio.ultimaLatitud != null && servicio.ultimaLongitud != null) {
+                        FilaDato(
+                            t.lastPositionTitle,
+                            t.lastPositionValue(
+                                String.format(Locale.US, "%.5f", servicio.ultimaLatitud),
+                                String.format(Locale.US, "%.5f", servicio.ultimaLongitud),
+                                servicio.ultimaPrecisionMetros?.roundToInt()
+                                    ?.let(t::locationAccuracyValue) ?: "—",
+                                selloFechaHora(servicio.ultimaUbicacionEn)
+                            )
+                        )
+                    }
+                    val marcadoresMapa = buildList {
+                        if (servicio.tieneGeocerca) {
+                            add(MarcaMapa(servicio.latitudRecogida!!, servicio.longitudRecogida!!, t.mapPickup))
+                        }
+                        if (servicio.latitudInicio != null && servicio.longitudInicio != null) {
+                            add(MarcaMapa(servicio.latitudInicio!!, servicio.longitudInicio!!, "Check-in"))
+                        }
+                        if (servicio.latitudTermino != null && servicio.longitudTermino != null) {
+                            add(MarcaMapa(servicio.latitudTermino!!, servicio.longitudTermino!!, "Check-out"))
+                        }
+                        if (servicio.ultimaLatitud != null && servicio.ultimaLongitud != null) {
+                            add(MarcaMapa(servicio.ultimaLatitud!!, servicio.ultimaLongitud!!, t.lastPositionTitle))
+                        }
+                    }
+                    if (marcadoresMapa.isNotEmpty()) {
+                        OutlinedCard(
+                            shape = RoundedCornerShape(18.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(t.mapTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                MapaUbicacion(
+                                    centroLatitud = servicio.latitudRecogida ?: marcadoresMapa.first().latitud,
+                                    centroLongitud = servicio.longitudRecogida ?: marcadoresMapa.first().longitud,
+                                    radioMetros = if (servicio.tieneGeocerca) servicio.radioGeocercaMetros else null,
+                                    marcadores = marcadoresMapa
+                                )
+                            }
+                        }
+                    }
                     servicio.reasignadoEn?.let {
                         val quien = servicio.reasignadoPor?.let { id -> remember(estado.equipo) { vm.obtenerPersona(id) } }
                         FilaDato(t.reassigned, "${selloFechaHora(it)} · ${quien?.nombre ?: t.coordination}")
