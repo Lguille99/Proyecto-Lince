@@ -1,0 +1,58 @@
+#!/bin/sh
+# Bloquea commits que contengan claves, credenciales o contraseñas.
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$staged" ]; then
+    exit 0
+fi
+
+estado=0
+
+# 1) Nombres de archivo que nunca deben versionarse.
+for archivo in $staged; do
+    case "$archivo" in
+        *.env.example|*.env.*.example) continue ;;
+        local.properties|*.env|*.env.*|*.local|secrets.properties|keystore.properties|google-services.json|*.jks|*.keystore|*.key|*.p12|*.pfx|*.pem)
+            echo "BLOQUEADO: archivo sensible en el commit: $archivo"
+            estado=1
+            ;;
+    esac
+done
+
+# 2) Patrones de alto riesgo en el diff staged.
+diff=$(git diff --cached -U0 -- . ':(exclude)*.lock' || true)
+patrones='(lince_[A-Za-z0-9]{20,}|sbp_[A-Za-z0-9]{20,}|sb_secret_[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,})'
+if printf '%s\n' "$diff" | grep -nE "$patrones" >/dev/null 2>&1; then
+    echo "BLOQUEADO: posible secreto en los cambios staged:"
+    printf '%s\n' "$diff" | grep -nE "$patrones" | head -n 20
+    estado=1
+fi
+
+# 3) Compara con los valores reales de local.properties (archivo ignorado por Git).
+if [ -f local.properties ]; then
+    while IFS='=' read -r clave valor; do
+        case "$clave" in ''|'#'*) continue ;; esac
+        valor=$(printf '%s' "$valor" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+        [ ${#valor} -ge 12 ] || continue
+        case "$valor" in
+            TU_*|*PLACEHOLDER*|*placeholder*|*CAMBIAR*|*cambiar*|*example*|*EXAMPLE*) continue ;;
+        esac
+        if printf '%s\n' "$diff" | grep -F -- "$valor" >/dev/null 2>&1; then
+            echo "BLOQUEADO: el valor de '$clave' de local.properties aparece en el commit."
+            estado=1
+        fi
+    done < local.properties
+fi
+
+if [ "$estado" -ne 0 ]; then
+    echo ""
+    echo "Quita los secretos del commit. Usa local.properties o variables de entorno, que están fuera de Git."
+    echo "Si es una falsa alarma: git commit --no-verify"
+    exit 1
+fi
+
+exit 0
