@@ -1,9 +1,24 @@
+# Gradle / IDE
 .gradle/
 .kotlin/
 **/build/
-local.properties
 .idea/
 *.iml
 .DS_Store
+
+# Credenciales y configuración local (NUNCA subir)
+local.properties
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+secrets.properties
+keystore.properties
+google-services.json
 *.jks
 *.keystore
+*.key
+*.p12
+*.pfx
+*.pem

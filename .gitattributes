@@ -1,0 +1,2 @@
+# Los hooks de Git deben mantenerse en LF para ejecutarse en Git Bash.
+.githooks/* text eol=lf

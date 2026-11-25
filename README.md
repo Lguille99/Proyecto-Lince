@@ -10,7 +10,7 @@ Aplicación móvil académica para consultar, responder y ejecutar asignaciones 
 
 
 =======
-MVP Android implementado con datos ficticios y persistencia local en Room. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. La interfaz observa un `StateFlow` único y muestra el estado de la conexión; la agenda permite elegir una fecha con `DatePickerDialog`. Cuando `SUPABASE_URL` y `SUPABASE_KEY` están configurados, la app usa Supabase Auth, PostgREST y RPC con RLS; si no hay configuración, red validada o el acceso remoto no está disponible, conserva el modo local. La base Room guarda estado, perfiles y disponibilidad, e importa una sola vez los datos locales anteriores en JSON. El dominio cuenta con 40 pruebas unitarias, la app con 15 pruebas Room/conectividad/API y la migración SQL con 43 comprobaciones PGlite.
+MVP Android implementado con datos ficticios y persistencia local en Room. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. La interfaz observa un `StateFlow` único y muestra el estado de la conexión; la agenda permite elegir una fecha con `DatePickerDialog`. Cuando `SUPABASE_URL` y `SUPABASE_KEY` están configurados, la app usa Supabase Auth, PostgREST y RPC con RLS; si no hay configuración, red validada o el acceso remoto no está disponible, conserva el modo local. La base Room guarda estado, perfiles y disponibilidad, e importa una sola vez los datos locales anteriores en JSON. El dominio cuenta con 46 pruebas unitarias, la app con 22 pruebas Room/conectividad/API y la migración SQL con 43 comprobaciones PGlite.
 
 
 Las imágenes de `docs/diseno/interfaces` son la referencia de diseño utilizada para construir las pantallas.
@@ -21,11 +21,13 @@ En **Servicios → Consultar servicios Southbound** se consultan los datos acad�
 
 Funciones integradas:
 
-- Lista remota paginada (20 servicios por página), búsqueda y filtro por estado del servicio.
-- Detalle obtenido mediante `GET /api/v1/servicios/{id}`.
-- Estados de servicio, reserva y asignación mostrados por separado, incluyendo cancelados y sin asignar.
-- Copia de cada consulta exitosa en Room (`southbound.db`), identificada por búsqueda, filtro y página. Ante fallas de conexión/servidor se muestra la copia de esa consulta con su fecha; las páginas y detalles nunca consultados necesitan conexión.
-- Mensajes para clave ausente/inválida, servicio inexistente, límite de peticiones y errores de red.
+- Explorador con pestañas para **servicios, guías, transportistas, clientes y resumen**, más los catálogos que alimentan los filtros.
+- Servicios paginados (`page`/`pageSize`, 20 por consulta) con búsqueda y filtros por fecha (`fechaDesde`/`fechaHasta`), oficina, tipo, estado de servicio/reserva (`CF`, `RQ`, `WL`, `XX`) y StatusPL (`CF`, `RQ`, `DL`, `CX`, `SIN_ASIGNAR`).
+- Detalle de servicio (`GET /api/v1/servicios/{id}`), de guía, transportista y cliente, con sus totales y flota.
+- Resumen de servicios y pax por estado, StatusPL, oficina, tipo y día, con filtros de fecha y oficina.
+- Se respeta el header `X-API-Key`, las fechas `YYYY-MM-DD`, las horas `HH:mm` y la paginación `data`/`meta`.
+- Copia de cada consulta exitosa en Room (`southbound.db`), identificada por su ruta (recurso, búsqueda, filtros y página). Ante fallas de conexión/servidor se muestra la copia de esa consulta con su fecha; las consultas nunca realizadas necesitan conexión.
+- Mensajes para clave ausente/inválida, recurso inexistente, parámetros inválidos, límite de peticiones y errores de red. Los errores del servidor muestran su `message` y `requestId`.
 - Pantallas en español e inglés, ViewModel y StateFlow.
 
 Configurar en `local.properties` (archivo ignorado por Git):
@@ -36,9 +38,17 @@ SOUTHBOUND_API_KEY=CLAVE_DEL_CURSO
 
 Después de cambiar la clave se debe recompilar la aplicación. No incluir la clave en commits, capturas ni documentación. La app envía `X-API-Key` únicamente al servidor HTTPS de Southbound.
 
-La API es **solo lectura**: no ofrece login de usuarios ni permite guardar confirmaciones, rechazos, ejecución o disponibilidad. No se mezclan los identificadores de Southbound con los datos locales ni se envían acciones a esta API. Los endpoints de guías, transportistas, clientes, catálogos y resumen todavía no están integrados.
+### Protección de credenciales
 
-Prueba manual: ingresar con una cuenta demo, abrir Servicios → Consultar servicios Southbound, buscar, cambiar filtro, avanzar de página y abrir un detalle. Reabrir una consulta ya visitada sin conexión debe mostrar la copia y su fecha. Una búsqueda nueva sin conexión debe informar que no hay copia.
+`local.properties` y los archivos de secretos (`.env`, `*.jks`, `*.keystore`, `*.pem`, etc.) están declarados en `.gitignore`, por lo que no se agregan con `git add`. Además, el repositorio incluye un hook opcional en `.githooks/pre-commit` que bloquea claves, credenciales y contraseñas (incluido el valor real de `SOUTHBOUND_API_KEY`) antes de crear un commit. Actívalo una vez con:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+La API es **solo lectura**: no ofrece login de usuarios ni permite guardar confirmaciones, rechazos, ejecución o disponibilidad. No se mezclan los identificadores de Southbound con los datos locales ni se envían acciones a esta API. Los endpoints integrados son `/health`, `/api/v1/catalogos`, `/api/v1/resumen`, `/api/v1/servicios`, `/api/v1/guias`, `/api/v1/transportistas` y `/api/v1/clientes`, tanto en listado paginado como en detalle.
+
+Prueba manual: ingresar con una cuenta demo, abrir Servicios → Consultar servicios Southbound, recorrer las pestañas, aplicar filtros de fecha, estado y asignación, avanzar de página y abrir un detalle. Reabrir una consulta ya visitada sin conexión debe mostrar la copia y su fecha. Una consulta nueva sin conexión debe informar que no hay copia.
 
 Documentación: https://ws.southbound.travel/lince-api/api-docs/
 
