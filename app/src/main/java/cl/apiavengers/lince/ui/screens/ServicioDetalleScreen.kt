@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
@@ -35,6 +36,7 @@ import cl.apiavengers.lince.ui.fechaNumerica
 import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
 import cl.apiavengers.lince.ui.selloFechaHora
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -81,17 +83,28 @@ fun ServicioDetalleScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            BarraSuperior(titulo = t.detailTitle, onBack = onBack)
+            LinceTopBar(titulo = t.detailTitle, navegarAtras = onBack)
         },
         bottomBar = {
-            BarraInferior(
-                esCoordinador = vm.esCoordinador(),
-                seleccion = "Servicios",
-                onInicio = onNavigateToInicio,
-                onServicios = onNavigateToServicios,
-                onAgenda = onNavigateToAgenda,
-                onEquipo = onNavigateToEquipo,
-                onPerfil = onNavigateToPerfil
+            val esCoordinador = vm.esCoordinador()
+            LinceFloatingBottomBar(
+                items = listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    if (esCoordinador) Icons.Default.Person to t.navTeam
+                    else Icons.Default.DateRange to t.navAgenda,
+                    Icons.Default.Face to t.navProfile
+                ),
+                indiceSeleccionado = 1,
+                enSeleccionar = { indice ->
+                    when (indice) {
+                        0 -> onNavigateToInicio()
+                        1 -> onNavigateToServicios()
+                        2 -> if (esCoordinador) onNavigateToEquipo() else onNavigateToAgenda()
+                        3 -> onNavigateToPerfil()
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -247,26 +260,24 @@ fun ServicioDetalleScreen(
                             )
                         )
                     }
-                    val marcadoresMapa = buildList {
-                        if (servicio.tieneGeocerca) {
-                            add(MarcaMapa(servicio.latitudRecogida!!, servicio.longitudRecogida!!, t.mapPickup))
-                        }
-                        if (servicio.latitudInicio != null && servicio.longitudInicio != null) {
-                            add(MarcaMapa(servicio.latitudInicio!!, servicio.longitudInicio!!, "Check-in"))
-                        }
-                        if (servicio.latitudTermino != null && servicio.longitudTermino != null) {
-                            add(MarcaMapa(servicio.latitudTermino!!, servicio.longitudTermino!!, "Check-out"))
-                        }
-                        if (servicio.ultimaLatitud != null && servicio.ultimaLongitud != null) {
-                            add(MarcaMapa(servicio.ultimaLatitud!!, servicio.ultimaLongitud!!, t.lastPositionTitle))
+                    val marcadoresMapa = remember(servicio, t) {
+                        buildList {
+                            if (servicio.tieneGeocerca) {
+                                add(MarcaMapa(servicio.latitudRecogida!!, servicio.longitudRecogida!!, t.mapPickup))
+                            }
+                            if (servicio.latitudInicio != null && servicio.longitudInicio != null) {
+                                add(MarcaMapa(servicio.latitudInicio!!, servicio.longitudInicio!!, "Check-in"))
+                            }
+                            if (servicio.latitudTermino != null && servicio.longitudTermino != null) {
+                                add(MarcaMapa(servicio.latitudTermino!!, servicio.longitudTermino!!, "Check-out"))
+                            }
+                            if (servicio.ultimaLatitud != null && servicio.ultimaLongitud != null) {
+                                add(MarcaMapa(servicio.ultimaLatitud!!, servicio.ultimaLongitud!!, t.lastPositionTitle))
+                            }
                         }
                     }
                     if (marcadoresMapa.isNotEmpty()) {
-                        OutlinedCard(
-                            shape = RoundedCornerShape(18.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                        LinceCard(modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(t.mapTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 MapaUbicacion(
@@ -290,18 +301,17 @@ fun ServicioDetalleScreen(
 
             if (vm.puedeResponder(servicio)) {
                 Text(t.respondAssignment, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                OutlinedTextField(
-                    value = motivo,
-                    onValueChange = {
+                LinceInputField(
+                    etiqueta = t.observationLabel,
+                    valor = motivo,
+                    enCambioValor = {
                         motivo = it
                         if (errorMotivo != null) errorMotivo = null
                     },
-                    label = { Text(t.observationLabel) },
-                    minLines = 2,
-                    isError = errorMotivo != null,
-                    supportingText = { errorMotivo?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    error = errorMotivo != null,
+                    mensajeError = errorMotivo,
+                    singleLine = false,
+                    minLines = 2
                 )
                 BotonPrincipal(
                     texto = t.confirmAssignment,
@@ -438,12 +448,8 @@ fun ServicioDetalleScreen(
 
 @Composable
 private fun Seccion(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
-    OutlinedCard(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    LinceCard(
+        fondo = Colores.superficieNeutra,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

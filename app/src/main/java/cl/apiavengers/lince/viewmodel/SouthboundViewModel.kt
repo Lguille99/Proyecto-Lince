@@ -1,6 +1,7 @@
 package cl.apiavengers.lince.viewmodel
 
 import android.app.Application
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.BuildConfig
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 
 enum class SeccionSouthbound { SERVICIOS, GUIAS, TRANSPORTISTAS, CLIENTES, RESUMEN }
 
+@Immutable
 data class FiltrosServicios(
     val pagina: Int = 1,
     val busqueda: String = "",
@@ -25,6 +27,7 @@ data class FiltrosServicios(
     val fechaHasta: String = ""
 )
 
+@Immutable
 data class FiltrosGuias(
     val pagina: Int = 1,
     val busqueda: String = "",
@@ -32,20 +35,24 @@ data class FiltrosGuias(
     val idioma: String = ""
 )
 
+@Immutable
 data class FiltrosTransportistas(
     val pagina: Int = 1,
     val busqueda: String = "",
     val oficina: String = ""
 )
 
+@Immutable
 data class FiltrosClientes(val pagina: Int = 1, val busqueda: String = "")
 
+@Immutable
 data class FiltrosResumen(
     val fechaDesde: String = "",
     val fechaHasta: String = "",
     val oficina: String = ""
 )
 
+@Immutable
 data class SouthboundUiState(
     val seccion: SeccionSouthbound = SeccionSouthbound.SERVICIOS,
     val iniciado: Boolean = false,

@@ -1,7 +1,9 @@
 package cl.apiavengers.lince.modelo
 
+import androidx.compose.runtime.Immutable
 import java.time.LocalDate
 
+@Immutable
 data class DisponibilidadUiState(
     val fecha: LocalDate = LocalDate.now(),
     val bloqueado: Boolean = false,

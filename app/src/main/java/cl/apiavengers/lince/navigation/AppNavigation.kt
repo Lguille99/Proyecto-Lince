@@ -1,5 +1,8 @@
 package cl.apiavengers.lince.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -13,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -51,23 +55,18 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
         }
     }
 
-    val irInicio: () -> Unit = {
-        navController.navigate(rutaInicio) {
+    val irTab: (String) -> Unit = { ruta ->
+        navController.navigate(ruta) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
+            restoreState = true
         }
     }
-    val irServicios: () -> Unit = {
-        navController.navigate("servicios") { launchSingleTop = true }
-    }
-    val irAgenda: () -> Unit = {
-        navController.navigate("agenda") { launchSingleTop = true }
-    }
-    val irPerfil: () -> Unit = {
-        navController.navigate("perfil") { launchSingleTop = true }
-    }
-    val irEquipo: () -> Unit = {
-        navController.navigate("equipo") { launchSingleTop = true }
-    }
+    val irInicio: () -> Unit = { irTab(rutaInicio) }
+    val irServicios: () -> Unit = { irTab("servicios") }
+    val irAgenda: () -> Unit = { irTab("agenda") }
+    val irPerfil: () -> Unit = { irTab("perfil") }
+    val irEquipo: () -> Unit = { irTab("equipo") }
     val cerrarSesion: () -> Unit = {
         vm.cerrarSesion()
         navController.navigate("login") {
@@ -79,7 +78,14 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
     Column(Modifier.fillMaxSize()) {
         EstadoConexion(modoRemoto = estado.modoRemoto)
         Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.statusBars)) {
-            NavHost(navController = navController, startDestination = "login") {
+            NavHost(
+                navController = navController,
+                startDestination = "login",
+                enterTransition = { fadeIn(tween(100)) },
+                exitTransition = { fadeOut(tween(80)) },
+                popEnterTransition = { fadeIn(tween(100)) },
+                popExitTransition = { fadeOut(tween(80)) }
+            ) {
                 composable("login") {
                     LoginScreen(
                         error = estado.error,
@@ -268,7 +274,9 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
                     val usuario = estado.usuario
                     if (usuario != null) {
                         val disponibilidadVm: DisponibilidadViewModel = viewModel()
-                        LaunchedEffect(usuario.id) { disponibilidadVm.cargar(usuario) }
+                        LaunchedEffect(usuario.id) {
+                            if (!disponibilidadVm.uiState.value.cargado) disponibilidadVm.cargar(usuario)
+                        }
                         val asignados = remember(usuario.id, estado.servicios) {
                             estado.servicios.filter { it.esDe(usuario.id) }
                         }

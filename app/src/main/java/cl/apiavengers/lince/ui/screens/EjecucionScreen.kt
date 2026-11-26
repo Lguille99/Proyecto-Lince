@@ -11,8 +11,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,11 +35,12 @@ import cl.apiavengers.lince.ui.components.*
 import cl.apiavengers.lince.ui.components.MapaUbicacion
 import cl.apiavengers.lince.ui.components.MarcaMapa
 import cl.apiavengers.lince.ui.fechaNumerica
+import cl.apiavengers.lince.ui.horaMinuto
 import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.selloFechaHora
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -142,17 +147,28 @@ fun EjecucionScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            BarraSuperior(titulo = t.executionTitle, onBack = onBack)
+            LinceTopBar(titulo = t.executionTitle, navegarAtras = onBack)
         },
         bottomBar = {
-            BarraInferior(
-                esCoordinador = vm.esCoordinador(),
-                seleccion = "Servicios",
-                onInicio = onNavigateToInicio,
-                onServicios = onNavigateToServicios,
-                onAgenda = onNavigateToAgenda,
-                onEquipo = onNavigateToEquipo,
-                onPerfil = onNavigateToPerfil
+            val esCoordinador = vm.esCoordinador()
+            LinceFloatingBottomBar(
+                items = listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    if (esCoordinador) Icons.Default.Person to t.navTeam
+                    else Icons.Default.DateRange to t.navAgenda,
+                    Icons.Default.Face to t.navProfile
+                ),
+                indiceSeleccionado = 1,
+                enSeleccionar = { indice ->
+                    when (indice) {
+                        0 -> onNavigateToInicio()
+                        1 -> onNavigateToServicios()
+                        2 -> if (esCoordinador) onNavigateToEquipo() else onNavigateToAgenda()
+                        3 -> onNavigateToPerfil()
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -164,7 +180,9 @@ fun EjecucionScreen(
         }
         val titular = remember(estado.equipo) { vm.obtenerPersona(servicio.asignadoA) }
         val inicioPermitido = servicio.inicioProgramado.minusMinutes(15)
-        val evaluacion = ubicacionActual?.let { evaluarLlegada(servicio, it, ahora) }
+        val evaluacion = remember(servicio, ubicacionActual, ahora) {
+            ubicacionActual?.let { evaluarLlegada(servicio, it, ahora) }
+        }
         val puedeIniciar = servicio.estado == EstadoServicio.CONFIRMADA &&
             servicio.inicioEn == null &&
             !ahora.isBefore(inicioPermitido) &&
@@ -198,12 +216,8 @@ fun EjecucionScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            OutlinedCard(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            LinceCard(
+                fondo = Colores.superficieNeutra,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -228,11 +242,7 @@ fun EjecucionScreen(
                 }
             }
 
-            OutlinedCard(
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            LinceCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(t.responsibleTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Text(
@@ -261,18 +271,11 @@ fun EjecucionScreen(
                 onActualizar = actualizarUbicacion
             )
 
-            OutlinedCard(
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            LinceCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(t.mapTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    MapaUbicacion(
-                        centroLatitud = servicio.latitudRecogida,
-                        centroLongitud = servicio.longitudRecogida,
-                        radioMetros = servicio.radioGeocercaMetros,
-                        marcadores = buildList {
+                    val marcadores = remember(servicio, ubicacionActual, t) {
+                        buildList {
                             if (servicio.tieneGeocerca) {
                                 add(MarcaMapa(servicio.latitudRecogida!!, servicio.longitudRecogida!!, t.mapPickup))
                             }
@@ -283,38 +286,37 @@ fun EjecucionScreen(
                                 add(MarcaMapa(servicio.ultimaLatitud!!, servicio.ultimaLongitud!!, t.lastPositionTitle))
                             }
                         }
+                    }
+                    MapaUbicacion(
+                        centroLatitud = servicio.latitudRecogida,
+                        centroLongitud = servicio.longitudRecogida,
+                        radioMetros = servicio.radioGeocercaMetros,
+                        marcadores = marcadores
                     )
                 }
             }
 
             if (servicio.inicioEn == null) {
-                OutlinedTextField(
-                    value = ubicacion,
-                    onValueChange = { ubicacion = it },
-                    label = { Text(t.startLocation) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
+                LinceInputField(
+                    etiqueta = t.startLocation,
+                    valor = ubicacion,
+                    enCambioValor = { ubicacion = it }
                 )
             }
             if (servicio.terminoEn == null) {
-                OutlinedTextField(
-                    value = observaciones,
-                    onValueChange = { observaciones = it },
-                    label = { Text(t.serviceNotes) },
-                    minLines = 2,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
+                LinceInputField(
+                    etiqueta = t.serviceNotes,
+                    valor = observaciones,
+                    enCambioValor = { observaciones = it },
+                    singleLine = false,
+                    minLines = 2
                 )
             }
             if (puedeTerminar) {
-                OutlinedTextField(
-                    value = ubicacionTermino,
-                    onValueChange = { ubicacionTermino = it },
-                    label = { Text(t.dropoffLocation) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
+                LinceInputField(
+                    etiqueta = t.dropoffLocation,
+                    valor = ubicacionTermino,
+                    enCambioValor = { ubicacionTermino = it }
                 )
             }
 
@@ -359,10 +361,7 @@ fun EjecucionScreen(
             } else if (servicio.estado == EstadoServicio.CONFIRMADA && servicio.inicioEn == null) {
                 Text(
                     if (!ahora.isBefore(inicioPermitido)) t.locationRequired else
-                        t.checkinEnabled(
-                            servicio.inicioProgramado.minusMinutes(15)
-                                .format(DateTimeFormatter.ofPattern("HH:mm"))
-                        ),
+                        t.checkinEnabled(horaMinuto(servicio.inicioProgramado.minusMinutes(15))),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -372,11 +371,7 @@ fun EjecucionScreen(
                 val ultimaLatitud = servicio.ultimaLatitud
                 val ultimaLongitud = servicio.ultimaLongitud
                 if (ultimaLatitud != null && ultimaLongitud != null) {
-                    OutlinedCard(
-                        shape = RoundedCornerShape(18.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    LinceCard(modifier = Modifier.fillMaxWidth()) {
                         Column(
                             Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -454,12 +449,8 @@ private fun TarjetaUbicacion(
     onActualizar: () -> Unit
 ) {
     val t = textos()
-    OutlinedCard(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    LinceCard(
+        fondo = Colores.superficieNeutra,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

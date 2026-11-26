@@ -16,7 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.apiavengers.lince.datos.southbound.*
-import cl.apiavengers.lince.ui.components.BarraSuperior
+import cl.apiavengers.lince.ui.components.LinceCard
+import cl.apiavengers.lince.ui.components.LinceInputField
+import cl.apiavengers.lince.ui.components.LinceSearchBar
+import cl.apiavengers.lince.ui.components.LinceTopBar
 import cl.apiavengers.lince.ui.fechaCorta
 import cl.apiavengers.lince.ui.idioma.IdiomaApp
 import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
@@ -24,6 +27,9 @@ import cl.apiavengers.lince.ui.selloFechaHora
 import cl.apiavengers.lince.viewmodel.*
 import java.text.DateFormat
 import java.util.Date
+
+private val FORMATO_SELLO_CORTO: DateFormat =
+    DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
 
 @Composable
 fun textoSouthbound(es: String, en: String): String {
@@ -84,10 +90,10 @@ fun SouthboundScreen(
         }
     }
     Scaffold(topBar = {
-        BarraSuperior(
+        LinceTopBar(
             titulo = textoSouthbound("Lince API · Southbound", "Lince API · Southbound"),
             subtitulo = textoSouthbound("Consulta de datos del curso", "Course data browser"),
-            onBack = onBack
+            navegarAtras = onBack
         )
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -154,12 +160,10 @@ private fun ContenidoServicios(estado: SouthboundUiState, vm: SouthboundViewMode
         item { AvisoDatos() }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = busqueda,
-                    onValueChange = { busqueda = it },
-                    label = { Text(textoSouthbound("Buscar (código, reserva, descripción)", "Search (code, booking, description)")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                LinceSearchBar(
+                    valor = busqueda,
+                    enCambioValor = { busqueda = it },
+                    pista = textoSouthbound("Buscar (código, reserva, descripción)", "Search (code, booking, description)")
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     CampoFecha(fechaDesde, { fechaDesde = it }, textoSouthbound("Desde", "From"), Modifier.weight(1f))
@@ -225,7 +229,7 @@ private fun ContenidoServicios(estado: SouthboundUiState, vm: SouthboundViewMode
         estado.servicios?.let { pagina ->
             item { TotalResultados(pagina.total) }
             if (pagina.datos.isEmpty()) item { SinResultados() }
-            items(pagina.datos, key = { it.id }) { servicio ->
+            items(pagina.datos, key = { it.id }, contentType = { "servicio" }) { servicio ->
                 TarjetaServicio(servicio) { onDetalle(servicio.id) }
             }
             item {
@@ -265,12 +269,10 @@ private fun ContenidoGuias(estado: SouthboundUiState, vm: SouthboundViewModel) {
         item { AvisoDatos() }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = busqueda,
-                    onValueChange = { busqueda = it },
-                    label = { Text(textoSouthbound("Buscar guía por nombre o código", "Search guide by name or code")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                LinceSearchBar(
+                    valor = busqueda,
+                    enCambioValor = { busqueda = it },
+                    pista = textoSouthbound("Buscar guía por nombre o código", "Search guide by name or code")
                 )
                 Button(
                     onClick = { aplicar(1, filtros.oficina, filtros.idioma) },
@@ -304,8 +306,8 @@ private fun ContenidoGuias(estado: SouthboundUiState, vm: SouthboundViewModel) {
         estado.guias?.let { pagina ->
             item { TotalResultados(pagina.total) }
             if (pagina.datos.isEmpty()) item { SinResultados() }
-            items(pagina.datos, key = { it.id }) { guia ->
-                OutlinedCard(
+            items(pagina.datos, key = { it.id }, contentType = { "guia" }) { guia ->
+                LinceCard(
                     modifier = Modifier.fillMaxWidth().clickable { vm.detalleGuia(guia.id) }
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -340,12 +342,10 @@ private fun ContenidoTransportistas(estado: SouthboundUiState, vm: SouthboundVie
         item { AvisoDatos() }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = busqueda,
-                    onValueChange = { busqueda = it },
-                    label = { Text(textoSouthbound("Buscar transportista por nombre o código", "Search driver by name or code")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                LinceSearchBar(
+                    valor = busqueda,
+                    enCambioValor = { busqueda = it },
+                    pista = textoSouthbound("Buscar transportista por nombre o código", "Search driver by name or code")
                 )
                 Button(
                     onClick = { aplicar(1, filtros.oficina) },
@@ -368,8 +368,8 @@ private fun ContenidoTransportistas(estado: SouthboundUiState, vm: SouthboundVie
         estado.transportistas?.let { pagina ->
             item { TotalResultados(pagina.total) }
             if (pagina.datos.isEmpty()) item { SinResultados() }
-            items(pagina.datos, key = { it.id }) { transportista ->
-                OutlinedCard(
+            items(pagina.datos, key = { it.id }, contentType = { "transportista" }) { transportista ->
+                LinceCard(
                     modifier = Modifier.fillMaxWidth().clickable { vm.detalleTransportista(transportista.id) }
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -406,12 +406,10 @@ private fun ContenidoClientes(estado: SouthboundUiState, vm: SouthboundViewModel
         item { AvisoDatos() }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = busqueda,
-                    onValueChange = { busqueda = it },
-                    label = { Text(textoSouthbound("Buscar cliente por nombre o código", "Search client by name or code")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                LinceSearchBar(
+                    valor = busqueda,
+                    enCambioValor = { busqueda = it },
+                    pista = textoSouthbound("Buscar cliente por nombre o código", "Search client by name or code")
                 )
                 Button(
                     onClick = { vm.cargarClientes(1, busqueda) },
@@ -423,8 +421,8 @@ private fun ContenidoClientes(estado: SouthboundUiState, vm: SouthboundViewModel
         estado.clientes?.let { pagina ->
             item { TotalResultados(pagina.total) }
             if (pagina.datos.isEmpty()) item { SinResultados() }
-            items(pagina.datos, key = { it.id }) { cliente ->
-                OutlinedCard(
+            items(pagina.datos, key = { it.id }, contentType = { "cliente" }) { cliente ->
+                LinceCard(
                     modifier = Modifier.fillMaxWidth().clickable { vm.detalleCliente(cliente.id) }
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -682,7 +680,7 @@ private fun LazyListScope.estadoGeneral(estado: SouthboundUiState, onReintentar:
                 textoSouthbound(
                     "No se pudo actualizar. Mostrando copia guardada: ",
                     "Unable to refresh. Showing saved copy: "
-                ) + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(estado.guardadoEn)),
+                ) + FORMATO_SELLO_CORTO.format(Date(estado.guardadoEn)),
                 color = MaterialTheme.colorScheme.tertiary
             )
         }
@@ -718,12 +716,11 @@ private fun AvisoDatos() {
 
 @Composable
 private fun CampoFecha(valor: String, onCambio: (String) -> Unit, etiqueta: String, modifier: Modifier = Modifier) {
-    OutlinedTextField(
-        value = valor,
-        onValueChange = onCambio,
-        label = { Text(etiqueta) },
-        placeholder = { Text("AAAA-MM-DD") },
-        singleLine = true,
+    LinceInputField(
+        etiqueta = etiqueta,
+        valor = valor,
+        enCambioValor = onCambio,
+        lugar = "AAAA-MM-DD",
         modifier = modifier
     )
 }
@@ -753,7 +750,7 @@ private fun FilaChips(
 
 @Composable
 private fun TarjetaServicio(servicio: ServicioSouthbound, onClick: () -> Unit) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    LinceCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(servicio.codigo, style = MaterialTheme.typography.labelMedium)
             Text(servicio.descripcion, style = MaterialTheme.typography.titleMedium)

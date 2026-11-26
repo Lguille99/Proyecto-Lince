@@ -28,20 +28,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.apiavengers.lince.datos.SesionSupabase
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
-import cl.apiavengers.lince.ui.components.BarraInferior
-import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
+import cl.apiavengers.lince.ui.components.LinceCard
+import cl.apiavengers.lince.ui.components.LinceFloatingBottomBar
+import cl.apiavengers.lince.ui.components.LinceTopBar
 import cl.apiavengers.lince.ui.fechaLarga
-import cl.apiavengers.lince.ui.idioma.IdiomaApp
-import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import cl.apiavengers.lince.ui.idioma.textos
+import cl.apiavengers.lince.ui.mesLargo
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.DisponibilidadViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun DisponibilidadScreen(
@@ -54,13 +53,12 @@ fun DisponibilidadScreen(
     onNavigateToServicios: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {}
 ) {
-    val state by vm.uiState.collectAsState()
+    val state by vm.uiState.collectAsStateWithLifecycle()
     val t = textos()
-    val idioma by PreferenciaIdioma.idioma.collectAsStateWithLifecycle()
     val esRemoto = SesionSupabase.activa
     var mes by remember { mutableStateOf(YearMonth.now()) }
     var mostrarSelector by remember { mutableStateOf(false) }
-    val hoy = LocalDate.now()
+    val hoy = remember { LocalDate.now() }
     val hoyMillis = remember(hoy) { hoy.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() }
     val fechasSeleccionables = remember(hoyMillis) {
         object : SelectableDates {
@@ -68,25 +66,27 @@ fun DisponibilidadScreen(
             override fun isSelectableYear(year: Int): Boolean = year >= hoy.year
         }
     }
-    val localeMes = if (idioma == IdiomaApp.INGLES) {
-        Locale("en", "US")
-    } else {
-        Locale("es", "CL")
-    }
-    val nombresMes = DateTimeFormatter.ofPattern("MMMM yyyy", localeMes)
-
     Scaffold(
         topBar = {
-            BarraSuperior(titulo = t.availabilityTitle, onBack = onBack)
+            LinceTopBar(titulo = t.availabilityTitle, navegarAtras = onBack)
         },
         bottomBar = {
-            BarraInferior(
-                esCoordinador = false,
-                seleccion = "Agenda",
-                onInicio = onNavigateToInicio,
-                onServicios = onNavigateToServicios,
-                onAgenda = {},
-                onPerfil = onNavigateToPerfil
+            LinceFloatingBottomBar(
+                items = listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    Icons.Default.DateRange to t.navAgenda,
+                    Icons.Default.Person to t.navProfile
+                ),
+                indiceSeleccionado = 2,
+                enSeleccionar = { indice ->
+                    when (indice) {
+                        0 -> onNavigateToInicio()
+                        1 -> onNavigateToServicios()
+                        3 -> onNavigateToPerfil()
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -102,11 +102,7 @@ fun DisponibilidadScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            OutlinedCard(
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            LinceCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -120,8 +116,7 @@ fun DisponibilidadScreen(
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = t.previousMonth)
                         }
                         Text(
-                            mes.format(nombresMes)
-                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(localeMes) else it.toString() },
+                            mesLargo(mes),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -188,12 +183,8 @@ fun DisponibilidadScreen(
                 }
             }
 
-            OutlinedCard(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            LinceCard(
+                fondo = Colores.superficieNeutra,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

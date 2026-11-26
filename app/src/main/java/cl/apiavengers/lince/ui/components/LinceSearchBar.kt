@@ -10,6 +10,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import cl.apiavengers.lince.ui.theme.*
+import kotlinx.coroutines.delay
 
 @Composable
 fun LinceSearchBar(
@@ -28,9 +30,18 @@ fun LinceSearchBar(
   modifier: Modifier = Modifier
 ) {
   var texto by remember { mutableStateOf(valor) }
+  LaunchedEffect(valor) {
+    if (valor != texto) texto = valor
+  }
+  LaunchedEffect(texto) {
+    if (texto != valor) {
+      delay(250)
+      enCambioValor(texto)
+    }
+  }
   OutlinedTextField(
     value = texto,
-    onValueChange = { texto = it; enCambioValor(it) },
+    onValueChange = { texto = it },
     placeholder = { Text(pista, style = EstiloCuerpoSecundario) },
     leadingIcon = { Icon(iconoPrincipal, contentDescription = null, tint = Colores.primario) },
     trailingIcon = {

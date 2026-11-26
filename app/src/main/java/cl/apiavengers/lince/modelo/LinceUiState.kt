@@ -1,5 +1,8 @@
 package cl.apiavengers.lince.modelo
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class LinceUiState(
     val usuario: Usuario? = null,
     val servicios: List<Servicio> = emptyList(),

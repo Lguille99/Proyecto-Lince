@@ -33,6 +33,8 @@ fun LinceInputField(
   accionesTeclado: KeyboardActions = KeyboardActions.Default,
   transformacionVisual: VisualTransformation = VisualTransformation.None,
   enabled: Boolean = true,
+  singleLine: Boolean = true,
+  minLines: Int = 1,
   trailingComposable: (@Composable () -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
@@ -54,7 +56,8 @@ fun LinceInputField(
         iconoTrailing?.let { Icon(it, contentDescription = null, tint = Colores.primario) }
       }
     },
-    singleLine = true,
+    singleLine = singleLine,
+    minLines = minLines,
     textStyle = EstiloCuerpo,
     visualTransformation = transformacionVisual,
     keyboardActions = accionesTeclado,
