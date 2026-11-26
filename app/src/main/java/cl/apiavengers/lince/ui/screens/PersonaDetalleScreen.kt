@@ -23,13 +23,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.modelo.Usuario
-import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
 import cl.apiavengers.lince.ui.components.ChipIdioma
+import cl.apiavengers.lince.ui.components.LinceCard
+import cl.apiavengers.lince.ui.components.LinceTopBar
 import cl.apiavengers.lince.ui.fechaNumerica
 import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -48,7 +50,7 @@ fun PersonaDetalleScreen(
 
     Scaffold(
         topBar = {
-            BarraSuperior(titulo = t.personTitle, onBack = onBack)
+            LinceTopBar(titulo = t.personTitle, navegarAtras = onBack)
         }
     ) { innerPadding ->
         if (persona == null) {
@@ -92,12 +94,8 @@ fun PersonaDetalleScreen(
                 persona.idiomas.forEach { ChipIdioma(it) }
             }
 
-            OutlinedCard(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            LinceCard(
+                fondo = Colores.superficieNeutra,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -108,9 +106,8 @@ fun PersonaDetalleScreen(
                 }
             }
 
-            OutlinedCard(
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            LinceCard(
+                fondo = Colores.superficieNeutra,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -136,8 +133,8 @@ fun PersonaDetalleScreen(
                 Text(t.noActiveServicesAssigned, fontSize = 14.sp)
             }
             servicios.forEach { servicio ->
-                OutlinedCard(
-                    shape = RoundedCornerShape(14.dp),
+                LinceCard(
+                    forma = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth().clickable { onServicioClick(servicio.id) }
                 ) {
                     Row(

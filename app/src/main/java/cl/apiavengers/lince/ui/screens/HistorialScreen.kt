@@ -8,29 +8,32 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Servicio
-import cl.apiavengers.lince.ui.components.BarraInferior
-import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipEstadoServicio
 import cl.apiavengers.lince.ui.components.EstadoVacio
+import cl.apiavengers.lince.ui.components.LinceCard
+import cl.apiavengers.lince.ui.components.LinceFilterChipRow
+import cl.apiavengers.lince.ui.components.LinceFloatingBottomBar
+import cl.apiavengers.lince.ui.components.LinceTopBar
 import cl.apiavengers.lince.ui.fechaNumerica
 import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
 import cl.apiavengers.lince.ui.selloFechaHora
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -47,22 +50,44 @@ fun HistorialScreen(
     val estado by vm.uiState.collectAsStateWithLifecycle()
     val t = textos()
     var filtro by remember { mutableStateOf<EstadoServicio?>(null) }
-    val registros = estado.historial.filter { filtro == null || it.estado == filtro }
     val usuario = estado.usuario
+    val esCoord = vm.esCoordinador()
+    val registros = remember(estado.historial, filtro) {
+        estado.historial.filter { filtro == null || it.estado == filtro }
+    }
 
     Scaffold(
         topBar = {
-            BarraSuperior(titulo = t.historyTitle, onBack = onBack)
+            LinceTopBar(titulo = t.historyTitle, navegarAtras = onBack)
         },
         bottomBar = {
-            BarraInferior(
-                esCoordinador = vm.esCoordinador(),
-                seleccion = "Servicios",
-                onInicio = onNavigateToInicio,
-                onServicios = onNavigateToServicios,
-                onAgenda = onNavigateToAgenda,
-                onEquipo = onNavigateToEquipo,
-                onPerfil = onNavigateToPerfil
+            val indice = 1
+            val items = if (esCoord) {
+                listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    Icons.Default.Person to t.navTeam,
+                    Icons.Default.Face to t.navProfile
+                )
+            } else {
+                listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    Icons.Default.DateRange to t.navAgenda,
+                    Icons.Default.Face to t.navProfile
+                )
+            }
+            LinceFloatingBottomBar(
+                items = items,
+                indiceSeleccionado = indice,
+                enSeleccionar = { i ->
+                    when (i) {
+                        0 -> onNavigateToInicio()
+                        2 -> if (esCoord) onNavigateToEquipo() else onNavigateToAgenda()
+                        3 -> onNavigateToPerfil()
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -72,56 +97,54 @@ fun HistorialScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+            LinceCard(
+                fondo = Colores.primario,
+                borde = null,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        if (vm.esCoordinador()) t.historyGeneral else t.historyAccumulated,
+                        if (esCoord) t.historyGeneral else t.historyAccumulated,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
-                        if (vm.esCoordinador()) t.historyRegistered(estado.historial.size)
+                        if (esCoord) t.historyRegistered(estado.historial.size)
                         else montoClp(usuario?.let { vm.totalGanado(it.id) } ?: 0),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
-                        if (vm.esCoordinador()) t.historyIncludes else t.historyConfirmedCompleted,
+                        if (esCoord) t.historyIncludes else t.historyConfirmedCompleted,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
 
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text(t.all) })
-                FilterChip(
-                    selected = filtro == EstadoServicio.COMPLETADA,
-                    onClick = { filtro = EstadoServicio.COMPLETADA },
-                    label = { Text(t.historyCompletedFilter) }
-                )
-                FilterChip(
-                    selected = filtro == EstadoServicio.RECHAZADA,
-                    onClick = { filtro = EstadoServicio.RECHAZADA },
-                    label = { Text(t.historyRejectedFilter) }
-                )
+            val seleccionadoLabel = when (filtro) {
+                null -> t.all
+                EstadoServicio.COMPLETADA -> t.historyCompletedFilter
+                EstadoServicio.RECHAZADA -> t.historyRejectedFilter
+                else -> t.all
             }
+            LinceFilterChipRow(
+                items = listOf(t.all to 0, t.historyCompletedFilter to 0, t.historyRejectedFilter to 0),
+                seleccionado = seleccionadoLabel,
+                enSeleccionar = { label ->
+                    filtro = when (label) {
+                        t.historyCompletedFilter -> EstadoServicio.COMPLETADA
+                        t.historyRejectedFilter -> EstadoServicio.RECHAZADA
+                        else -> null
+                    }
+                }
+            )
 
             if (registros.isEmpty()) {
-                OutlinedCard(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.outlinedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    ),
+                LinceCard(
+                    fondo = Colores.superficieNeutra,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     EstadoVacio(
@@ -148,9 +171,8 @@ fun HistorialScreen(
 @Composable
 private fun TarjetaHistorial(servicio: Servicio, autor: String, onClick: () -> Unit) {
     val t = textos()
-    OutlinedCard(
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    LinceCard(
+        forma = RoundedCornerShape(18.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

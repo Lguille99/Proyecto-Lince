@@ -8,26 +8,36 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Servicio
-import cl.apiavengers.lince.ui.components.*
+import cl.apiavengers.lince.ui.components.ChipEstadoServicio
+import cl.apiavengers.lince.ui.components.ChipIdioma
+import cl.apiavengers.lince.ui.components.ChipModalidad
+import cl.apiavengers.lince.ui.components.ChipSuave
+import cl.apiavengers.lince.ui.components.EstadoVacio
+import cl.apiavengers.lince.ui.components.LinceCard
+import cl.apiavengers.lince.ui.components.LinceFilterChipRow
+import cl.apiavengers.lince.ui.components.LinceFloatingBottomBar
+import cl.apiavengers.lince.ui.components.LinceSearchBar
+import cl.apiavengers.lince.ui.components.LinceTopBar
 import cl.apiavengers.lince.ui.esFechaHoy
 import cl.apiavengers.lince.ui.fechaCorta
 import cl.apiavengers.lince.ui.idioma.textos
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -46,34 +56,55 @@ fun ServiciosScreen(
     var filtro by remember { mutableStateOf<EstadoServicio?>(null) }
     var busqueda by remember { mutableStateOf("") }
     val usuario = estado.usuario
-    val propios = if (vm.esCoordinador()) estado.servicios else estado.servicios.filter { usuario != null && it.esDe(usuario.id) }
-    val filtrados = propios.filter { servicio ->
-        (filtro == null || servicio.estado == filtro) &&
-            (busqueda.isBlank() || servicio.titulo.contains(busqueda, true) ||
-                servicio.fecha.contains(busqueda) || t.modalidad(servicio.modalidad).contains(busqueda, true))
+    val esCoord = vm.esCoordinador()
+    val propios = remember(estado.servicios, usuario?.id, esCoord) {
+        if (esCoord) estado.servicios else estado.servicios.filter { usuario != null && it.esDe(usuario.id) }
+    }
+    val filtrados = remember(propios, filtro, busqueda) {
+        propios.filter { servicio ->
+            (filtro == null || servicio.estado == filtro) &&
+                (busqueda.isBlank() || servicio.titulo.contains(busqueda, true) ||
+                    servicio.fecha.contains(busqueda) || t.modalidad(servicio.modalidad).contains(busqueda, true))
+        }
     }
     Scaffold(
         topBar = {
-            BarraSuperior(
+            LinceTopBar(
                 titulo = t.servicesTitle,
-                subtitulo = if (vm.esCoordinador()) t.servicesAllSubtitle else t.servicesMineSubtitle,
-                onBack = onBack,
-                acciones = {
-                    IconButton(onClick = onEquipoClick) {
-                        Icon(Icons.Default.Person, contentDescription = t.navTeam)
-                    }
-                }
+                subtitulo = if (esCoord) t.servicesAllSubtitle else t.servicesMineSubtitle,
+                navegarAtras = onBack,
+                accionDerecha = onEquipoClick,
+                iconoDerecha = Icons.Default.Person
             )
         },
         bottomBar = {
-            BarraInferior(
-                esCoordinador = vm.esCoordinador(),
-                seleccion = "Servicios",
-                onInicio = onNavigateToInicio,
-                onServicios = {},
-                onAgenda = onNavigateToAgenda,
-                onEquipo = onEquipoClick,
-                onPerfil = onNavigateToPerfil
+            val indice = 1
+            val items = if (esCoord) {
+                listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    Icons.Default.Person to t.navTeam,
+                    Icons.Default.Face to t.navProfile
+                )
+            } else {
+                listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    Icons.Default.DateRange to t.navAgenda,
+                    Icons.Default.Face to t.navProfile
+                )
+            }
+            LinceFloatingBottomBar(
+                items = items,
+                indiceSeleccionado = indice,
+                enSeleccionar = { i ->
+                    when (i) {
+                        0 -> onNavigateToInicio()
+                        2 -> if (esCoord) onEquipoClick() else onNavigateToAgenda()
+                        3 -> onNavigateToPerfil()
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -86,37 +117,35 @@ fun ServiciosScreen(
             Button(onClick = onSouthbound, modifier = Modifier.fillMaxWidth()) {
                 Text(textoSouthbound("Consultar servicios Southbound", "Browse Southbound services"))
             }
-            OutlinedTextField(
-                value = busqueda,
-                onValueChange = { busqueda = it },
-                label = { Text(t.servicesSearch) },
-                singleLine = true,
-                shape = RoundedCornerShape(50),
-                modifier = Modifier.fillMaxWidth()
+            LinceSearchBar(
+                valor = busqueda,
+                enCambioValor = { busqueda = it },
+                pista = t.servicesSearch
             )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                FilterChip(selected = filtro == null, onClick = { filtro = null }, label = { Text(t.servicesAllFilter) })
-                FilterChip(
-                    selected = filtro == EstadoServicio.PENDIENTE,
-                    onClick = { filtro = EstadoServicio.PENDIENTE },
-                    label = { Text(t.servicesPendingFilter) }
-                )
-                FilterChip(
-                    selected = filtro == EstadoServicio.CONFIRMADA,
-                    onClick = { filtro = EstadoServicio.CONFIRMADA },
-                    label = { Text(t.servicesConfirmedFilter) }
-                )
+            val seleccionadoLabel = when (filtro) {
+                null -> t.servicesAllFilter
+                EstadoServicio.PENDIENTE -> t.servicesPendingFilter
+                EstadoServicio.CONFIRMADA -> t.servicesConfirmedFilter
+                else -> t.servicesAllFilter
             }
+            LinceFilterChipRow(
+                items = listOf(
+                    t.servicesAllFilter to 0,
+                    t.servicesPendingFilter to 0,
+                    t.servicesConfirmedFilter to 0
+                ),
+                seleccionado = seleccionadoLabel,
+                enSeleccionar = { label ->
+                    filtro = when (label) {
+                        t.servicesPendingFilter -> EstadoServicio.PENDIENTE
+                        t.servicesConfirmedFilter -> EstadoServicio.CONFIRMADA
+                        else -> null
+                    }
+                }
+            )
             if (filtrados.isEmpty()) {
-                OutlinedCard(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.outlinedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    ),
+                LinceCard(
+                    fondo = Colores.superficieNeutra,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     EstadoVacio(
@@ -141,9 +170,8 @@ fun ServiciosScreen(
 @Composable
 private fun TarjetaServicio(servicio: Servicio, onClick: () -> Unit) {
     val t = textos()
-    OutlinedCard(
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    LinceCard(
+        forma = RoundedCornerShape(18.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

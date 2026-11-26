@@ -9,27 +9,30 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.apiavengers.lince.modelo.Usuario
-import cl.apiavengers.lince.ui.components.BarraInferior
-import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
 import cl.apiavengers.lince.ui.components.ChipIdioma
 import cl.apiavengers.lince.ui.components.EstadoVacio
+import cl.apiavengers.lince.ui.components.LinceCard
+import cl.apiavengers.lince.ui.components.LinceFloatingBottomBar
+import cl.apiavengers.lince.ui.components.LinceSearchBar
+import cl.apiavengers.lince.ui.components.LinceTopBar
 import cl.apiavengers.lince.ui.idioma.textos
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -46,27 +49,46 @@ fun EquipoScreen(
     val estado by vm.uiState.collectAsStateWithLifecycle()
     val t = textos()
     var busqueda by remember { mutableStateOf("") }
-    val equipo = estado.equipo.filter {
-        it.nombre.contains(busqueda, true) || t.rol(it.rol).contains(busqueda, true)
+    val esCoord = vm.esCoordinador()
+    val equipo = remember(estado.equipo, busqueda) {
+        estado.equipo.filter {
+            it.nombre.contains(busqueda, true) || t.rol(it.rol).contains(busqueda, true)
+        }
     }
 
     Scaffold(
         topBar = {
-            BarraSuperior(
-                titulo = t.teamTitle,
-                subtitulo = t.teamSubtitle,
-                onBack = onBack
-            )
+            LinceTopBar(titulo = t.teamTitle, subtitulo = t.teamSubtitle, navegarAtras = onBack)
         },
         bottomBar = {
-            BarraInferior(
-                esCoordinador = vm.esCoordinador(),
-                seleccion = if (vm.esCoordinador()) "Equipo" else "",
-                onInicio = onNavigateToInicio,
-                onServicios = onNavigateToServicios,
-                onAgenda = onNavigateToAgenda,
-                onEquipo = onNavigateToEquipo,
-                onPerfil = onNavigateToPerfil
+            val indice = if (esCoord) 2 else 1
+            val items = if (esCoord) {
+                listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    Icons.Default.Person to t.navTeam,
+                    Icons.Default.Face to t.navProfile
+                )
+            } else {
+                listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    Icons.Default.DateRange to t.navAgenda,
+                    Icons.Default.Face to t.navProfile
+                )
+            }
+            LinceFloatingBottomBar(
+                items = items,
+                indiceSeleccionado = indice,
+                enSeleccionar = { i ->
+                    when (i) {
+                        0 -> onNavigateToInicio()
+                        1 -> onNavigateToServicios()
+                        2 -> if (esCoord) onNavigateToEquipo() else onNavigateToAgenda()
+                        3 -> onNavigateToPerfil()
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -76,13 +98,10 @@ fun EquipoScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
-                value = busqueda,
-                onValueChange = { busqueda = it },
-                label = { Text(t.teamSearch) },
-                singleLine = true,
-                shape = RoundedCornerShape(50),
-                modifier = Modifier.fillMaxWidth()
+            LinceSearchBar(
+                valor = busqueda,
+                enCambioValor = { busqueda = it },
+                pista = t.teamSearch
             )
             equipo.forEach { persona ->
                 TarjetaPersona(
@@ -107,9 +126,8 @@ fun EquipoScreen(
 @Composable
 fun TarjetaPersona(persona: Usuario, calificacion: Double?, onClick: () -> Unit) {
     val t = textos()
-    OutlinedCard(
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    LinceCard(
+        forma = RoundedCornerShape(18.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Row(

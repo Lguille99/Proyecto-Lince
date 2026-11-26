@@ -11,9 +11,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,13 +26,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cl.apiavengers.lince.ui.components.BarraInferior
-import cl.apiavengers.lince.ui.components.BarraSuperior
 import cl.apiavengers.lince.ui.components.BotonPrincipal
 import cl.apiavengers.lince.ui.components.BotonSecundario
 import cl.apiavengers.lince.ui.components.ChipDisponibilidad
+import cl.apiavengers.lince.ui.components.KpiMetricCard
+import cl.apiavengers.lince.ui.components.LinceCard
+import cl.apiavengers.lince.ui.components.LinceFloatingBottomBar
+import cl.apiavengers.lince.ui.components.LinceTopBar
+import cl.apiavengers.lince.ui.components.SoftActionButton
 import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.selloFechaHora
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -67,24 +76,29 @@ fun ResumenCoordinacionScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            BarraSuperior(
+            LinceTopBar(
                 titulo = t.summaryTitle,
                 subtitulo = if (estado.modoRemoto) t.coordinationRemote else t.coordinationLocal,
-                acciones = {
-                    IconButton(onClick = onCerrarSesion) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = t.logout)
-                    }
-                }
+                accionDerecha = onCerrarSesion,
+                iconoDerecha = Icons.AutoMirrored.Filled.ExitToApp
             )
         },
         bottomBar = {
-            BarraInferior(
-                esCoordinador = true,
-                seleccion = "Inicio",
-                onInicio = {},
-                onServicios = onServicios,
-                onEquipo = onEquipo,
-                onPerfil = onPerfil
+            LinceFloatingBottomBar(
+                items = listOf(
+                    Icons.Default.Home to t.navHome,
+                    Icons.AutoMirrored.Filled.List to t.navServices,
+                    Icons.Default.Person to t.navTeam,
+                    Icons.Default.Face to t.navProfile
+                ),
+                indiceSeleccionado = 0,
+                enSeleccionar = { i ->
+                    when (i) {
+                        1 -> onServicios()
+                        2 -> onEquipo()
+                        3 -> onPerfil()
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -94,33 +108,26 @@ fun ResumenCoordinacionScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            OutlinedCard(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            LinceCard(
+                fondo = Colores.superficieNeutra,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(t.assignmentStatus, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    FilaResumen(
-                        valor = resumen?.pendientes ?: 0,
-                        etiqueta = t.pendingResponse,
-                        contenedor = MaterialTheme.colorScheme.primaryContainer,
-                        contenido = MaterialTheme.colorScheme.onPrimaryContainer
+                    KpiMetricCard(
+                        label = t.pendingResponse,
+                        valor = (resumen?.pendientes ?: 0).toString(),
+                        colorSemantico = MaterialTheme.colorScheme.primary
                     )
-                    FilaResumen(
-                        valor = resumen?.confirmadas ?: 0,
-                        etiqueta = t.confirmedPlural,
-                        contenedor = MaterialTheme.colorScheme.secondaryContainer,
-                        contenido = MaterialTheme.colorScheme.onSecondaryContainer
+                    KpiMetricCard(
+                        label = t.confirmedPlural,
+                        valor = (resumen?.confirmadas ?: 0).toString(),
+                        colorSemantico = MaterialTheme.colorScheme.secondary
                     )
-                    FilaResumen(
-                        valor = resumen?.rechazadas ?: 0,
-                        etiqueta = t.rejectedPlural,
-                        contenedor = MaterialTheme.colorScheme.errorContainer,
-                        contenido = MaterialTheme.colorScheme.onErrorContainer
+                    KpiMetricCard(
+                        label = t.rejectedPlural,
+                        valor = (resumen?.rechazadas ?: 0).toString(),
+                        colorSemantico = MaterialTheme.colorScheme.error
                     )
                     Text(
                         t.activeSummary(
@@ -137,11 +144,7 @@ fun ResumenCoordinacionScreen(
             BotonPrincipal(texto = t.viewAllServices, onClick = onServicios)
             BotonSecundario(texto = t.consultHistory, onClick = onHistorial)
 
-            OutlinedCard(
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            LinceCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -182,19 +185,17 @@ fun ResumenCoordinacionScreen(
                             ChipDisponibilidad(persona.disponibilidad)
                         }
                     }
-                    TextButton(onClick = onEquipo) { Text(t.viewFullTeam) }
+                    SoftActionButton(texto = t.viewFullTeam, icono = Icons.Default.Person, enClic = onEquipo)
                 }
             }
 
-            val enEjecucion = estado.servicios.filter {
-                it.inicioEn != null && it.terminoEn == null
+            val enEjecucion = remember(estado.servicios) {
+                estado.servicios.filter {
+                    it.inicioEn != null && it.terminoEn == null
+                }
             }
             if (enEjecucion.isNotEmpty()) {
-                OutlinedCard(
-                    shape = RoundedCornerShape(18.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                LinceCard(modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(t.lastPositionTitle, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         enEjecucion.forEach { servicio ->
@@ -248,25 +249,6 @@ fun ResumenCoordinacionScreen(
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-    }
-}
-
-@Composable
-private fun FilaResumen(valor: Int, etiqueta: String, contenedor: Color, contenido: Color) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = contenedor,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(Modifier.size(10.dp).background(contenido, CircleShape))
-            Text(valor.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = contenido)
-            Text(etiqueta, fontSize = 14.sp, color = contenido)
         }
     }
 }
