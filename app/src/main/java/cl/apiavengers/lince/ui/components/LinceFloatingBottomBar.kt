@@ -1,5 +1,6 @@
 package cl.apiavengers.lince.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,33 +32,33 @@ fun LinceFloatingBottomBar(
       .padding(horizontal = 16.dp)
       .height(64.dp),
     color = Colores.card,
-    shape = FormaBarraFlotante
+    shape = FormaBarraFlotante,
+    shadowElevation = 6.dp
   ) {
     Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(4.dp)
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
       items.forEachIndexed { index, (icono, etiqueta) ->
         val activo = index == indiceSeleccionado
-        IconButton(onClick = { enSeleccionar(index) }) {
-          Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-          ) {
-            Icon(
-              icono,
-              contentDescription = null,
-              tint = if (activo) Colores.primario else Colores.iconoInactivo,
-              modifier = Modifier.size(22.dp)
+        Column(
+          modifier = Modifier.weight(1f).clickable { enSeleccionar(index) }.padding(vertical = 6.dp),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.Center
+        ) {
+          Icon(
+            icono,
+            contentDescription = etiqueta,
+            tint = if (activo) Colores.primario else Colores.iconoInactivo,
+            modifier = Modifier.size(22.dp)
+          )
+          Text(
+            text = etiqueta,
+            style = EstiloChip.copy(
+              fontSize = 10.sp,
+              color = if (activo) Colores.primario else Colores.iconoInactivo
             )
-            Text(
-              text = etiqueta,
-              style = EstiloChip.copy(
-                fontSize = 10.sp,
-                color = if (activo) Colores.primario else Colores.iconoInactivo
-              )
-            )
-          }
+          )
         }
       }
     }

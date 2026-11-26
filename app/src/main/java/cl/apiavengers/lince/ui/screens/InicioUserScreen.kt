@@ -7,7 +7,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,6 +24,7 @@ import cl.apiavengers.lince.ui.components.*
 import cl.apiavengers.lince.ui.fechaCorta
 import cl.apiavengers.lince.ui.fechaLargaHoy
 import cl.apiavengers.lince.ui.idioma.textos
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 
 @Composable
@@ -40,16 +44,26 @@ fun InicioUserScreen(
     val proximo = estado.servicios.sortedWith(compareBy({ it.fecha }, { it.hora })).firstOrNull()
     val deHoy = vm.serviciosDeHoy().filter { !vm.esCoordinador() }
 
+    val itemsBarra = listOf(
+        Icons.Default.Home to t.navHome,
+        Icons.AutoMirrored.Filled.List to t.navServices,
+        Icons.Default.DateRange to t.navAgenda,
+        Icons.Default.Face to t.navProfile
+    )
+
     Scaffold(
         bottomBar = {
-            BarraInferior(
-                esCoordinador = false,
-                seleccion = "Inicio",
-                onInicio = {},
-                onServicios = onNavigateToServicios,
-                onAgenda = onNavigateToAgenda,
-                onEquipo = onNavigateToEquipo,
-                onPerfil = onNavigateToPerfil
+            LinceFloatingBottomBar(
+                items = itemsBarra,
+                indiceSeleccionado = 0,
+                enSeleccionar = { indice ->
+                    when (indice) {
+                        1 -> onNavigateToServicios()
+                        2 -> onNavigateToAgenda()
+                        3 -> onNavigateToPerfil()
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -72,9 +86,10 @@ fun InicioUserScreen(
                 )
             }
 
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+            LinceCard(
+                fondo = Colores.primario,
+                forma = RoundedCornerShape(20.dp),
+                borde = null,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -82,18 +97,18 @@ fun InicioUserScreen(
                         t.homeDay,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = Colores.textoBlanco
                     )
                     Text(
                         t.homePending(pendientes),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = Colores.textoBlanco
                     )
                     Text(
                         t.homeTodayAssigned(deHoy.size),
                         fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = Colores.subtitulo
                     )
                 }
             }
@@ -109,13 +124,7 @@ fun InicioUserScreen(
             if (proximo != null) {
                 TarjetaResumenServicio(proximo, onClick = { onServicioClick(proximo.id) })
             } else {
-                OutlinedCard(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.outlinedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                LinceCard(modifier = Modifier.fillMaxWidth()) {
                     EstadoVacio(
                         titulo = t.homeNoActive,
                         mensaje = t.homeNoActiveMessage,
@@ -130,14 +139,7 @@ fun InicioUserScreen(
             BotonSecundario(texto = t.homeViewHistory, onClick = onNavigateToHistorial)
             BotonSecundario(texto = t.homeViewTeam, onClick = onNavigateToEquipo)
 
-            OutlinedCard(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            LinceCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(t.homeAvailability, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     Text(
@@ -154,11 +156,7 @@ fun InicioUserScreen(
 
 @Composable
 private fun TarjetaResumenServicio(servicio: cl.apiavengers.lince.modelo.Servicio, onClick: () -> Unit) {
-    OutlinedCard(
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-    ) {
+    LinceCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

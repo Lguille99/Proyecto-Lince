@@ -20,15 +20,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.apiavengers.lince.R
 import cl.apiavengers.lince.datos.DatosPrueba
-import cl.apiavengers.lince.ui.components.BotonPrincipal
+import cl.apiavengers.lince.ui.components.*
 import cl.apiavengers.lince.ui.idioma.IdiomaApp
 import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import cl.apiavengers.lince.ui.idioma.textos
+import cl.apiavengers.lince.ui.theme.Colores
 
 @Composable
 fun LoginScreen(
@@ -107,74 +109,66 @@ fun LoginScreen(
             }
 
             if (error != null) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.errorContainer
+                LinceCard(
+                    fondo = Colores.errorFondo,
+                    borde = null,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(14.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             Icons.Default.Warning,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            tint = Colores.error,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
                             error,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            color = Colores.error,
                             fontSize = 13.sp
                         )
                     }
                 }
             }
 
-            OutlinedCard(
-                shape = MaterialTheme.shapes.large,
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            LinceCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(
-                        value = cuenta,
-                        onValueChange = { cuenta = it },
-                        label = { Text(t.loginUser) },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        modifier = Modifier.fillMaxWidth()
+                    LinceInputField(
+                        etiqueta = t.loginUser,
+                        valor = cuenta,
+                        enCambioValor = { cuenta = it },
+                        teclado = KeyboardOptions(imeAction = ImeAction.Next)
                     )
-                    OutlinedTextField(
-                        value = clave,
-                        onValueChange = { clave = it },
-                        label = { Text(t.loginPassword) },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (verClave) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(
+                    LinceInputField(
+                        etiqueta = t.loginPassword,
+                        valor = clave,
+                        enCambioValor = { clave = it },
+                        teclado = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done
                         ),
-                        keyboardActions = KeyboardActions(
+                        accionesTeclado = KeyboardActions(
                             onDone = {
                                 if (cuenta.isNotBlank() && clave.isNotBlank() && !cargando) {
                                     onLogin(cuenta, clave)
                                 }
                             }
                         ),
-                        trailingIcon = {
+                        transformacionVisual = if (verClave) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingComposable = {
                             IconButton(onClick = { verClave = !verClave }) {
                                 Icon(
                                     painter = painterResource(
                                         if (verClave) R.drawable.ic_visibility_off else R.drawable.ic_visibility
                                     ),
-                                    contentDescription = if (verClave) t.loginHidePassword else t.loginShowPassword
+                                    contentDescription = if (verClave) t.loginHidePassword else t.loginShowPassword,
+                                    tint = Colores.primario
                                 )
                             }
                         }
@@ -188,13 +182,7 @@ fun LoginScreen(
                 }
             }
 
-            OutlinedCard(
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            LinceCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -214,7 +202,7 @@ fun LoginScreen(
                                     clave = "Lince123"
                                 }
                                 .padding(vertical = 6.dp),
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 Icons.Default.Email,

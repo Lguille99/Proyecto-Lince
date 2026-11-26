@@ -53,7 +53,7 @@ private val ColoresLince = lightColorScheme(
     scrim = Color(0xFF000000)
 )
 
-private val ColoresLinceOscuro = darkColorScheme(
+internal val ColoresLinceOscuro = darkColorScheme(
     primary = Color(0xFF8FCEE8),
     onPrimary = Color(0xFF003544),
     primaryContainer = Color(0xFF0C4A60),

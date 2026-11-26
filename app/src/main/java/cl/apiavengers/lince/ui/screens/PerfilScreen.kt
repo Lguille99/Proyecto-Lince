@@ -5,11 +5,13 @@ package cl.apiavengers.lince.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -27,6 +29,7 @@ import cl.apiavengers.lince.ui.idioma.IdiomaApp
 import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import cl.apiavengers.lince.ui.idioma.textos
 import cl.apiavengers.lince.ui.montoClp
+import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.ui.theme.ModoTema
 import cl.apiavengers.lince.ui.theme.PreferenciaTema
 import cl.apiavengers.lince.viewmodel.LinceViewModel
@@ -75,27 +78,44 @@ fun PerfilScreen(
         }
     }
 
+    val esCoord = vm.esCoordinador()
+    val itemsBarra = if (esCoord) {
+        listOf(
+            Icons.Default.Home to t.navHome,
+            Icons.AutoMirrored.Filled.List to t.navServices,
+            Icons.Default.Person to t.navTeam,
+            Icons.Default.Face to t.navProfile
+        )
+    } else {
+        listOf(
+            Icons.Default.Home to t.navHome,
+            Icons.AutoMirrored.Filled.List to t.navServices,
+            Icons.Default.DateRange to t.navAgenda,
+            Icons.Default.Face to t.navProfile
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            BarraSuperior(
+            LinceTopBar(
                 titulo = t.profileTitle,
-                acciones = {
-                    IconButton(onClick = onCerrarSesion) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = t.logout)
-                    }
-                }
+                accionDerecha = onCerrarSesion,
+                iconoDerecha = Icons.AutoMirrored.Filled.ExitToApp
             )
         },
         bottomBar = {
-            BarraInferior(
-                esCoordinador = vm.esCoordinador(),
-                seleccion = "Perfil",
-                onInicio = onNavigateToInicio,
-                onServicios = onNavigateToServicios,
-                onAgenda = onNavigateToAgenda,
-                onEquipo = onNavigateToEquipo,
-                onPerfil = {}
+            LinceFloatingBottomBar(
+                items = itemsBarra,
+                indiceSeleccionado = 3,
+                enSeleccionar = { indice ->
+                    when (indice) {
+                        0 -> onNavigateToInicio()
+                        1 -> onNavigateToServicios()
+                        2 -> if (esCoord) onNavigateToEquipo() else onNavigateToAgenda()
+                    }
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -105,94 +125,72 @@ fun PerfilScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+            LinceCard(
+                fondo = Colores.primario,
+                forma = RoundedCornerShape(18.dp),
+                borde = null,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(usuario?.nombre.orEmpty(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                    Text(usuario?.nombre.orEmpty(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Colores.textoBlanco)
                     Text(
                         usuario?.rol?.let { t.rol(it) }.orEmpty(),
                         fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = Colores.subtitulo
                     )
-                    if (usuario != null && !vm.esCoordinador()) {
+                    if (usuario != null && !esCoord) {
                         Text(
                             t.accumulated(montoClp(vm.totalGanado(usuario.id))),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = Colores.textoBlanco
                         )
                         vm.promedioCalificacion(usuario.id)?.let {
                             Text(
                                 t.averageRating("%.1f".format(it)),
                                 fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = Colores.subtitulo
                             )
                         }
                     }
                 }
             }
 
-            OutlinedTextField(
-                value = usuario?.id.orEmpty(),
-                onValueChange = {},
-                label = { Text(t.profileId) },
-                enabled = false,
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
+            LinceInputField(
+                etiqueta = t.profileId,
+                valor = usuario?.id.orEmpty(),
+                enCambioValor = {},
+                enabled = false
             )
-            OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it },
-                label = { Text(t.profileName) },
-                singleLine = true,
-                isError = mostrarErrores && nombreError != null,
-                supportingText = {
-                    if (mostrarErrores && nombreError != null) Text(nombreError)
-                },
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
+            LinceInputField(
+                etiqueta = t.profileName,
+                valor = nombre,
+                enCambioValor = { nombre = it },
+                error = mostrarErrores && nombreError != null,
+                mensajeError = nombreError
             )
-            OutlinedTextField(
-                value = correo,
-                onValueChange = { correo = it },
-                label = { Text(t.profileEmail) },
-                singleLine = true,
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = mostrarErrores && correoError != null,
-                supportingText = {
-                    if (mostrarErrores && correoError != null) Text(correoError)
-                },
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
+            LinceInputField(
+                etiqueta = t.profileEmail,
+                valor = correo,
+                enCambioValor = { correo = it },
+                teclado = KeyboardOptions(keyboardType = KeyboardType.Email),
+                error = mostrarErrores && correoError != null,
+                mensajeError = correoError
             )
-            OutlinedTextField(
-                value = telefono,
-                onValueChange = { telefono = it },
-                label = { Text(t.profilePhone) },
-                singleLine = true,
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Phone),
-                isError = mostrarErrores && telefonoError != null,
-                supportingText = {
-                    if (mostrarErrores && telefonoError != null) Text(telefonoError)
-                },
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
+            LinceInputField(
+                etiqueta = t.profilePhone,
+                valor = telefono,
+                enCambioValor = { telefono = it },
+                teclado = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                error = mostrarErrores && telefonoError != null,
+                mensajeError = telefonoError
             )
-            OutlinedTextField(
-                value = zona,
-                onValueChange = { zona = it },
-                label = { Text(t.profileZone) },
-                singleLine = true,
-                isError = mostrarErrores && zonaError != null,
-                supportingText = {
-                    if (mostrarErrores && zonaError != null) Text(zonaError)
-                },
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
+            LinceInputField(
+                etiqueta = t.profileZone,
+                valor = zona,
+                enCambioValor = { zona = it },
+                error = mostrarErrores && zonaError != null,
+                mensajeError = zonaError
             )
 
             Text(t.profileLanguages, fontSize = 16.sp, fontWeight = FontWeight.Bold)

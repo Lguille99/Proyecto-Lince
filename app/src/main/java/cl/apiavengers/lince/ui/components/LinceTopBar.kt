@@ -1,11 +1,12 @@
 package cl.apiavengers.lince.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -29,24 +30,29 @@ fun LinceTopBar(
   iconoDerecha: ImageVector = Icons.Default.MoreVert,
   modifier: Modifier = Modifier
 ) {
-  Column(modifier = modifier.fillMaxWidth()) {
-    Surface(
-      modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-      color = Colores.topBar
+  Surface(
+    modifier = modifier.fillMaxWidth(),
+    color = Colores.topBar
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .statusBarsPadding()
+        .heightIn(min = 56.dp)
+        .padding(horizontal = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      Row(
-        modifier = Modifier.weight(1f, fill = false).padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+      navegarAtras?.let {
+        IconButton(onClick = it) {
+          Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Colores.textoBlanco)
+        }
+      }
+      Column(
+        modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
       ) {
-        navegarAtras?.let {
-          IconButton(onClick = it) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Colores.textoBlanco)
-          }
-        }
-        Column(modifier = Modifier.weight(1f, fill = false)) {
-          Text(text = titulo, style = EstiloTituloPantalla)
-          subtitulo?.let { Text(text = it, style = EstiloSubtituloPantalla) }
-        }
+        Text(text = titulo, style = EstiloTituloPantalla)
+        subtitulo?.let { Text(text = it, style = EstiloSubtituloPantalla) }
       }
       accionDerecha?.let {
         IconButton(onClick = it) {

@@ -20,9 +20,9 @@ import cl.apiavengers.lince.ui.idioma.LocalTextos
 import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import cl.apiavengers.lince.ui.idioma.TextosEspanol
 import cl.apiavengers.lince.ui.idioma.TextosIngles
+import cl.apiavengers.lince.ui.theme.LinceTheme
 import cl.apiavengers.lince.ui.theme.ModoTema
 import cl.apiavengers.lince.ui.theme.PreferenciaTema
-import cl.apiavengers.lince.ui.theme.TemaLince
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
                 ModoTema.OSCURO -> true
             }
             CompositionLocalProvider(LocalTextos provides textos) {
-                TemaLince(darkTheme = oscuro) {
+                LinceTheme(darkTheme = oscuro) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
