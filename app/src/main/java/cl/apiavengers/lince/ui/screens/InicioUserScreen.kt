@@ -87,7 +87,7 @@ fun InicioUserScreen(
             }
 
             LinceCard(
-                fondo = Colores.primario,
+                fondo = Colores.topBar,
                 forma = RoundedCornerShape(20.dp),
                 borde = null,
                 modifier = Modifier.fillMaxWidth()
@@ -108,7 +108,7 @@ fun InicioUserScreen(
                     Text(
                         t.homeTodayAssigned(deHoy.size),
                         fontSize = 13.sp,
-                        color = Colores.subtitulo
+                        color = Colores.subtituloSobreNavy
                     )
                 }
             }

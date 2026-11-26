@@ -126,7 +126,7 @@ fun PerfilScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             LinceCard(
-                fondo = Colores.primario,
+                fondo = Colores.topBar,
                 forma = RoundedCornerShape(18.dp),
                 borde = null,
                 modifier = Modifier.fillMaxWidth()
@@ -136,7 +136,7 @@ fun PerfilScreen(
                     Text(
                         usuario?.rol?.let { t.rol(it) }.orEmpty(),
                         fontSize = 13.sp,
-                        color = Colores.subtitulo
+                        color = Colores.subtituloSobreNavy
                     )
                     if (usuario != null && !esCoord) {
                         Text(
@@ -149,7 +149,7 @@ fun PerfilScreen(
                             Text(
                                 t.averageRating("%.1f".format(it)),
                                 fontSize = 13.sp,
-                                color = Colores.subtitulo
+                                color = Colores.subtituloSobreNavy
                             )
                         }
                     }

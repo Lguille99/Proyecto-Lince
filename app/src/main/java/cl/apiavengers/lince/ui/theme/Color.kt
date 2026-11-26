@@ -5,8 +5,8 @@ import androidx.compose.ui.graphics.Color
 // Paleta Estricta Lince - Referencia Operativa
 val NavyEstructuralClaro = Color(0xFF132333)
 val NavyEstructuralOscuro = Color(0xFF0B1521)
-val AzulCorporativoClaro = Color(0xFF0B57D0)
-val AzulCorporativoOscuro = Color(0xFF3B82F6)
+val AzulCorporativoClaro = Color(0xFF1E3A5F)
+val AzulCorporativoOscuro = Color(0xFF3B6EA5)
 
 // Tonos Neutros - Modo Claro
 val CanvasClaro = Color(0xFFF4F7FA)
@@ -42,5 +42,6 @@ object Colores {
     val error = Color(0xFFC62828)
     val errorFondo = Color(0xFFFEE2E2)
     val textoBlanco = Color.White
+    val subtituloSobreNavy = Color(0xFFCBD5E1)
     val bordeInput = BordeClaro
 }
