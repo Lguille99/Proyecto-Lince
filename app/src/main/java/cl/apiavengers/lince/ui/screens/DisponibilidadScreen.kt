@@ -25,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cl.apiavengers.lince.datos.SesionSupabase
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Usuario
 import cl.apiavengers.lince.ui.components.BotonPrincipal
@@ -55,7 +54,6 @@ fun DisponibilidadScreen(
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val t = textos()
-    val esRemoto = SesionSupabase.activa
     var mes by remember { mutableStateOf(YearMonth.now()) }
     var mostrarSelector by remember { mutableStateOf(false) }
     val hoy = remember { LocalDate.now() }
@@ -227,7 +225,7 @@ fun DisponibilidadScreen(
                 )
             }
             Text(
-                if (esRemoto) t.changesRemote else t.changesLocal,
+                t.changesLocal,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

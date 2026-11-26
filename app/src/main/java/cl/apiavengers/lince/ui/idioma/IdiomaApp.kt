@@ -1,41 +1,56 @@
 package cl.apiavengers.lince.ui.idioma
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.core.content.edit
+import cl.apiavengers.lince.datos.preferencias.Preferencias
+import cl.apiavengers.lince.datos.preferencias.PreferenciasDataStore
 import cl.apiavengers.lince.modelo.Disponibilidad
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Idioma
 import cl.apiavengers.lince.modelo.Modalidad
 import cl.apiavengers.lince.modelo.Rol
 import cl.apiavengers.lince.ui.theme.ModoTema
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 enum class IdiomaApp { ESPANOL, INGLES }
 
 object PreferenciaIdioma {
-    private const val ARCHIVO = "idioma_lince"
-    private const val CLAVE = "idioma"
+    private val alcance = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private var prefs: SharedPreferences? = null
+    private var almacen: PreferenciasDataStore? = null
+    private var iniciado = false
 
     private val _idioma = MutableStateFlow(IdiomaApp.ESPANOL)
     val idioma: StateFlow<IdiomaApp> = _idioma.asStateFlow()
 
     fun iniciar(context: Context) {
-        val almacen = context.applicationContext
-            .getSharedPreferences(ARCHIVO, Context.MODE_PRIVATE)
-        prefs = almacen
-        _idioma.value = leer(almacen.getString(CLAVE, null))
+        if (iniciado) return
+        iniciado = true
+        val preferencias = Preferencias.obtener(context)
+        almacen = preferencias
+        runCatching {
+            _idioma.value = leer(runBlocking { preferencias.idioma.first() })
+        }
+        alcance.launch {
+            preferencias.idioma.collect { valor -> _idioma.value = leer(valor) }
+        }
     }
 
     fun fijar(nuevo: IdiomaApp) {
         _idioma.value = nuevo
-        prefs?.edit { putString(CLAVE, nuevo.name) }
+        almacen?.let { preferencias ->
+            alcance.launch { preferencias.fijarIdioma(nuevo.name) }
+        }
     }
 
     fun actuales(): Textos = if (_idioma.value == IdiomaApp.INGLES) TextosIngles else TextosEspanol
@@ -83,8 +98,8 @@ interface Textos {
     fun modalidad(valor: Modalidad): String
 
     val connectionOffline: String
-    val connectionRemote: String
-    val connectionLocal: String
+    val connectionOnline: String
+    fun pendingSync(cantidad: Int): String
 
     val loginLogoDescription: String
     val loginWelcome: String
@@ -112,7 +127,6 @@ interface Textos {
     val profileAppearanceHint: String
     val profileLanguage: String
     val profileLanguageHint: String
-    val profileDataRemote: String
     val profileDataLocal: String
     val errorName: String
     val errorEmail: String
@@ -259,7 +273,6 @@ interface Textos {
     val coordination: String
 
     val summaryTitle: String
-    val coordinationRemote: String
     val coordinationLocal: String
     val assignmentStatus: String
     val pendingResponse: String
@@ -272,8 +285,8 @@ interface Textos {
     fun availableNow(disponibles: Int, total: Int): String
     val viewFullTeam: String
     val syncing: String
-    val simulateSync: String
-    fun lastSimulation(valor: String): String
+    val syncNow: String
+    fun lastSync(valor: String): String
     val notSynced: String
 
     val teamTitle: String
@@ -306,7 +319,6 @@ interface Textos {
     val blockDay: String
     val noAssignmentsThatDay: String
     val saveAvailability: String
-    val changesRemote: String
     val changesLocal: String
 
     val msgAssignmentConfirmed: String
@@ -317,16 +329,13 @@ interface Textos {
     val msgRatingSaved: String
     val msgServiceReassigned: String
     val msgProfileUpdated: String
-    val msgSummaryUpdatedLocal: String
-    val msgSyncSimulated: String
-    fun msgLocalMode(detalle: String): String
+    fun msgSyncCompleted(enviadas: Int): String
     val msgIncorrectCredentials: String
-    val msgSupabaseUnavailable: String
+    val msgSyncFailed: String
     val msgSignInAgain: String
     val msgOperationFailed: String
     val msgDataAccessFailed: String
     val msgAgendaReadFailed: String
-    val msgAvailabilitySavedRemote: String
     val msgAvailabilitySavedLocal: String
     val msgSaveFailed: String
 
@@ -393,9 +402,9 @@ object TextosEspanol : Textos {
         Modalidad.DIA_COMPLETO -> "Día completo"
     }
 
-    override val connectionOffline = "Sin Internet · trabajando en modo local"
-    override val connectionRemote = "Con Internet · conectado a Supabase"
-    override val connectionLocal = "Con Internet · demostración local"
+    override val connectionOffline = "Sin Internet · consultando datos locales"
+    override val connectionOnline = "Con Internet · datos locales al día"
+    override fun pendingSync(cantidad: Int) = "$cantidad cambio(s) por sincronizar"
 
     override val loginLogoDescription = "Logo Lince"
     override val loginWelcome = "Bienvenido"
@@ -423,8 +432,7 @@ object TextosEspanol : Textos {
     override val profileAppearanceHint = "Elige cómo se ve la aplicación en este dispositivo."
     override val profileLanguage = "Idioma de la aplicación"
     override val profileLanguageHint = "Elige el idioma de la interfaz."
-    override val profileDataRemote = "Los datos se guardan en Supabase. La cuenta y el rol no se pueden modificar."
-    override val profileDataLocal = "Los datos se guardan en este dispositivo. La cuenta y el rol no se pueden modificar."
+    override val profileDataLocal = "Los datos se guardan en este dispositivo y se sincronizan al recuperar la conexión. La cuenta y el rol no se pueden modificar."
     override val errorName = "El nombre debe tener entre 2 y 60 caracteres."
     override val errorEmail = "Ingresa un correo válido."
     override val errorPhone = "Ingresa un teléfono válido."
@@ -583,7 +591,6 @@ object TextosEspanol : Textos {
     override val coordination = "Coordinación"
 
     override val summaryTitle = "Resumen operativo"
-    override val coordinationRemote = "Coordinación · Supabase"
     override val coordinationLocal = "Coordinación · Datos locales"
     override val assignmentStatus = "Estado de las asignaciones"
     override val pendingResponse = "Pendientes de respuesta"
@@ -597,8 +604,8 @@ object TextosEspanol : Textos {
     override fun availableNow(disponibles: Int, total: Int) = "$disponibles de $total disponibles ahora"
     override val viewFullTeam = "Ver equipo completo"
     override val syncing = "Sincronizando..."
-    override val simulateSync = "Simular sincronización"
-    override fun lastSimulation(valor: String) = "Última simulación: $valor"
+    override val syncNow = "Sincronizar ahora"
+    override fun lastSync(valor: String) = "Última sincronización: $valor"
     override val notSynced = "sin sincronizar"
 
     override val teamTitle = "Equipo"
@@ -632,10 +639,8 @@ object TextosEspanol : Textos {
     override val blockDay = "Bloquear este día"
     override val noAssignmentsThatDay = "No recibirás asignaciones para este día."
     override val saveAvailability = "Guardar disponibilidad"
-    override val changesRemote =
-        "Los cambios se guardan en Supabase. No puedes bloquear un día con un servicio asignado."
     override val changesLocal =
-        "Los cambios se guardan en este dispositivo. No puedes bloquear un día con un servicio asignado."
+        "Los cambios se guardan en este dispositivo y se sincronizan al recuperar la conexión. No puedes bloquear un día con un servicio asignado."
 
     override val msgAssignmentConfirmed = "Asignación confirmada."
     override val msgAssignmentRejected = "Asignación rechazada."
@@ -645,17 +650,16 @@ object TextosEspanol : Textos {
     override val msgRatingSaved = "Calificación guardada."
     override val msgServiceReassigned = "Servicio reasignado."
     override val msgProfileUpdated = "Perfil actualizado."
-    override val msgSummaryUpdatedLocal = "Resumen actualizado con los datos locales."
-    override val msgSyncSimulated = "Sincronización simulada en Supabase."
-    override fun msgLocalMode(detalle: String) = "Modo local: $detalle"
+    override fun msgSyncCompleted(enviadas: Int) =
+        if (enviadas == 0) "Sin cambios pendientes de sincronizar."
+        else "Sincronización completada: $enviadas registro(s) enviado(s)."
     override val msgIncorrectCredentials = "Usuario o contraseña incorrectos."
-    override val msgSupabaseUnavailable = "Supabase no está disponible en este momento."
+    override val msgSyncFailed = "No se pudo sincronizar. Se reintentará al recuperar la conexión."
     override val msgSignInAgain = "Debes iniciar sesión nuevamente."
     override val msgOperationFailed = "No se pudo completar la operación."
     override val msgDataAccessFailed = "No se pudo acceder a los datos. Intenta nuevamente."
     override val msgAgendaReadFailed = "No se pudo leer tu agenda. Intenta nuevamente."
-    override val msgAvailabilitySavedRemote = "Disponibilidad guardada en Supabase."
-    override val msgAvailabilitySavedLocal = "Disponibilidad guardada en este dispositivo."
+    override val msgAvailabilitySavedLocal = "Disponibilidad guardada en este dispositivo. Se sincronizará al recuperar la conexión."
     override val msgSaveFailed = "No se pudo guardar. Intenta nuevamente."
 
     override fun traducir(mensaje: String?): String? = mensaje
@@ -721,9 +725,9 @@ object TextosIngles : Textos {
         Modalidad.DIA_COMPLETO -> "Full day"
     }
 
-    override val connectionOffline = "No Internet · working in local mode"
-    override val connectionRemote = "Online · connected to Supabase"
-    override val connectionLocal = "Online · local demo"
+    override val connectionOffline = "No Internet · viewing local data"
+    override val connectionOnline = "Online · local data up to date"
+    override fun pendingSync(cantidad: Int) = "$cantidad change(s) pending sync"
 
     override val loginLogoDescription = "Lince logo"
     override val loginWelcome = "Welcome"
@@ -751,8 +755,7 @@ object TextosIngles : Textos {
     override val profileAppearanceHint = "Choose how the app looks on this device."
     override val profileLanguage = "App language"
     override val profileLanguageHint = "Choose the interface language."
-    override val profileDataRemote = "Data is saved to Supabase. Account and role cannot be changed."
-    override val profileDataLocal = "Data is saved on this device. Account and role cannot be changed."
+    override val profileDataLocal = "Data is saved on this device and synced when the connection returns. Account and role cannot be changed."
     override val errorName = "The name must be between 2 and 60 characters."
     override val errorEmail = "Enter a valid email."
     override val errorPhone = "Enter a valid phone number."
@@ -911,7 +914,6 @@ object TextosIngles : Textos {
     override val coordination = "Coordination"
 
     override val summaryTitle = "Operations summary"
-    override val coordinationRemote = "Coordination · Supabase"
     override val coordinationLocal = "Coordination · Local data"
     override val assignmentStatus = "Assignment status"
     override val pendingResponse = "Awaiting response"
@@ -925,8 +927,8 @@ object TextosIngles : Textos {
     override fun availableNow(disponibles: Int, total: Int) = "$disponibles of $total available now"
     override val viewFullTeam = "View full team"
     override val syncing = "Syncing..."
-    override val simulateSync = "Simulate sync"
-    override fun lastSimulation(valor: String) = "Last sync: $valor"
+    override val syncNow = "Sync now"
+    override fun lastSync(valor: String) = "Last sync: $valor"
     override val notSynced = "not synced"
 
     override val teamTitle = "Team"
@@ -960,10 +962,8 @@ object TextosIngles : Textos {
     override val blockDay = "Block this day"
     override val noAssignmentsThatDay = "You will not receive assignments for this day."
     override val saveAvailability = "Save availability"
-    override val changesRemote =
-        "Changes are saved to Supabase. You cannot block a day with an assigned service."
     override val changesLocal =
-        "Changes are saved on this device. You cannot block a day with an assigned service."
+        "Changes are saved on this device and synced when the connection returns. You cannot block a day with an assigned service."
 
     override val msgAssignmentConfirmed = "Assignment confirmed."
     override val msgAssignmentRejected = "Assignment rejected."
@@ -973,17 +973,16 @@ object TextosIngles : Textos {
     override val msgRatingSaved = "Rating saved."
     override val msgServiceReassigned = "Service reassigned."
     override val msgProfileUpdated = "Profile updated."
-    override val msgSummaryUpdatedLocal = "Summary updated with local data."
-    override val msgSyncSimulated = "Simulated sync completed in Supabase."
-    override fun msgLocalMode(detalle: String) = "Local mode: $detalle"
+    override fun msgSyncCompleted(enviadas: Int) =
+        if (enviadas == 0) "No pending changes to sync."
+        else "Sync completed: $enviadas record(s) sent."
     override val msgIncorrectCredentials = "Incorrect username or password."
-    override val msgSupabaseUnavailable = "Supabase is not available right now."
+    override val msgSyncFailed = "Could not sync. It will retry when the connection returns."
     override val msgSignInAgain = "Please sign in again."
     override val msgOperationFailed = "The operation could not be completed."
     override val msgDataAccessFailed = "Could not access the data. Please try again."
     override val msgAgendaReadFailed = "Could not read your schedule. Please try again."
-    override val msgAvailabilitySavedRemote = "Availability saved to Supabase."
-    override val msgAvailabilitySavedLocal = "Availability saved on this device."
+    override val msgAvailabilitySavedLocal = "Availability saved on this device. It will sync when the connection returns."
     override val msgSaveFailed = "Could not save. Please try again."
 
     override fun traducir(mensaje: String?): String? {
@@ -1031,13 +1030,7 @@ object TextosIngles : Textos {
             texto == "La agenda personal corresponde a conductores y guías." -> "Personal schedules are for drivers and guides."
             texto == "La cuenta no es válida." -> "The account is not valid."
             texto == "Ingresa tu usuario y contraseña." -> "Enter your username and password."
-            texto == "Revisa la vinculación de usuarios." -> "Check the user linking."
-            texto == "La persona seleccionada ya no está disponible. Actualiza los datos." -> "The selected person is no longer available. Refresh the data."
-            texto == "No se encontró la asignación remota. Actualiza los datos." -> "The remote assignment was not found. Refresh the data."
-            texto == "No se pudo conectar con Supabase. Revisa tu conexión e inténtalo nuevamente." -> "Could not connect to Supabase. Check your connection and try again."
             texto == "No tienes permisos para realizar esta operación." -> "You do not have permission to perform this operation."
-            texto == "Supabase no está configurado. Agrega SUPABASE_URL y SUPABASE_KEY en local.properties." ->
-                "Supabase is not configured. Add SUPABASE_URL and SUPABASE_KEY to local.properties."
             texto == "Debes iniciar sesión nuevamente." -> msgSignInAgain
             texto.startsWith("Persona no encontrada:") ->
                 "Person not found:" + texto.removePrefix("Persona no encontrada:")
@@ -1046,8 +1039,6 @@ object TextosIngles : Textos {
             texto.startsWith("La persona no maneja el idioma requerido (") ->
                 "The person does not speak the required language (" +
                     texto.substringAfter("(").replace("Español", "Spanish").replace("Inglés", "English")
-            texto.startsWith("Supabase respondió con un error (") ->
-                "Supabase returned an error (" + texto.substringAfter("(")
             else -> texto
         }
     }

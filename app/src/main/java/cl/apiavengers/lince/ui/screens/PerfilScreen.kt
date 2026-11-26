@@ -270,7 +270,7 @@ fun PerfilScreen(
             )
 
             Text(
-                if (estado.modoRemoto) t.profileDataRemote else t.profileDataLocal,
+                t.profileDataLocal,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

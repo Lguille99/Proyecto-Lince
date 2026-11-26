@@ -14,5 +14,7 @@ data class LinceUiState(
     val mensaje: String? = null,
     val esError: Boolean = false,
     val ultimaSincronizacion: String? = null,
-    val modoRemoto: Boolean = false
+    val conectado: Boolean = true,
+    val pendientesSincronizar: Int = 0,
+    val sincronizando: Boolean = false
 )

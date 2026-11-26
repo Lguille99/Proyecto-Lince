@@ -40,7 +40,6 @@ import cl.apiavengers.lince.ui.theme.Colores
 import cl.apiavengers.lince.viewmodel.LinceViewModel
 import java.util.Locale
 import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
 
 @Composable
 fun ResumenCoordinacionScreen(
@@ -56,7 +55,6 @@ fun ResumenCoordinacionScreen(
     val t = textos()
     val resumen = estado.resumen
     val snackbar = remember { SnackbarHostState() }
-    var sincronizando by remember { mutableStateOf(false) }
     val mensaje = estado.mensaje
 
     LaunchedEffect(mensaje) {
@@ -65,20 +63,13 @@ fun ResumenCoordinacionScreen(
             vm.limpiarMensaje()
         }
     }
-    LaunchedEffect(sincronizando) {
-        if (sincronizando) {
-            delay(600)
-            vm.sincronizar()
-            sincronizando = false
-        }
-    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             LinceTopBar(
                 titulo = t.summaryTitle,
-                subtitulo = if (estado.modoRemoto) t.coordinationRemote else t.coordinationLocal,
+                subtitulo = t.coordinationLocal,
                 accionDerecha = onCerrarSesion,
                 iconoDerecha = Icons.AutoMirrored.Filled.ExitToApp
             )
@@ -240,12 +231,12 @@ fun ResumenCoordinacionScreen(
             }
 
             BotonPrincipal(
-                texto = if (sincronizando) t.syncing else t.simulateSync,
-                onClick = { sincronizando = true },
-                cargando = sincronizando
+                texto = if (estado.sincronizando) t.syncing else t.syncNow,
+                onClick = { vm.sincronizar() },
+                cargando = estado.sincronizando
             )
             Text(
-                t.lastSimulation(estado.ultimaSincronizacion ?: t.notSynced),
+                t.lastSync(estado.ultimaSincronizacion ?: t.notSynced),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

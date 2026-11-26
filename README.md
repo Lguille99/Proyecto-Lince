@@ -10,14 +10,14 @@ Aplicación móvil académica para consultar, responder y ejecutar asignaciones 
 
 
 =======
-MVP Android implementado con datos ficticios y persistencia local en Room. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. La interfaz observa un `StateFlow` único y muestra el estado de la conexión; la agenda permite elegir una fecha con `DatePickerDialog`. Cuando `SUPABASE_URL` y `SUPABASE_KEY` están configurados, la app usa Supabase Auth, PostgREST y RPC con RLS; si no hay configuración, red validada o el acceso remoto no está disponible, conserva el modo local. La base Room guarda estado, perfiles y disponibilidad, e importa una sola vez los datos locales anteriores en JSON. El dominio cuenta con 46 pruebas unitarias, la app con 22 pruebas Room/conectividad/API y la migración SQL con 43 comprobaciones PGlite.
+MVP Android implementado con datos ficticios y persistencia local. Permite iniciar sesión con validación de rol, consultar servicios, confirmar o rechazar asignaciones, registrar check-in/check-out, calificar servicios, gestionar disponibilidad y editar el perfil. La interfaz observa un `StateFlow` único y muestra el estado de la conexión; la agenda permite elegir una fecha con `DatePickerDialog`. Toda la información se consulta sin Internet desde Room, las preferencias (tema, idioma y última sincronización) se guardan con DataStore y las operaciones realizadas sin red quedan en una cola persistente que se sincroniza automáticamente al recuperar la conectividad. La base Room guarda estado, perfiles, disponibilidad y operaciones pendientes, e importa una sola vez los datos locales anteriores en JSON. El dominio cuenta con 46 pruebas unitarias y la app con pruebas Room, de conectividad, de cola de sincronización y de la API Southbound.
 
 
 Las imágenes de `docs/diseno/interfaces` son la referencia de diseño utilizada para construir las pantallas.
 
 ## Consulta de la API Southbound
 
-En **Servicios → Consultar servicios Southbound** se consultan los datos académicos de la API del cliente. Se conserva el flujo anterior de asignaciones locales/Supabase. Las cuentas demo no están vinculadas a las identidades de Southbound; este catálogo es de consulta general y no representa las asignaciones del usuario conectado.
+En **Servicios → Consultar servicios Southbound** se consultan los datos académicos de la API del cliente. Se conserva el flujo de asignaciones locales. Las cuentas demo no están vinculadas a las identidades de Southbound; este catálogo es de consulta general y no representa las asignaciones del usuario conectado.
 
 Funciones integradas:
 
@@ -74,14 +74,14 @@ Una asignación tiene un **titular** y, opcionalmente, un **acompañante**. Ambo
 
 Todas usan la clave `Lince123`.
 
-| Usuario | Correo Auth | Perfil | Rol |
-|---|---|---|---|
-| `conductor.demo` | `conductor.demo@lince.local` | `DRV-001` | Conductor |
-| `conductor2.demo` | `conductor2.demo@lince.local` | `DRV-002` | Conductor |
-| `guia.demo` | `guia.demo@lince.local` | `GUI-002` | Guía |
-| `coordinador.demo` | `coordinador.demo@lince.local` | `COO-003` | Coordinador |
+| Usuario | Perfil | Rol |
+|---|---|---|
+| `conductor.demo` | `DRV-001` | Conductor |
+| `conductor2.demo` | `DRV-002` | Conductor |
+| `guia.demo` | `GUI-002` | Guía |
+| `coordinador.demo` | `COO-003` | Coordinador |
 
-En modo local basta con el usuario. En Supabase se debe crear cada usuario Auth con su correo y luego vincularlo a `perfiles.auth_user_id`. Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e historial (completados y rechazados), con servicios programados para el día actual.
+Basta con el usuario para ingresar; la validación es local. Los datos de ejemplo incluyen servicios activos (pendientes y confirmados) e historial (completados y rechazados), con servicios programados para el día actual.
 
 ## Reglas implementadas
 
@@ -94,66 +94,44 @@ En modo local basta con el usuario. En Supabase se debe crear cada usuario Auth 
 - La disponibilidad se bloquea con al menos 7 días de anticipación y no permite bloquear un día con un servicio asignado.
 - La agenda acepta fechas desde el día actual mediante `DatePickerDialog`; el calendario mensual sigue disponible.
 - El perfil permite editar nombre, correo, teléfono, zona e idiomas; el ID y el rol son de solo lectura. Los errores de nombre, correo, teléfono, zona e idiomas se muestran en el formulario.
-- La app distingue una red validada de una red sin Internet y muestra un aviso cuando se pierde la conexión.
+- La app distingue una red validada de una red sin Internet, muestra un aviso cuando se pierde la conexión y permite seguir consultando los datos guardados en Room.
 - El acumulado considera los servicios confirmados y completados del usuario.
-- La simulación de sincronización actualiza el resumen y registra la hora de la última ejecución.
+- Cada operación (confirmar, rechazar, check-in, check-out, ubicación, calificación, reasignación, perfil y disponibilidad) se registra en una cola persistente. Al recuperar la conectividad la cola se envía automáticamente y se actualiza la hora de la última sincronización.
 
-## Integración con Supabase
+## Persistencia local
 
-La app usa Supabase cuando la configuración local está presente. El modo local se conserva como respaldo y para ejecutar la demo sin red. No se sincronizan cambios entre ambos modos.
+La app funciona sin conexión y no depende de un servicio externo de base de datos.
 
-### Base de datos
+### Room
 
-Aplicar en orden en el SQL Editor del proyecto o con Supabase CLI:
+Room es la fuente de verdad del estado de la aplicación. La base `lince.db` guarda:
 
-1. `supabase/migrations/202610190001_estructura.sql`
-2. `supabase/migrations/202610190002_permisos_y_operaciones.sql`
-3. `supabase/migrations/202610280001_mvp_supabase.sql`
-4. `supabase/migrations/202611220001_geocercas_ubicacion.sql`
-5. `supabase/seed.sql`
+- `estado_servicios` y `perfiles`: cambios de asignaciones y datos editables del perfil.
+- `disponibilidad` y `agendas_importadas`: días bloqueados por cuenta.
+- `operaciones_pendientes`: cola de cambios realizados sin conexión, con tipo, detalle, fecha, estado e intentos.
 
-La migración `202610280001_mvp_supabase.sql` es aditiva: agrega acompañante, reasignación, calificaciones, ubicación de check-in, funciones y políticas RLS sin borrar datos existentes. La publicación de cambios en la base remota requiere permisos de administración; la publishable key de la app no permite ejecutar DDL.
+Al iniciar sesión, la app consulta directamente Room, por lo que servicios, historial, equipo y resumen están disponibles aunque no haya Internet. La importación del JSON anterior se ejecuta una sola vez y luego se descarta.
 
-Para restaurar el estado demo, ejecutar `supabase/reset_demo.sql` y luego `supabase/seed.sql`. El reset elimina solo los servicios `LIN-001` a `LIN-006`, sus asignaciones, ejecuciones, calificaciones, historial, disponibilidad y sincronizaciones; conserva los perfiles y sus vínculos con Auth. El seed es repetible si se ejecuta después del reset y deja dos servicios de hoy (uno confirmado para conductor y uno pendiente para guía), uno rechazado, uno completado y calificado, y servicios pendientes para conductor y guía.
+### DataStore
 
-### Usuarios Auth
+Las preferencias se guardan con Preferences DataStore en `lince_preferencias`:
 
-Crear en **Authentication > Users** los cuatro correos de la tabla de cuentas, con la clave `Lince123` o la que defina el equipo. Luego vincular cada perfil:
+- `modo_tema`: sistema, claro u oscuro.
+- `idioma`: español o inglés.
+- `ultima_sincronizacion`: fecha y hora del último envío de la cola.
 
-```sql
-update public.perfiles p
-set auth_user_id = u.id
-from auth.users u
-where u.email = case p.codigo
-    when 'DRV-001' then 'conductor.demo@lince.local'
-    when 'DRV-002' then 'conductor2.demo@lince.local'
-    when 'GUI-002' then 'guia.demo@lince.local'
-    when 'COO-003' then 'coordinador.demo@lince.local'
-end;
-```
+El tema y el idioma se aplican al iniciar la app y se conservan entre sesiones. Los cambios se escriben de forma asíncrona sin bloquear la interfaz.
 
-La creación de usuarios Auth no se hace con la publishable key desde la app; se realiza en el panel de Supabase o con la Admin API usando una clave secreta que nunca se incorpora al APK.
+### Sincronización de registros pendientes
 
-### Configuración Android
+Cada acción sobre asignaciones, ejecución, perfil o disponibilidad se persiste primero en Room y luego se agrega a `operaciones_pendientes`. `MonitorConexion` observa la red con `ConnectivityManager`:
 
-Crear o editar `local.properties` en la raíz, sin commitearlo:
+- Sin red: la app sigue consultando Room y acumula operaciones pendientes. El banner superior indica el estado y la cantidad pendiente.
+- Al recuperar una red validada: la cola se procesa automáticamente, los registros se marcan como sincronizados, se limpian de la cola y se actualiza `ultima_sincronizacion` en DataStore.
+- Si el envío falla: el registro queda en estado `ERROR` y se reintenta en la siguiente sincronización.
+- El resumen de coordinación incluye el botón **Sincronizar ahora** para forzar el proceso manualmente.
 
-```properties
-SUPABASE_URL=https://TU-PROYECTO.supabase.co
-SUPABASE_KEY=sb_publishable_TU_CLAVE
-```
-
-`app/build.gradle.kts` expone ambos valores como `BuildConfig`. La app usa la publishable key con RLS; no se debe usar `service_role` ni una clave secreta en el cliente. Si faltan los valores, el login y las operaciones usan el repositorio local.
-
-### Pruebas SQL
-
-```bash
-cd supabase/tests
-npm install
-npm test
-```
-
-La suite levanta PGlite, aplica las migraciones y el seed, y comprueba 45 reglas de negocio, permisos y trazabilidad.
+La implementación usa la interfaz `Sincronizador`; `SincronizadorLocal` es la implementación por defecto del MVP y puede reemplazarse por un cliente HTTP cuando exista un backend definitivo, sin cambiar la cola ni los ViewModels.
 
 ## Identidad visual
 
@@ -266,10 +244,11 @@ Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. H
 ## Tecnologías
 
 - Kotlin y Jetpack Compose con Material 3.
-- Arquitectura MVVM: UI y cliente Supabase en `app/`, reglas de negocio en `dominio/`.
-- Modo remoto con Supabase Auth, PostgREST, RPC y RLS; respaldo local con Room y `StateFlow`.
-- Room 2.7.2 con migraciones, DAOs y pruebas Robolectric. El JSON con `AtomicFile` se conserva solo para importar datos anteriores.
-- Indicador de conectividad con `ConnectivityManager` y pruebas SQL con PGlite.
+- Arquitectura MVVM: UI, ViewModels y persistencia local en `app/`, reglas de negocio en `dominio/`.
+- Persistencia local con Room y Preferences DataStore; estado de la interfaz con `StateFlow`.
+- Room 2.7.2 con migraciones, DAOs, cola de operaciones pendientes y pruebas Robolectric. El JSON con `AtomicFile` se conserva solo para importar datos anteriores.
+- DataStore para tema, idioma y última sincronización.
+- Indicador de conectividad con `ConnectivityManager` y sincronización automática de la cola al recuperar la red.
 
 ### Compilar y probar
 
@@ -298,9 +277,9 @@ Referencias oficiales de diseño: [Material Design 3](https://m3.material.io/) y
 ```text
 Proyecto-lince/
 ├── README.md
-├── app/                      # Interfaz, navegación, ViewModels y cliente Supabase
+├── app/                      # Interfaz, navegación, ViewModels, Room y DataStore
 ├── dominio/                  # Modelo, repositorios y pruebas
-├── supabase/                 # Migraciones, seed y pruebas PGlite
+├── backend/                  # API Ktor de referencia (opcional)
 └── docs/
     ├── evidencias/
     │   ├── clase-01/
@@ -321,6 +300,6 @@ Proyecto-lince/
 - Documento de diseño y recursos visuales incorporados al repositorio.
 - Identidad, flujo y pantallas usados como base de la implementación.
 - MVP funcional con datos ficticios y persistencia local.
-- Integración preparada con Supabase Auth, PostgREST, RPC y RLS, con respaldo local.
+- Persistencia con Room y DataStore, consulta sin Internet y sincronización de registros pendientes al recuperar la conectividad.
 - Documentación alineada con la implementación: titular conductor o guía, acompañante opcional, equipo, ficha, reasignación y calificación.
-- Pruebas unitarias del dominio, pruebas SQL PGlite y compilación del APK verificadas.
+- Pruebas unitarias del dominio, pruebas de persistencia y sincronización, y compilación del APK verificadas.

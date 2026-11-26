@@ -1,11 +1,18 @@
 package cl.apiavengers.lince.ui.theme
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
+import cl.apiavengers.lince.datos.preferencias.Preferencias
+import cl.apiavengers.lince.datos.preferencias.PreferenciasDataStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 enum class ModoTema(val etiqueta: String) {
     SISTEMA("Sistema"),
@@ -14,24 +21,32 @@ enum class ModoTema(val etiqueta: String) {
 }
 
 object PreferenciaTema {
-    private const val ARCHIVO = "tema_lince"
-    private const val CLAVE = "modo"
+    private val alcance = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private var prefs: SharedPreferences? = null
+    private var almacen: PreferenciasDataStore? = null
+    private var iniciado = false
 
     private val _modo = MutableStateFlow(ModoTema.SISTEMA)
     val modo: StateFlow<ModoTema> = _modo.asStateFlow()
 
     fun iniciar(context: Context) {
-        val almacen = context.applicationContext
-            .getSharedPreferences(ARCHIVO, Context.MODE_PRIVATE)
-        prefs = almacen
-        _modo.value = leer(almacen.getString(CLAVE, null))
+        if (iniciado) return
+        iniciado = true
+        val preferencias = Preferencias.obtener(context)
+        almacen = preferencias
+        runCatching {
+            _modo.value = leer(runBlocking { preferencias.modoTema.first() })
+        }
+        alcance.launch {
+            preferencias.modoTema.collect { valor -> _modo.value = leer(valor) }
+        }
     }
 
     fun fijar(nuevo: ModoTema) {
         _modo.value = nuevo
-        prefs?.edit { putString(CLAVE, nuevo.name) }
+        almacen?.let { preferencias ->
+            alcance.launch { preferencias.fijarModoTema(nuevo.name) }
+        }
     }
 
     private fun leer(valor: String?): ModoTema =

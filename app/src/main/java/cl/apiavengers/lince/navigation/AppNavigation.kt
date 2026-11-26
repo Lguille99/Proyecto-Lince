@@ -76,7 +76,7 @@ fun AppNavigation(vm: LinceViewModel = viewModel()) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        EstadoConexion(modoRemoto = estado.modoRemoto)
+        EstadoConexion(conectado = estado.conectado, pendientes = estado.pendientesSincronizar)
         Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.statusBars)) {
             NavHost(
                 navController = navController,

@@ -24,8 +24,6 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         buildConfigField("String", "SOUTHBOUND_API_KEY", "\"${valorConfiguracion("SOUTHBOUND_API_KEY")}\"")
-        buildConfigField("String", "SUPABASE_URL", "\"${valorConfiguracion("SUPABASE_URL")}\"")
-        buildConfigField("String", "SUPABASE_KEY", "\"${valorConfiguracion("SUPABASE_KEY")}\"")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -62,6 +60,7 @@ android {
 dependencies {
     implementation("androidx.room:room-runtime:2.7.2")
     kapt("androidx.room:room-compiler:2.7.2")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation(project(":dominio"))
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")

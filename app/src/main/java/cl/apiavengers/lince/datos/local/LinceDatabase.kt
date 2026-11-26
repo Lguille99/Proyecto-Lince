@@ -12,14 +12,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DisponibilidadEntity::class,
         AgendaImportadaEntity::class,
         EstadoServicioEntity::class,
-        PerfilEntity::class
+        PerfilEntity::class,
+        OperacionPendienteEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class LinceDatabase : RoomDatabase() {
     abstract fun estadoDao(): EstadoDao
     abstract fun disponibilidadDao(): DisponibilidadDao
+    abstract fun operacionPendienteDao(): OperacionPendienteDao
 
     companion object {
         val MIGRACION_1_2 = object : Migration(1, 2) {
@@ -80,6 +82,21 @@ abstract class LinceDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRACION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS operaciones_pendientes (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "tipo TEXT NOT NULL, " +
+                        "servicioId TEXT, " +
+                        "detalle TEXT NOT NULL, " +
+                        "creadoEn TEXT NOT NULL, " +
+                        "estado TEXT NOT NULL, " +
+                        "intentos INTEGER NOT NULL)"
+                )
+            }
+        }
+
         @Volatile private var instancia: LinceDatabase? = null
 
         fun obtener(context: Context): LinceDatabase = instancia ?: synchronized(this) {
@@ -87,7 +104,8 @@ abstract class LinceDatabase : RoomDatabase() {
                 context.applicationContext,
                 LinceDatabase::class.java,
                 "lince.db"
-            ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4).build().also { instancia = it }
+            ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5)
+                .build().also { instancia = it }
         }
     }
 }

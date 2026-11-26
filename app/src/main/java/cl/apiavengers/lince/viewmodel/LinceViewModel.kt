@@ -1,24 +1,21 @@
 package cl.apiavengers.lince.viewmodel
 
 import android.app.Application
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.datos.ArchivoEstado
-import cl.apiavengers.lince.datos.ClienteSupabase
-import cl.apiavengers.lince.datos.ErrorSupabase
-import cl.apiavengers.lince.datos.PanelLince
+import cl.apiavengers.lince.datos.MonitorConexion
 import cl.apiavengers.lince.datos.RepositorioLince
-import cl.apiavengers.lince.datos.SesionSupabase
-import cl.apiavengers.lince.datos.SupabaseConfig
 import cl.apiavengers.lince.datos.local.AlmacenEstadoRoom
+import cl.apiavengers.lince.datos.local.ColaSincronizacion
 import cl.apiavengers.lince.datos.local.LinceDatabase
-import cl.apiavengers.lince.modelo.Disponibilidad
+import cl.apiavengers.lince.datos.local.OperacionPendiente
+import cl.apiavengers.lince.datos.local.SincronizadorLocal
+import cl.apiavengers.lince.datos.local.TipoOperacionSync
+import cl.apiavengers.lince.datos.preferencias.Preferencias
 import cl.apiavengers.lince.modelo.EstadoServicio
 import cl.apiavengers.lince.modelo.Idioma
 import cl.apiavengers.lince.modelo.LinceUiState
-import cl.apiavengers.lince.modelo.ResumenCoordinador
 import cl.apiavengers.lince.modelo.Rol
 import cl.apiavengers.lince.modelo.Servicio
 import cl.apiavengers.lince.modelo.Ubicacion
@@ -31,6 +28,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,45 +37,50 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(LinceUiState())
     val uiState = _uiState.asStateFlow()
 
-    private var remoto: ClienteSupabase? = null
+    private val prefs = Preferencias.obtener(application)
+    private val cola = ColaSincronizacion(
+        LinceDatabase.obtener(application).operacionPendienteDao()
+    )
     private var repositorioLocal: RepositorioLince? = null
     private var sesion = 0
 
     private val t get() = PreferenciaIdioma.actuales()
 
+    init {
+        viewModelScope.launch {
+            prefs.ultimaSincronizacion.collect { valor ->
+                if (valor != null) _uiState.update { it.copy(ultimaSincronizacion = valor) }
+            }
+        }
+        viewModelScope.launch {
+            MonitorConexion(application).conectado.collect { conectado ->
+                _uiState.update { it.copy(conectado = conectado) }
+                if (conectado) sincronizarPendientes()
+            }
+        }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { cola.actualizarPendientes() }
+            ColaSincronizacion.pendientes.collect { pendientes ->
+                _uiState.update { it.copy(pendientesSincronizar = pendientes) }
+                if (pendientes > 0 && _uiState.value.conectado) sincronizarPendientes()
+            }
+        }
+    }
+
     fun iniciarSesion(cuenta: String, clave: String) {
         if (_uiState.value.cargando) return
-        remoto?.cerrarSesion()
-        remoto = null
-        SesionSupabase.cliente = null
         repositorioLocal?.cerrarSesion()
-        _uiState.value = LinceUiState(cargando = true)
+        val base = _uiState.value
+        _uiState.value = LinceUiState(
+            cargando = true,
+            conectado = base.conectado,
+            pendientesSincronizar = base.pendientesSincronizar,
+            ultimaSincronizacion = base.ultimaSincronizacion,
+            sincronizando = base.sincronizando
+        )
         val token = ++sesion
 
         viewModelScope.launch {
-            var errorRemoto: String? = null
-            if (SupabaseConfig.disponible && hayRed()) {
-                val cliente = ClienteSupabase()
-                try {
-                    val usuarioRemoto = cliente.iniciarSesion(cuenta, clave)
-                    val panel = cliente.cargarPanel()
-                    remoto = cliente
-                    SesionSupabase.cliente = cliente
-                    if (token == sesion) {
-                        _uiState.value = estadoRemoto(usuarioRemoto, panel)
-                    }
-                    return@launch
-                } catch (cancelacion: CancellationException) {
-                    throw cancelacion
-                } catch (problema: ErrorSupabase) {
-                    cliente.cerrarSesion()
-                    errorRemoto = PreferenciaIdioma.traducir(problema.message)
-                } catch (problema: Exception) {
-                    cliente.cerrarSesion()
-                    errorRemoto = t.msgSupabaseUnavailable
-                }
-            }
-
             var errorLocal: String? = null
             val estadoIniciado = try {
                 val repositorio = obtenerRepositorio()
@@ -93,21 +96,25 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             if (token != sesion) return@launch
-            _uiState.value = estadoIniciado?.copy(
-                mensaje = errorRemoto?.let { t.msgLocalMode(it) }
-            ) ?: LinceUiState(
-                error = errorLocal ?: errorRemoto ?: t.msgIncorrectCredentials
+            _uiState.value = estadoIniciado ?: LinceUiState(
+                error = errorLocal ?: t.msgIncorrectCredentials,
+                conectado = base.conectado,
+                pendientesSincronizar = base.pendientesSincronizar,
+                ultimaSincronizacion = base.ultimaSincronizacion
             )
         }
     }
 
     fun cerrarSesion() {
         sesion++
-        remoto?.cerrarSesion()
-        remoto = null
-        SesionSupabase.cliente = null
         repositorioLocal?.cerrarSesion()
-        _uiState.value = LinceUiState()
+        val base = _uiState.value
+        _uiState.value = LinceUiState(
+            conectado = base.conectado,
+            pendientesSincronizar = base.pendientesSincronizar,
+            ultimaSincronizacion = base.ultimaSincronizacion,
+            sincronizando = base.sincronizando
+        )
     }
 
     fun esCoordinador(): Boolean = _uiState.value.usuario?.rol == Rol.COORDINADOR
@@ -116,66 +123,39 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value.usuario?.let { servicio.esTitular(it.id) } == true
 
     fun sincronizar() {
-        if (!esCoordinador() || _uiState.value.cargando) return
-        val cliente = remoto
-        if (cliente == null) {
-            accionLocal(
-                exito = t.msgSummaryUpdatedLocal,
-                ultimaSincronizacion = LocalDateTime.now().format(HORA)
-            ) { _, usuario -> usuario }
+        if (_uiState.value.cargando || _uiState.value.sincronizando) return
+        if (!_uiState.value.conectado) {
+            _uiState.update { it.copy(mensaje = t.msgSyncFailed, esError = true) }
             return
         }
-        val token = sesion
-        _uiState.update { it.copy(cargando = true, error = null, mensaje = null, esError = false) }
-        viewModelScope.launch {
-            try {
-                cliente.simularSincronizacion()
-                val panel = cliente.cargarPanel()
-                val usuario = cliente.usuario ?: _uiState.value.usuario
-                    ?: throw ErrorSupabase(t.msgSignInAgain)
-                if (token == sesion) {
-                    _uiState.value = estadoRemoto(
-                        usuario = usuario,
-                        panel = panel,
-                        mensaje = t.msgSyncSimulated,
-                        ultimaSincronizacion = LocalDateTime.now().format(HORA)
-                    )
-                }
-            } catch (cancelacion: CancellationException) {
-                throw cancelacion
-            } catch (problema: Exception) {
-                if (token == sesion) {
-                    _uiState.update {
-                        it.copy(cargando = false, esError = true, mensaje = mensajeError(problema))
-                    }
-                }
-            }
-        }
+        sincronizarPendientes(mostrarMensaje = true)
     }
 
     fun confirmar(servicioId: String) {
-        if (remoto == null) {
-            accionLocal(t.msgAssignmentConfirmed) { repositorio, usuario ->
-                repositorio.confirmarServicio(servicioId)
-                usuario
-            }
-        } else {
-            accionRemota(t.msgAssignmentConfirmed) { cliente ->
-                cliente.responder(servicioId, true, null)
-            }
+        accionLocal(
+            exito = t.msgAssignmentConfirmed,
+            operacion = OperacionPendiente(
+                TipoOperacionSync.CONFIRMAR,
+                servicioId,
+                "Confirmar asignación $servicioId"
+            )
+        ) { repositorio, usuario ->
+            repositorio.confirmarServicio(servicioId)
+            usuario
         }
     }
 
     fun rechazar(servicioId: String, motivo: String) {
-        if (remoto == null) {
-            accionLocal(t.msgAssignmentRejected) { repositorio, usuario ->
-                repositorio.rechazarServicio(servicioId, motivo)
-                usuario
-            }
-        } else {
-            accionRemota(t.msgAssignmentRejected) { cliente ->
-                cliente.responder(servicioId, false, motivo)
-            }
+        accionLocal(
+            exito = t.msgAssignmentRejected,
+            operacion = OperacionPendiente(
+                TipoOperacionSync.RECHAZAR,
+                servicioId,
+                "Rechazar $servicioId · $motivo"
+            )
+        ) { repositorio, usuario ->
+            repositorio.rechazarServicio(servicioId, motivo)
+            usuario
         }
     }
 
@@ -185,15 +165,16 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         observaciones: String = "",
         posicion: Ubicacion? = null
     ) {
-        if (remoto == null) {
-            accionLocal(t.msgCheckinRegistered) { repositorio, usuario ->
-                repositorio.registrarCheckIn(servicioId, ubicacion, observaciones, posicion)
-                usuario
-            }
-        } else {
-            accionRemota(t.msgCheckinRegistered) { cliente ->
-                cliente.registrarCheckIn(servicioId, ubicacion, observaciones, posicion)
-            }
+        accionLocal(
+            exito = t.msgCheckinRegistered,
+            operacion = OperacionPendiente(
+                TipoOperacionSync.CHECK_IN,
+                servicioId,
+                "Check-in $servicioId · $ubicacion"
+            )
+        ) { repositorio, usuario ->
+            repositorio.registrarCheckIn(servicioId, ubicacion, observaciones, posicion)
+            usuario
         }
     }
 
@@ -203,54 +184,58 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         posicion: Ubicacion? = null,
         ubicacionTermino: String = ""
     ) {
-        if (remoto == null) {
-            accionLocal(t.msgServiceFinished) { repositorio, usuario ->
-                repositorio.registrarCheckOut(servicioId, observaciones, posicion, ubicacionTermino)
-                usuario
-            }
-        } else {
-            accionRemota(t.msgServiceFinished) { cliente ->
-                cliente.registrarCheckOut(servicioId, observaciones, posicion, ubicacionTermino)
-            }
+        accionLocal(
+            exito = t.msgServiceFinished,
+            operacion = OperacionPendiente(
+                TipoOperacionSync.CHECK_OUT,
+                servicioId,
+                "Check-out $servicioId · $ubicacionTermino"
+            )
+        ) { repositorio, usuario ->
+            repositorio.registrarCheckOut(servicioId, observaciones, posicion, ubicacionTermino)
+            usuario
         }
     }
 
     fun reportarUbicacion(servicioId: String, posicion: Ubicacion) {
-        if (remoto == null) {
-            accionLocal(t.msgLocationReported) { repositorio, usuario ->
-                repositorio.reportarUbicacion(servicioId, posicion)
-                usuario
-            }
-        } else {
-            accionRemota(t.msgLocationReported) { cliente ->
-                cliente.reportarUbicacion(servicioId, posicion)
-            }
+        accionLocal(
+            exito = t.msgLocationReported,
+            operacion = OperacionPendiente(
+                TipoOperacionSync.REPORTAR_UBICACION,
+                servicioId,
+                "Ubicación $servicioId · ${posicion.latitud}, ${posicion.longitud}"
+            )
+        ) { repositorio, usuario ->
+            repositorio.reportarUbicacion(servicioId, posicion)
+            usuario
         }
     }
 
     fun calificar(servicioId: String, puntaje: Int) {
-        if (remoto == null) {
-            accionLocal(t.msgRatingSaved) { repositorio, usuario ->
-                repositorio.calificarServicio(servicioId, puntaje)
-                usuario
-            }
-        } else {
-            accionRemota(t.msgRatingSaved) { cliente ->
-                cliente.calificar(servicioId, puntaje)
-            }
+        accionLocal(
+            exito = t.msgRatingSaved,
+            operacion = OperacionPendiente(
+                TipoOperacionSync.CALIFICAR,
+                servicioId,
+                "Calificar $servicioId · $puntaje/5"
+            )
+        ) { repositorio, usuario ->
+            repositorio.calificarServicio(servicioId, puntaje)
+            usuario
         }
     }
 
     fun reasignar(servicioId: String, nuevoUsuarioId: String) {
-        if (remoto == null) {
-            accionLocal(t.msgServiceReassigned) { repositorio, usuario ->
-                repositorio.reasignarServicio(servicioId, nuevoUsuarioId)
-                usuario
-            }
-        } else {
-            accionRemota(t.msgServiceReassigned) { cliente ->
-                cliente.reasignar(servicioId, nuevoUsuarioId)
-            }
+        accionLocal(
+            exito = t.msgServiceReassigned,
+            operacion = OperacionPendiente(
+                TipoOperacionSync.REASIGNAR,
+                servicioId,
+                "Reasignar $servicioId a $nuevoUsuarioId"
+            )
+        ) { repositorio, usuario ->
+            repositorio.reasignarServicio(servicioId, nuevoUsuarioId)
+            usuario
         }
     }
 
@@ -261,14 +246,15 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         zona: String,
         idiomas: List<Idioma>
     ) {
-        if (remoto == null) {
-            accionLocal(t.msgProfileUpdated) { repositorio, _ ->
-                repositorio.actualizarPerfil(nombre, correo, telefono, zona, idiomas)
-            }
-        } else {
-            accionRemota(t.msgProfileUpdated) { cliente ->
-                cliente.actualizarPerfil(nombre, correo, telefono, zona, idiomas)
-            }
+        accionLocal(
+            exito = t.msgProfileUpdated,
+            operacion = OperacionPendiente(
+                TipoOperacionSync.PERFIL,
+                null,
+                "Perfil · $nombre · $correo"
+            )
+        ) { repositorio, _ ->
+            repositorio.actualizarPerfil(nombre, correo, telefono, zona, idiomas)
         }
     }
 
@@ -343,7 +329,9 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         usuario: Usuario,
         mensaje: String? = null,
         esError: Boolean = false,
-        ultimaSincronizacion: String? = _uiState.value.ultimaSincronizacion
+        ultimaSincronizacion: String? = _uiState.value.ultimaSincronizacion,
+        pendientes: Int = _uiState.value.pendientesSincronizar,
+        conectado: Boolean = _uiState.value.conectado
     ): LinceUiState = LinceUiState(
         usuario = usuario,
         servicios = repositorio.consultarServicios(),
@@ -353,42 +341,14 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         mensaje = mensaje,
         esError = esError,
         ultimaSincronizacion = ultimaSincronizacion,
-        modoRemoto = false
+        conectado = conectado,
+        pendientesSincronizar = pendientes,
+        sincronizando = false
     )
-
-    private fun estadoRemoto(
-        usuario: Usuario,
-        panel: PanelLince,
-        mensaje: String? = null,
-        esError: Boolean = false,
-        ultimaSincronizacion: String? = _uiState.value.ultimaSincronizacion
-    ): LinceUiState {
-        val activos = panel.servicios.filter {
-            it.estado == EstadoServicio.PENDIENTE || it.estado == EstadoServicio.CONFIRMADA
-        }
-        val historial = panel.servicios.filter {
-            it.estado == EstadoServicio.COMPLETADA || it.estado == EstadoServicio.RECHAZADA
-        }
-        return LinceUiState(
-            usuario = usuario,
-            servicios = activos,
-            historial = historial,
-            equipo = panel.equipo,
-            resumen = if (usuario.rol == Rol.COORDINADOR) {
-                resumenDesde(panel.servicios, panel.equipo)
-            } else {
-                null
-            },
-            mensaje = mensaje,
-            esError = esError,
-            ultimaSincronizacion = ultimaSincronizacion,
-            modoRemoto = true
-        )
-    }
 
     private fun accionLocal(
         exito: String,
-        ultimaSincronizacion: String? = null,
+        operacion: OperacionPendiente? = null,
         bloque: (RepositorioLince, Usuario) -> Usuario
     ) {
         val actual = _uiState.value
@@ -404,15 +364,16 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
                 val actualizado = withContext(Dispatchers.IO) {
                     bloque(repositorio, usuario)
                 }
-                val estado = withContext(Dispatchers.IO) {
-                    estadoLocal(
-                        repositorio = repositorio,
-                        usuario = actualizado,
-                        mensaje = exito,
-                        ultimaSincronizacion = ultimaSincronizacion
-                    )
+                val pendientes = withContext(Dispatchers.IO) {
+                    operacion?.let { cola.encolar(it) }
+                    cola.contar()
                 }
-                if (token == sesion) _uiState.value = estado
+                val estado = withContext(Dispatchers.IO) {
+                    estadoLocal(repositorio, actualizado, mensaje = exito, pendientes = pendientes)
+                }
+                if (token != sesion) return@launch
+                _uiState.value = estado
+                if (operacion != null && estado.conectado) sincronizarPendientes()
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (problema: Exception) {
@@ -425,71 +386,59 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun accionRemota(
-        exito: String,
-        bloque: suspend (ClienteSupabase) -> Unit
-    ) {
-        val cliente = remoto ?: return
-        if (_uiState.value.cargando) return
+    private fun sincronizarPendientes(mostrarMensaje: Boolean = false) {
+        if (_uiState.value.sincronizando) return
         val token = sesion
-        _uiState.update {
-            it.copy(cargando = true, error = null, mensaje = null, esError = false)
-        }
+        _uiState.update { it.copy(sincronizando = true) }
         viewModelScope.launch {
             try {
-                bloque(cliente)
-                val panel = cliente.cargarPanel()
-                val usuario = cliente.usuario ?: _uiState.value.usuario
-                    ?: throw ErrorSupabase(t.msgSignInAgain)
-                if (token == sesion) {
-                    _uiState.value = estadoRemoto(usuario, panel, mensaje = exito)
+                val pendientesAntes = withContext(Dispatchers.IO) { cola.contar() }
+                val enviadas = if (pendientesAntes > 0) {
+                    withContext(Dispatchers.IO) { cola.sincronizar(SincronizadorLocal()) }
+                } else {
+                    0
                 }
+                val ahora = LocalDateTime.now().format(HORA)
+                val actualizarHora = pendientesAntes > 0 || mostrarMensaje
+                if (actualizarHora) {
+                    withContext(Dispatchers.IO) { prefs.fijarUltimaSincronizacion(ahora) }
+                }
+                val pendientes = withContext(Dispatchers.IO) {
+                    cola.limpiarSincronizadas()
+                    cola.contar()
+                }
+                if (token != sesion) return@launch
+                _uiState.update {
+                    it.copy(
+                        sincronizando = false,
+                        pendientesSincronizar = pendientes,
+                        ultimaSincronizacion = if (actualizarHora) ahora else it.ultimaSincronizacion,
+                        mensaje = if (mostrarMensaje) t.msgSyncCompleted(enviadas) else it.mensaje,
+                        esError = if (mostrarMensaje) false else it.esError
+                    )
+                }
+                if (pendientes > 0 && _uiState.value.conectado) sincronizarPendientes()
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (problema: Exception) {
                 if (token == sesion) {
                     _uiState.update {
-                        it.copy(cargando = false, esError = true, mensaje = mensajeError(problema))
+                        it.copy(
+                            sincronizando = false,
+                            mensaje = if (mostrarMensaje) t.msgSyncFailed else it.mensaje,
+                            esError = mostrarMensaje
+                        )
                     }
                 }
             }
         }
-    }
-
-    private fun hayRed(): Boolean {
-        val gestor = getApplication<Application>()
-            .getSystemService(ConnectivityManager::class.java) ?: return true
-        val red = gestor.activeNetwork ?: return false
-        val capacidades = gestor.getNetworkCapabilities(red) ?: return false
-        return capacidades.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-            capacidades.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
     private fun mensajeError(error: Exception): String = when {
         error is IllegalArgumentException || error is IllegalStateException -> {
             PreferenciaIdioma.traducir(error.message) ?: t.msgOperationFailed
         }
-        error is ErrorSupabase -> PreferenciaIdioma.traducir(error.message) ?: t.msgOperationFailed
         else -> t.msgDataAccessFailed
-    }
-
-    private fun resumenDesde(servicios: List<Servicio>, equipo: List<Usuario>): ResumenCoordinador {
-        val activos = servicios.filter {
-            it.estado == EstadoServicio.PENDIENTE || it.estado == EstadoServicio.CONFIRMADA
-        }
-        val historial = servicios.filter {
-            it.estado == EstadoServicio.COMPLETADA || it.estado == EstadoServicio.RECHAZADA
-        }
-        return ResumenCoordinador(
-            serviciosActivos = activos.size,
-            pendientes = activos.count { it.estado == EstadoServicio.PENDIENTE },
-            confirmadas = activos.count { it.estado == EstadoServicio.CONFIRMADA },
-            rechazadas = historial.count { it.estado == EstadoServicio.RECHAZADA },
-            enEjecucion = activos.count { it.inicioEn != null && it.terminoEn == null },
-            personasEquipo = equipo.size,
-            personasDisponibles = equipo.count { it.disponibilidad == Disponibilidad.DISPONIBLE },
-            historialTotal = historial.size
-        )
     }
 
     private companion object {

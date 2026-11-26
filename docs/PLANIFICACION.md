@@ -6,14 +6,16 @@ Este tablero versionado en GitHub registra el estado técnico. Los responsables 
 
 | Tarea | Evidencia |
 |---|---|
-| Persistencia Room de estado, perfiles y disponibilidad | `EstadoServicioEntity`, `PerfilEntity`, `DisponibilidadEntity`, DAOs y `LinceDatabase` v3 |
-| Migraciones Room y esquema exportado | `MIGRACION_1_2`, `MIGRACION_2_3` y esquemas `1.json`–`3.json` |
+| Persistencia Room de estado, perfiles, disponibilidad y cola pendiente | `EstadoServicioEntity`, `PerfilEntity`, `DisponibilidadEntity`, `OperacionPendienteEntity`, DAOs y `LinceDatabase` v5 |
+| Migraciones Room y esquema exportado | `MIGRACION_1_2`, `MIGRACION_2_3`, `MIGRACION_3_4`, `MIGRACION_4_5` y esquemas exportados |
+| Preferencias con DataStore | Tema, idioma y última sincronización en `PreferenciasDataStore` |
+| Sincronización al recuperar conectividad | `ColaSincronizacion`, `MonitorConexion` y reintentos de operaciones pendientes |
 | Importación única de datos locales anteriores | `AlmacenEstadoRoom` y `AlmacenDisponibilidadRoom` con respaldo JSON |
 | Estado único y reactivo | `LinceUiState` + `StateFlow` observado por las pantallas |
 | Confirmar/rechazar con motivo validado | Repositorio, detalle de servicio y persistencia Room |
 | Perfil editable con validación inline | Nombre, correo, teléfono, zona e idiomas; ID y rol fijos |
 | Agenda con selector nativo | Calendario mensual y `DatePickerDialog` desde el día actual |
-| Estado de conexión | `MonitorConexion`, `ConexionViewModel` y banner de red |
+| Estado de conexión | `MonitorConexion`, `LinceViewModel` y banner de red con pendientes |
 | Actualización de listas, historial y resumen | `LinceViewModel`, `LinceUiState` y pantallas migradas |
 | Documentación de ejecución y demostración | README actualizado |
 
@@ -22,9 +24,8 @@ Este tablero versionado en GitHub registra el estado técnico. Los responsables 
 | Comprobación | Resultado |
 |---|---|
 | `:dominio:test` | 40 pruebas aprobadas |
-| `:app:testDebugUnitTest` | 7 pruebas aprobadas: disponibilidad Room, estado/perfiles Room y conectividad |
+| `:app:testDebugUnitTest` | Pruebas de disponibilidad Room, estado/perfiles Room, conectividad, cola de sincronización y Southbound |
 | `:app:compileDebugKotlin` | Compilación correcta |
-| Pruebas PGlite | 43 comprobaciones aprobadas antes de la integración; el SQL no cambió |
 | `:app:lintDebug` | Pendiente de ejecutar sobre la versión integrada |
 | `:app:assembleDebug` | Pendiente de generar el APK final |
 
@@ -45,7 +46,7 @@ Este tablero versionado en GitHub registra el estado técnico. Los responsables 
 | Tarea | Dependencia |
 |---|---|
 | Consumir la API del cliente | Documentación, acceso y contrato de autenticación del cliente |
-| Sincronización bidireccional y offline avanzado | Resolución de conflictos y política de reintentos |
+| Conectar la cola local con un backend definitivo | Contrato HTTP y resolución de conflictos |
 | Notificaciones de asignaciones y disponibilidad | Servicio de notificaciones y permisos |
 
 ## Registro de demostración física

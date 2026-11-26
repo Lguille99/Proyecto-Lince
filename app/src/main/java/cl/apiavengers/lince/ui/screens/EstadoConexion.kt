@@ -1,8 +1,5 @@
 package cl.apiavengers.lince.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +13,13 @@ import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.ui.idioma.textos
 
 @Composable
-fun EstadoConexion(modoRemoto: Boolean) {
+fun EstadoConexion(conectado: Boolean, pendientes: Int) {
+    val t = textos()
+    val texto = when {
+        !conectado -> t.connectionOffline
+        pendientes > 0 -> t.pendingSync(pendientes)
+        else -> t.connectionOnline
+    }
     // Banner sutil justo debajo de la top bar, respetando insets del sistema
     Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant)) {
         Spacer(Modifier.statusBarsPadding())
@@ -28,9 +31,13 @@ fun EstadoConexion(modoRemoto: Boolean) {
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                text = if (modoRemoto) textos().changesRemote else textos().changesLocal,
+                text = texto,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (conectado) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
                 fontWeight = FontWeight.Medium
             )
         }
