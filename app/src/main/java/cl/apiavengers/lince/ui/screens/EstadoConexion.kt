@@ -1,38 +1,38 @@
 package cl.apiavengers.lince.ui.screens
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Surface
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.unit.sp
 import cl.apiavengers.lince.ui.idioma.textos
-import cl.apiavengers.lince.ui.theme.Colores
-import cl.apiavengers.lince.ui.theme.EstiloCuerpoSecundario
-import cl.apiavengers.lince.viewmodel.ConexionViewModel
 
 @Composable
-fun EstadoConexion(
-    modoRemoto: Boolean = false,
-    vm: ConexionViewModel = viewModel()
-) {
-    val conectado by vm.conectado.collectAsStateWithLifecycle()
-    val t = textos()
-    val fondo = if (conectado) Colores.exitoFondo else Colores.errorFondo
-    val tinta = if (conectado) Colores.exitoTexto else Colores.error
-    Surface(color = fondo) {
-        Text(
-            when {
-                !conectado -> t.connectionOffline
-                modoRemoto -> t.connectionRemote
-                else -> t.connectionLocal
-            },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-            style = EstiloCuerpoSecundario.copy(color = tinta)
-        )
+fun EstadoConexion(modoRemoto: Boolean) {
+    // Banner sutil justo debajo de la top bar, respetando insets del sistema
+    Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant)) {
+        Spacer(Modifier.statusBarsPadding())
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = if (modoRemoto) textos().changesRemote else textos().changesLocal,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
