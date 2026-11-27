@@ -1,7 +1,7 @@
 package cl.apiavengers.lince.viewmodel
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.datos.ArchivoEstado
 import cl.apiavengers.lince.datos.MonitorConexion
@@ -25,6 +25,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,16 +34,34 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class LinceViewModel(application: Application) : AndroidViewModel(application) {
+class LinceViewModel(
+    private val monitorConexion: MonitorConexion,
+    private val preferencias: cl.apiavengers.lince.datos.preferencias.PreferenciasDataStore,
+    private val cola: ColaSincronizacion,
+    private val repositorioProvider: () -> RepositorioLince,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : ViewModel() {
     private val _uiState = MutableStateFlow(LinceUiState())
     val uiState = _uiState.asStateFlow()
 
-    private val prefs = Preferencias.obtener(application)
-    private val cola = ColaSincronizacion(
-        LinceDatabase.obtener(application).operacionPendienteDao()
-    )
+    private val prefs = preferencias
     private var repositorioLocal: RepositorioLince? = null
     private var sesion = 0
+
+    constructor(application: Application) : this(
+        MonitorConexion(application),
+        Preferencias.obtener(application),
+        ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
+        {
+            RepositorioLince(
+                AlmacenEstadoRoom(
+                    LinceDatabase.obtener(application).estadoDao(),
+                    ArchivoEstado(application)
+                )
+            )
+        },
+        Dispatchers.IO
+    )
 
     private val t get() = PreferenciaIdioma.actuales()
 
@@ -53,13 +72,13 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            MonitorConexion(application).conectado.collect { conectado ->
+            monitorConexion.conectado.collect { conectado ->
                 _uiState.update { it.copy(conectado = conectado) }
                 if (conectado) sincronizarPendientes()
             }
         }
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { cola.actualizarPendientes() }
+            withContext(ioDispatcher) { cola.actualizarPendientes() }
             ColaSincronizacion.pendientes.collect { pendientes ->
                 _uiState.update { it.copy(pendientesSincronizar = pendientes) }
                 if (pendientes > 0 && _uiState.value.conectado) sincronizarPendientes()
@@ -84,10 +103,10 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
             var errorLocal: String? = null
             val estadoIniciado = try {
                 val repositorio = obtenerRepositorio()
-                val perfil = withContext(Dispatchers.IO) {
+                val perfil = withContext(ioDispatcher) {
                     repositorio.iniciarSesion(cuenta, clave)
                 }
-                withContext(Dispatchers.IO) { estadoLocal(repositorio, perfil) }
+                withContext(ioDispatcher) { estadoLocal(repositorio, perfil) }
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (problema: IllegalArgumentException) {
@@ -312,14 +331,7 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun obtenerRepositorio(): RepositorioLince {
         repositorioLocal?.let { return it }
-        val repositorio = withContext(Dispatchers.IO) {
-            RepositorioLince(
-                AlmacenEstadoRoom(
-                    LinceDatabase.obtener(getApplication()).estadoDao(),
-                    ArchivoEstado(getApplication())
-                )
-            )
-        }
+        val repositorio = withContext(ioDispatcher) { repositorioProvider() }
         repositorioLocal = repositorio
         return repositorio
     }
@@ -361,14 +373,14 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val repositorio = obtenerRepositorio()
-                val actualizado = withContext(Dispatchers.IO) {
+                val actualizado = withContext(ioDispatcher) {
                     bloque(repositorio, usuario)
                 }
-                val pendientes = withContext(Dispatchers.IO) {
+                val pendientes = withContext(ioDispatcher) {
                     operacion?.let { cola.encolar(it) }
                     cola.contar()
                 }
-                val estado = withContext(Dispatchers.IO) {
+                val estado = withContext(ioDispatcher) {
                     estadoLocal(repositorio, actualizado, mensaje = exito, pendientes = pendientes)
                 }
                 if (token != sesion) return@launch
@@ -392,18 +404,18 @@ class LinceViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(sincronizando = true) }
         viewModelScope.launch {
             try {
-                val pendientesAntes = withContext(Dispatchers.IO) { cola.contar() }
+                val pendientesAntes = withContext(ioDispatcher) { cola.contar() }
                 val enviadas = if (pendientesAntes > 0) {
-                    withContext(Dispatchers.IO) { cola.sincronizar(SincronizadorLocal()) }
+                    withContext(ioDispatcher) { cola.sincronizar(SincronizadorLocal()) }
                 } else {
                     0
                 }
                 val ahora = LocalDateTime.now().format(HORA)
                 val actualizarHora = pendientesAntes > 0 || mostrarMensaje
                 if (actualizarHora) {
-                    withContext(Dispatchers.IO) { prefs.fijarUltimaSincronizacion(ahora) }
+                    withContext(ioDispatcher) { prefs.fijarUltimaSincronizacion(ahora) }
                 }
-                val pendientes = withContext(Dispatchers.IO) {
+                val pendientes = withContext(ioDispatcher) {
                     cola.limpiarSincronizadas()
                     cola.contar()
                 }

@@ -2,7 +2,7 @@ package cl.apiavengers.lince.viewmodel
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.BuildConfig
 import cl.apiavengers.lince.datos.southbound.*
@@ -79,9 +79,11 @@ data class SouthboundUiState(
     val detalleCliente: ClienteApiSouthbound? = null
 )
 
-class SouthboundViewModel(application: Application) : AndroidViewModel(application) {
-    private val cliente = ClienteSouthbound(
-        BuildConfig.SOUTHBOUND_API_KEY, CacheSouthbound.obtener(application).consultas()
+class SouthboundViewModel(
+    private val cliente: ClienteSouthbound
+) : ViewModel() {
+    constructor(application: Application) : this(
+        ClienteSouthbound(BuildConfig.SOUTHBOUND_API_KEY, CacheSouthbound.obtener(application).consultas())
     )
     private val _estado = MutableStateFlow(SouthboundUiState())
     val estado = _estado.asStateFlow()

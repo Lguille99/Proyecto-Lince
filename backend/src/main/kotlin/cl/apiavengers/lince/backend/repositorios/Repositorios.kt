@@ -287,11 +287,35 @@ object HitosRepo {
         conexion.actualizar("DELETE FROM hitos WHERE id = ?", id) > 0
     }
 
-    fun existeTipo(servicioId: String, tipo: String): Boolean = Db.usar { conexion ->
+    fun existePorRequestId(servicioId: String, requestId: String): Boolean = Db.usar { conexion ->
         conexion.consultar(
-            "SELECT 1 FROM hitos WHERE servicio_id = ? AND tipo = ? LIMIT 1",
-            servicioId, tipo.uppercase()
+            "SELECT 1 FROM hitos WHERE servicio_id = ? AND request_id = ? LIMIT 1",
+            servicioId, requestId
         ) { true }.isNotEmpty()
+    }
+
+    fun buscarPorRequestId(servicioId: String, requestId: String): HitoDto? = Db.usar { conexion ->
+        conexion.consultarUno(
+            "SELECT * FROM hitos WHERE servicio_id = ? AND request_id = ?",
+            servicioId, requestId
+        ) { fila ->
+            fila(
+                id = fila.getString("id"),
+                servicioId = fila.getString("servicio_id"),
+                geocercaId = fila.getString("geocerca_id"),
+                usuarioId = fila.getString("usuario_id"),
+                tipo = fila.getString("tipo"),
+                lat = fila.getDouble("lat").takeUnless { fila.wasNull() },
+                lng = fila.getDouble("lng").takeUnless { fila.wasNull() },
+                precisionM = fila.getDouble("precision_m").takeUnless { fila.wasNull() },
+                distanciaM = fila.getDouble("distancia_m").takeUnless { fila.wasNull() },
+                ocurridoEn = fila.getString("ocurrido_en"),
+                observaciones = fila.getString("observaciones"),
+                motivoRechazo = fila.getString("motivo_rechazo"),
+                requestId = fila.getString("request_id"),
+                estadoSync = fila.getString("estado_sync")
+            )
+        }
     }
 
     fun ultimaPosicion(servicioId: String): UltimaPosicionDto? = Db.usar { conexion ->

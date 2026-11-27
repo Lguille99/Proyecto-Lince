@@ -156,13 +156,33 @@ private fun Route.rutaHitos() {
         call.respond(HttpStatusCode.NoContent)
     }
 
-    post("/hitos/check-in") {
+post("/hitos/check-in") {
         val principal = call.exigirRol(RolApi.GUIA, RolApi.TRANSPORTISTA)
-        val request = call.receive<CheckInRequest>()
-        validarCoordenadas(request.lat, request.lng, true)
+        val request = call.receive<CheckInRequest>
+        val idempotencyKey = call.request.headers["Idempotency-Key"]?.takeIf { it.isNotBlank() }
         val servicio = ServiciosRepo.buscar(request.servicioId)
             ?: throw ApiError(HttpStatusCode.NotFound, "SERVICIO_NO_ENCONTRADO", "Servicio no encontrado.")
+        if (servicio.estado.uppercase() == "CANCELADO") {
+            IncidenciasRepo.crear(
+                nuevoId(), request.servicioId, principal.id,
+                Instant.now().toString()
+            )
+            throw ApiError(
+                HttpStatusCode.Conflict, "SERVICIO_CANCELADO",
+                "No se puede registrar check-in en un servicio cancelado."
+            )
+        }
+        if (idempotencyKey != null && HitosRepo.existePorRequestId(request.servicioId, idempotencyKey)) {
+            val hitoExistente = HitosRepo.buscarPorRequestId(request.servicioId, idempotencyKey)
+                ?: throw ApiError(HttpStatusCode.InternalServerError, "ERROR_INTERNO", "No se pudo recuperar el check-in idempotente.")
+            call.respond(HttpStatusCode.OK, hitoExistente!!)
+            return@post
+        }
         if (!ServiciosRepo.estaAsignado(request.servicioId, principal.id)) {
+            IncidenciasRepo.crear(
+                nuevoId(), request.servicioId, principal.id,
+                Instant.now().toString()
+            )
             throw ApiError(HttpStatusCode.Forbidden, "SIN_ASIGNACION", "No estás asignado a este servicio.")
         }
         if (HitosRepo.existeTipo(request.servicioId, TipoHito.CHECK_IN.name)) {
@@ -172,20 +192,39 @@ private fun Route.rutaHitos() {
             ?: throw ApiError(HttpStatusCode.UnprocessableEntity, "GEOCERCA_NO_DEFINIDA", "El servicio no tiene geocerca configurada.")
         val distancia = Reglas.distanciaMetros(request.lat, request.lng, geocerca.lat, geocerca.lng)
         if (distancia > geocerca.radioM) {
+            IncidenciasRepo.crear(
+                nuevoId(), request.servicioId, principal.id,
+                Instant.now().toString()
+            )
             throw ApiError(
                 HttpStatusCode.UnprocessableEntity, "FUERA_DE_GEOCERCA",
                 "Estás a ${distancia.roundToInt()} m del punto; el radio permitido es ${geocerca.radioM} m."
             )
         }
+        if (!Reglas.precisionGpsSuficiente(request.precisionM)) {
+            IncidenciasRepo.crear(
+                nuevoId(), request.servicioId, principal.id,
+                Instant.now().toString()
+            )
+            throw ApiError(
+                HttpStatusCode.UnprocessableEntity, "PRECISION_GPS_INSUFICIENTE",
+                "La precisión GPS debe ser de como máximo ${Reglas.PRECISION_GPS_MAXIMA_M} m."
+            )
+        }
         val ahora = Instant.now()
         val pickup = Reglas.parsearInstante(servicio.fechaHoraPickup)
         if (!Reglas.esPuntual(pickup, ahora)) {
+            IncidenciasRepo.crear(
+                nuevoId(), request.servicioId, principal.id,
+                Instant.now().toString()
+            )
             throw ApiError(
                 HttpStatusCode.UnprocessableEntity, "CHECK_IN_TARDIO",
                 "El check-in debe registrarse al menos ${Reglas.MINUTOS_PUNTUALIDAD} minutos antes del pickup " +
-                    "(${Reglas.minutosDeTardanza(pickup, ahora)} min de tardanza)."
+                    "(${Reglas.minutosDeTardanza(pickup, ahora)} min de tardancia)."
             )
         }
+        val hitoRequestId = idempotencyKey ?: call.callId
         val hito = HitosRepo.crear(
             id = nuevoId(),
             servicioId = request.servicioId,
@@ -199,7 +238,7 @@ private fun Route.rutaHitos() {
             ocurridoEn = ahora.toString(),
             observaciones = request.observaciones?.trim()?.takeIf { it.isNotEmpty() },
             motivoRechazo = null,
-            requestId = call.callId
+            requestId = hitoRequestId
         )
         call.respond(HttpStatusCode.Created, hito)
     }

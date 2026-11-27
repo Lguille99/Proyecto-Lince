@@ -86,6 +86,8 @@ paths:
       description: >
         No usar para CHECK_IN ni CHECK_OUT; esos tienen endpoints dedicados con
         validación de geocerca y puntualidad.
+      operationId: crearHito
+      idempotencyKey: X-Idempotency-Key
       requestBody:
         required: true
         content:
@@ -113,6 +115,8 @@ paths:
         GUIA o TRANSPORTISTA. Requiere estar dentro del radio de la geocerca
         (150 m por defecto, configurable) y registrar al menos 15 minutos antes
         del pickup. Calcula y guarda distancia Haversine y precisión GPS.
+      operationId: checkIn
+      idempotencyKey: X-Idempotency-Key
       requestBody:
         required: true
         content:
@@ -144,6 +148,9 @@ paths:
     post:
       tags: [Hitos]
       summary: Check-out con ubicación de dropoff
+      description: Check-out con ubicación de dropoff
+      operationId: checkOut
+      idempotencyKey: X-Idempotency-Key
       requestBody:
         required: true
         content:
@@ -198,6 +205,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ActualizarHitoRequest'
+      operationId: actualizarHito
+      idempotencyKey: X-Idempotency-Key
       responses:
         '200':
           description: Hito actualizado
@@ -217,6 +226,8 @@ paths:
       description: Solo COORDINACION.
       parameters:
         - $ref: '#/components/parameters/IdPath'
+      operationId: eliminarHito
+      idempotencyKey: X-Idempotency-Key
       responses:
         '204':
           description: Eliminado
@@ -247,6 +258,8 @@ paths:
       tags: [Geocercas]
       summary: Crea geocerca de hotel o pickup
       description: Solo COORDINACION. Radio por defecto 150 m.
+      operationId: crearGeocerca
+      idempotencyKey: X-Idempotency-Key
       requestBody:
         required: true
         content:
@@ -297,6 +310,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GeocercaRequest'
+      operationId: actualizarGeocerca
+      idempotencyKey: X-Idempotency-Key
       responses:
         '200':
           description: Actualizada
@@ -354,6 +369,8 @@ paths:
       description: >
         Exige al menos 7 días de anticipación y rechaza fechas con servicios
         asignados. La app envía la misma validación antes de llamar.
+      operationId: bloquearDia
+      idempotencyKey: X-Idempotency-Key
       requestBody:
         required: true
         content:
@@ -423,6 +440,9 @@ paths:
     post:
       tags: [Incidencias]
       summary: Reporta una incidencia
+      description: Reporta una incidencia
+      operationId: reportarIncidencia
+      idempotencyKey: X-Idempotency-Key
       requestBody:
         required: true
         content:
@@ -473,6 +493,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ActualizarIncidenciaRequest'
+      operationId: actualizarIncidencia
+      idempotencyKey: X-Idempotency-Key
       responses:
         '200':
           description: Actualizada

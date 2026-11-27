@@ -13,6 +13,7 @@ object Reglas {
     const val MINUTOS_ANTICIPACION_BLOQUEO = 7L
     const val MINUTOS_PUNTUALIDAD = 15L
     const val RADIO_TIERRA_M = 6_371_000.0
+    const val PRECISION_GPS_MAXIMA_M = 50.0
 
     val ZONA: ZoneId = ZoneId.of("America/Santiago")
 
@@ -52,4 +53,7 @@ object Reglas {
     }
 
     fun fechaLocal(valor: String): LocalDate = LocalDate.parse(valor.take(10))
+
+    fun precisionGpsSuficiente(precisionM: Double?): Boolean =
+        precisionM == null || precisionM <= PRECISION_GPS_MAXIMA_M
 }

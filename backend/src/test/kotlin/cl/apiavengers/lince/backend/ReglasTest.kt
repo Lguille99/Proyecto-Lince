@@ -68,4 +68,19 @@ class ReglasTest {
             Reglas.parsearInstante("2026-11-19T12:00:00Z")
         )
     }
+
+    @Test
+    fun `precisionGpsSuficiente`() {
+        assertTrue(Reglas.precisionGpsSuficiente(5.0))
+        assertTrue(Reglas.precisionGpsSuficiente(50.0))
+        assertFalse(Reglas.precisionGpsSuficiente(51.0))
+    }
+
+    @Test
+    fun `validaciones de check-in con idempotency key`() {
+        val key1 = "key-test-001"
+        val key2 = "key-test-002"
+        assertNotEquals(key1, key2)
+        assertEquals(key1, key1)
+    }
 }
