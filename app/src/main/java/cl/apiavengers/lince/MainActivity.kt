@@ -23,6 +23,7 @@ import cl.apiavengers.lince.ui.idioma.TextosEspanol
 import cl.apiavengers.lince.ui.idioma.TextosIngles
 import cl.apiavengers.lince.ui.theme.LinceTheme
 import cl.apiavengers.lince.ui.theme.ModoTema
+import cl.apiavengers.lince.ui.theme.ProvideLinceStatusColors
 import cl.apiavengers.lince.ui.theme.PreferenciaTema
 
 class MainActivity : ComponentActivity() {
@@ -52,11 +53,13 @@ class MainActivity : ComponentActivity() {
             }
             CompositionLocalProvider(LocalTextos provides textos) {
                 LinceTheme(darkTheme = oscuro) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        AppNavigation()
+                    ProvideLinceStatusColors(darkTheme = oscuro) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            AppNavigation()
+                        }
                     }
                 }
             }
