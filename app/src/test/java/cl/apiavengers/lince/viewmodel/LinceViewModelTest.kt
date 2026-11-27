@@ -127,3 +127,4 @@ class LinceViewModelTest {
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
     }
 }
+
