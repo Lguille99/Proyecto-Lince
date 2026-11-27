@@ -18,6 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import cl.apiavengers.lince.ui.theme.CanvasOscuro
+import cl.apiavengers.lince.ui.theme.NavyEstructuralClaro
+import cl.apiavengers.lince.ui.theme.NavyEstructuralOscuro
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
@@ -31,8 +34,8 @@ fun LinceTopBar(
     modifier: Modifier = Modifier
 ) {
     // Navy estructural dinámico según el brillo del fondo (Modo Claro vs Oscuro)
-    val esOscuro = MaterialTheme.colorScheme.background == Color(0xFF0F172A)
-    val navyBg = if (esOscuro) Color(0xFF0B1521) else Color(0xFF132333)
+    val esOscuro = MaterialTheme.colorScheme.background == CanvasOscuro
+    val navyBg = if (esOscuro) NavyEstructuralOscuro else NavyEstructuralClaro
 
     Surface(
         modifier = modifier.fillMaxWidth(),
