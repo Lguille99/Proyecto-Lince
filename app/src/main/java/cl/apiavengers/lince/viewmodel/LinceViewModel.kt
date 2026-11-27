@@ -1,7 +1,8 @@
 package cl.apiavengers.lince.viewmodel
 
 import android.app.Application
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.datos.ArchivoEstado
 import cl.apiavengers.lince.datos.MonitorConexion
@@ -35,33 +36,26 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class LinceViewModel(
-    private val monitorConexion: MonitorConexion,
-    private val preferencias: cl.apiavengers.lince.datos.preferencias.PreferenciasDataStore,
-    private val cola: ColaSincronizacion,
-    private val repositorioProvider: () -> RepositorioLince,
+    application: Application,
+    private val monitorConexion: MonitorConexion = MonitorConexion(application),
+    private val preferencias: cl.apiavengers.lince.datos.preferencias.PreferenciasDataStore = Preferencias.obtener(application),
+    private val cola: ColaSincronizacion = ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
+    private val repositorioProvider: () -> RepositorioLince = {
+        RepositorioLince(
+            AlmacenEstadoRoom(
+                LinceDatabase.obtener(application).estadoDao(),
+                ArchivoEstado(application)
+            )
+        )
+    },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : ViewModel() {
+) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(LinceUiState())
     val uiState = _uiState.asStateFlow()
 
     private val prefs = preferencias
     private var repositorioLocal: RepositorioLince? = null
     private var sesion = 0
-
-    constructor(application: Application) : this(
-        MonitorConexion(application),
-        Preferencias.obtener(application),
-        ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
-        {
-            RepositorioLince(
-                AlmacenEstadoRoom(
-                    LinceDatabase.obtener(application).estadoDao(),
-                    ArchivoEstado(application)
-                )
-            )
-        },
-        Dispatchers.IO
-    )
 
     private val t get() = PreferenciaIdioma.actuales()
 
@@ -456,4 +450,5 @@ class LinceViewModel(
     private companion object {
         val HORA: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM HH:mm")
     }
+
 }

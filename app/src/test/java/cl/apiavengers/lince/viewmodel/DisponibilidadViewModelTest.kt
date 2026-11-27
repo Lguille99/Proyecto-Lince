@@ -1,5 +1,7 @@
 package cl.apiavengers.lince.viewmodel
 
+import android.app.Application
+
 import cl.apiavengers.lince.datos.local.ColaSincronizacion
 import cl.apiavengers.lince.datos.RepositorioDisponibilidad
 import cl.apiavengers.lince.modelo.DisponibilidadUiState
@@ -24,7 +26,7 @@ class DisponibilidadViewModelTest {
         val repo = mockk<RepositorioDisponibilidad>(relaxed = true)
         val cola = mockk<ColaSincronizacion>(relaxed = true)
         coEvery { repo.consultar(any()) } returns emptySet()
-        val vm = DisponibilidadViewModel(repo, cola, mainDispatcherRule.testDispatcher)
+        val vm = DisponibilidadViewModel(mockk<Application>(relaxed = true), repo, cola, mainDispatcherRule.testDispatcher)
         val usuario = mockk<Usuario>(relaxed = true)
         vm.cargar(usuario)
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()

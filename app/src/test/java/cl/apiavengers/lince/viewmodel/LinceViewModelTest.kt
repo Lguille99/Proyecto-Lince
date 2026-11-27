@@ -1,5 +1,7 @@
 package cl.apiavengers.lince.viewmodel
 
+import android.app.Application
+
 import cl.apiavengers.lince.datos.MonitorConexion
 import cl.apiavengers.lince.datos.RepositorioLince
 import cl.apiavengers.lince.datos.local.ColaSincronizacion
@@ -45,7 +47,7 @@ class LinceViewModelTest {
         every { repo.consultarHistorial() } returns emptyList()
         every { repo.consultarEquipo() } returns emptyList()
         every { repo.resumenCoordinador() } returns cl.apiavengers.lince.modelo.ResumenCoordinador(0,0,0,0,0,0,0,0)
-        val vm = LinceViewModel(monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
+        val vm = LinceViewModel(mockk<Application>(relaxed = true), monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
         vm.iniciarSesion("guia.demo", "Lince123")
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
         assertNotNull(vm.uiState.value.usuario)
@@ -62,7 +64,7 @@ class LinceViewModelTest {
         val (monitor, prefs, cola) = mocks()
         val repo = mockk<RepositorioLince>(relaxed = true)
         every { repo.iniciarSesion(any(), any()) } throws IllegalArgumentException("bad")
-        val vm = LinceViewModel(monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
+        val vm = LinceViewModel(mockk<Application>(relaxed = true), monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
         vm.iniciarSesion("x", "y")
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
         assertNotNull(vm.uiState.value.error)
@@ -83,7 +85,7 @@ class LinceViewModelTest {
         every { repo.consultarEquipo() } returns emptyList()
         every { repo.resumenCoordinador() } returns cl.apiavengers.lince.modelo.ResumenCoordinador(0,0,0,0,0,0,0,0)
         every { repo.candidatosReasignacion(any()) } returns emptyList()
-        val vm = LinceViewModel(monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
+        val vm = LinceViewModel(mockk<Application>(relaxed = true), monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
         vm.iniciarSesion("coordinador.demo", "Lince123")
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
         vm.calificar("LIN-001", 5)
@@ -111,7 +113,7 @@ class LinceViewModelTest {
         every { repo.serviciosDelDiaPara(any()) } returns emptyList()
         every { repo.totalGanado(any()) } returns 0
         every { repo.promedioCalificacion(any()) } returns null
-        val vm = LinceViewModel(monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
+        val vm = LinceViewModel(mockk<Application>(relaxed = true), monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
         vm.iniciarSesion("guia.demo", "Lince123")
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
         vm.obtenerPersona("GUI-002")

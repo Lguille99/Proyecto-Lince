@@ -2,7 +2,8 @@ package cl.apiavengers.lince.viewmodel
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.BuildConfig
 import cl.apiavengers.lince.datos.southbound.*
@@ -80,11 +81,9 @@ data class SouthboundUiState(
 )
 
 class SouthboundViewModel(
-    private val cliente: ClienteSouthbound
-) : ViewModel() {
-    constructor(application: Application) : this(
-        ClienteSouthbound(BuildConfig.SOUTHBOUND_API_KEY, CacheSouthbound.obtener(application).consultas())
-    )
+    application: Application,
+    private val cliente: ClienteSouthbound = ClienteSouthbound(BuildConfig.SOUTHBOUND_API_KEY, CacheSouthbound.obtener(application).consultas())
+) : AndroidViewModel(application) {
     private val _estado = MutableStateFlow(SouthboundUiState())
     val estado = _estado.asStateFlow()
     private var trabajo: Job? = null
@@ -350,4 +349,6 @@ class SouthboundViewModel(
             }
         }
     }
+
+
 }

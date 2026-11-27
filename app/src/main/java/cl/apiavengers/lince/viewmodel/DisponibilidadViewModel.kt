@@ -1,7 +1,8 @@
 package cl.apiavengers.lince.viewmodel
 
 import android.app.Application
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import cl.apiavengers.lince.datos.local.AlmacenDisponibilidadRoom
 import cl.apiavengers.lince.datos.local.ColaSincronizacion
@@ -25,17 +26,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class DisponibilidadViewModel(
-    private val repositorio: RepositorioDisponibilidad,
-    private val cola: ColaSincronizacion,
+    application: Application,
+    private val repositorio: RepositorioDisponibilidad = RepositorioDisponibilidad(
+        AlmacenDisponibilidadRoom(LinceDatabase.obtener(application).disponibilidadDao(), ArchivoDisponibilidad(application))
+    ),
+    private val cola: ColaSincronizacion = ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : ViewModel() {
-    constructor(application: Application) : this(
-        RepositorioDisponibilidad(
-            AlmacenDisponibilidadRoom(LinceDatabase.obtener(application).disponibilidadDao(), ArchivoDisponibilidad(application))
-        ),
-        ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
-        Dispatchers.IO
-    )
+) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(DisponibilidadUiState())
     val uiState = _uiState.asStateFlow()
     private var usuarioActual: Usuario? = null
@@ -104,4 +101,6 @@ class DisponibilidadViewModel(
             }
         }
     }
+
+
 }

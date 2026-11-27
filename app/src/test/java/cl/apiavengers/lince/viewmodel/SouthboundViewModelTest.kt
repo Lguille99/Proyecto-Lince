@@ -1,5 +1,7 @@
 package cl.apiavengers.lince.viewmodel
 
+import android.app.Application
+
 import cl.apiavengers.lince.datos.southbound.*
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -31,7 +33,7 @@ class SouthboundViewModelTest {
 
     @Test
     fun iniciarYCargarSecciones() = runTest {
-        val vm = SouthboundViewModel(cliente())
+        val vm = SouthboundViewModel(mockk<Application>(relaxed = true), cliente())
         vm.iniciar()
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
         vm.seleccionar(SeccionSouthbound.GUIAS)
@@ -45,7 +47,7 @@ class SouthboundViewModelTest {
 
     @Test
     fun cargarServiciosConFiltros() = runTest {
-        val vm = SouthboundViewModel(cliente())
+        val vm = SouthboundViewModel(mockk<Application>(relaxed = true), cliente())
         vm.cargarServicios(2, "q", "CF", "CF", "TRANSFER", "SCL", "2026-10-01", "2026-10-31")
         vm.cargarServicios()
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
@@ -53,7 +55,7 @@ class SouthboundViewModelTest {
 
     @Test
     fun cargarGuiasTransportistasClientesResumen() = runTest {
-        val vm = SouthboundViewModel(cliente())
+        val vm = SouthboundViewModel(mockk<Application>(relaxed = true), cliente())
         vm.cargarGuias(1, "q", "SCL", "ES")
         vm.cargarTransportistas(1, "q", "SCL")
         vm.cargarClientes(1, "q")
@@ -63,7 +65,7 @@ class SouthboundViewModelTest {
 
     @Test
     fun detalles() = runTest {
-        val vm = SouthboundViewModel(cliente())
+        val vm = SouthboundViewModel(mockk<Application>(relaxed = true), cliente())
         vm.detalleServicio(1)
         vm.detalleGuia(1)
         vm.detalleTransportista(1)
