@@ -84,6 +84,11 @@ class SouthboundViewModel(
     application: Application,
     private val cliente: ClienteSouthbound = ClienteSouthbound(BuildConfig.SOUTHBOUND_API_KEY, CacheSouthbound.obtener(application).consultas())
 ) : AndroidViewModel(application) {
+    constructor(application: Application) : this(
+        application,
+        ClienteSouthbound(BuildConfig.SOUTHBOUND_API_KEY, CacheSouthbound.obtener(application).consultas())
+    )
+
     private val _estado = MutableStateFlow(SouthboundUiState())
     val estado = _estado.asStateFlow()
     private var trabajo: Job? = null

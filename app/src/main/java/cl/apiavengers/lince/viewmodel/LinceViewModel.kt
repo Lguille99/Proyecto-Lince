@@ -50,6 +50,22 @@ class LinceViewModel(
     },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AndroidViewModel(application) {
+    constructor(application: Application) : this(
+        application,
+        MonitorConexion(application),
+        Preferencias.obtener(application),
+        ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
+        {
+            RepositorioLince(
+                AlmacenEstadoRoom(
+                    LinceDatabase.obtener(application).estadoDao(),
+                    ArchivoEstado(application)
+                )
+            )
+        },
+        Dispatchers.IO
+    )
+
     private val _uiState = MutableStateFlow(LinceUiState())
     val uiState = _uiState.asStateFlow()
 

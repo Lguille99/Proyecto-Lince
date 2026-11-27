@@ -33,6 +33,15 @@ class DisponibilidadViewModel(
     private val cola: ColaSincronizacion = ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AndroidViewModel(application) {
+    constructor(application: Application) : this(
+        application,
+        RepositorioDisponibilidad(
+            AlmacenDisponibilidadRoom(LinceDatabase.obtener(application).disponibilidadDao(), ArchivoDisponibilidad(application))
+        ),
+        ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
+        Dispatchers.IO
+    )
+
     private val _uiState = MutableStateFlow(DisponibilidadUiState())
     val uiState = _uiState.asStateFlow()
     private var usuarioActual: Usuario? = null
