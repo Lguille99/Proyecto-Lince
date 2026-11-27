@@ -94,3 +94,13 @@ dependencies {
 
 kapt { arguments { arg("room.schemaLocation", "$projectDir/schemas") } }
 
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*BuildConfig*", "*_Impl*", "*Dao_Impl*", "*Database_Impl*", "*ComposableSingletons*", "R$*")
+            }
+        }
+    }
+}
