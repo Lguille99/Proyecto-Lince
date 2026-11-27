@@ -130,3 +130,65 @@ class LinceViewModelTest {
     }
 }
 
+
+    @Test
+    fun confirmarYSincronizar() = runTest {
+        val (monitor, prefs, cola) = mocks()
+        val repo = mockk<RepositorioLince>(relaxed = true)
+        every { repo.iniciarSesion(any(), any()) } returns mockk<Usuario>(relaxed = true).also {
+            every { it.rol } returns cl.apiavengers.lince.modelo.Rol.GUIA
+            every { it.id } returns "GUI-002"
+        }
+        every { repo.consultarServicios() } returns emptyList()
+        every { repo.consultarHistorial() } returns emptyList()
+        every { repo.consultarEquipo() } returns emptyList()
+        every { repo.resumenCoordinador() } returns cl.apiavengers.lince.modelo.ResumenCoordinador(0,0,0,0,0,0,0,0)
+        every { repo.confirmarServicio(any()) } returns true
+        every { repo.consultarServicios() } returns listOf(
+            Servicio("LIN-001", "Servicio de prueba", "Transfer", "2024-01-15", "09:00",
+                "Hotel Plaza", "Terminal", "DRV-001", EstadoServicio.PENDIENTE,
+                idiomaRequerido = Idioma.ESPANOL)
+        )
+        every { repo.consultarHistorial() } returns emptyList()
+        every { repo.consultarEquipo() } returns emptyList()
+        val vm = LinceViewModel(mockk<Application>(relaxed = true), monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
+        vm.iniciarSesion("guia.demo", "Lince123")
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+        // Confirmar el servicio pendiente
+        vm.confirmar("LIN-001")
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+        // Verificar que el servicio cambió a confirmada
+        assertTrue(vm.uiState.value.servicios.any { it.id == "LIN-001" && it.estado == EstadoServicio.CONFIRMADA })
+        // Sincronizar pendientes
+        vm.sincronizar()
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun guardarDisponibilidadYSincronizar() = runTest {
+        val (monitor, prefs, cola) = mocks()
+        val repo = mockk<RepositorioLince>(relaxed = true)
+        every { repo.iniciarSesion(any(), any()) } returns mockk<Usuario>(relaxed = true).also {
+            every { it.rol } returns cl.apiavengers.lince.modelo.Rol.COORDINADOR
+            every { it.id } returns "COO-003"
+        }
+        every { repo.iniciarSesion(any(), any()) } returns mockk<Usuario>(relaxed = true).also {
+            every { it.rol } returns cl.apiavengers.lince.modelo.Rol.COORDINADOR
+            every { it.id } returns "COO-003"
+        }
+        every { repo.consultarServicios() } returns emptyList()
+        every { repo.consultarHistorial() } returns emptyList()
+        every { repo.consultarEquipo() } returns emptyList()
+        every { repo.resumenCoordinador() } returns cl.apiavengers.lince.modelo.ResumenCoordinador(0,0,0,0,0,0,0,0)
+        val vm = LinceViewModel(mockk<Application>(relaxed = true), monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
+        vm.iniciarSesion("coordinador.demo", "Lince123")
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+        // Guardar disponibilidad
+        vm.seleccionarFecha(LocalDate.now().plusDays(1))
+        vm.cambiarBloqueo(true)
+        vm.guardar(listOf())
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+        // Sincronizar
+        vm.sincronizar()
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+    }
