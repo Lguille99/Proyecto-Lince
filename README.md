@@ -34,6 +34,7 @@ Configurar en `local.properties` (archivo ignorado por Git):
 
 ```properties
 SOUTHBOUND_API_KEY=CLAVE_DEL_CURSO
+BACKEND_URL=http://10.0.2.2:8080/
 ```
 
 Después de cambiar la clave se debe recompilar la aplicación. No incluir la clave en commits, capturas ni documentación. La app envía `X-API-Key` únicamente al servidor HTTPS de Southbound.
@@ -252,11 +253,26 @@ Conductor y guía usan Inicio, Servicios, Agenda y Perfil en la NavigationBar. H
 
 ### Compilar y probar
 
+Android:
+
 ```bash
 ./gradlew :dominio:test
 ./gradlew :app:testDebugUnitTest
 ./gradlew :app:lintDebug
 ./gradlew :app:assembleDebug
+```
+
+Backend (requiere `JWT_SECRET`):
+
+```bash
+JWT_SECRET=secreto ./gradlew :backend:build
+```
+
+Cobertura (Kover):
+
+```bash
+./gradlew :app:koverHtmlReport
+./gradlew :dominio:koverHtmlReport
 ```
 
 En Windows:
@@ -266,9 +282,21 @@ gradlew.bat :dominio:test
 gradlew.bat :app:testDebugUnitTest
 gradlew.bat :app:lintDebug
 gradlew.bat :app:assembleDebug
+set JWT_SECRET=secreto && gradlew.bat :backend:build
+gradlew.bat :app:koverHtmlReport
 ```
 
 Requiere JDK 17 y Android SDK configurados.
+
+Variables de entorno del backend (`JWT_SECRET` obligatoria; el resto opcionales):
+
+```properties
+JWT_SECRET=secreto
+PORT=8080
+HOST=0.0.0.0
+DB_PATH=data/lince.db
+DEMO_PASSWORD=Lince123
+```
 
 Referencias oficiales de diseño: [Material Design 3](https://m3.material.io/) y [componentes Material para Android](https://developer.android.com/design/ui/mobile/guides/components/material-overview).
 
@@ -279,7 +307,7 @@ Proyecto-lince/
 ├── README.md
 ├── app/                      # Interfaz, navegación, ViewModels, Room y DataStore
 ├── dominio/                  # Modelo, repositorios y pruebas
-├── backend/                  # API Ktor de referencia (opcional)
+├── backend/                  # API Ktor integrada (autenticación, hitos, disponibilidad, incidencias)
 └── docs/
     ├── evidencias/
     │   ├── clase-01/
