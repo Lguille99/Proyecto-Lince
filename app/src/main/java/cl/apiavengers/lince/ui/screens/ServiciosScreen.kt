@@ -145,7 +145,7 @@ fun ServiciosScreen(
             )
             if (filtrados.isEmpty()) {
                 LinceCard(
-                    fondo = Colores.superficieNeutra,
+                    fondo = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     EstadoVacio(

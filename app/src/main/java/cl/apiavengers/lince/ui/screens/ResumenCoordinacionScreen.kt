@@ -100,7 +100,7 @@ fun ResumenCoordinacionScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             LinceCard(
-                fondo = Colores.superficieNeutra,
+                fondo = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {

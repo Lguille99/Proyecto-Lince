@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -26,12 +27,12 @@ fun MetricSubTile(
   icono: ImageVector,
   valor: String,
   etiqueta: String,
-  colorIcono: Color = Colores.primario,
+  colorIcono: Color = MaterialTheme.colorScheme.primary,
   modifier: Modifier = Modifier
 ) {
   Surface(
     modifier = modifier.fillMaxWidth().padding(8.dp),
-    color = Colores.superficieTinted,
+    color = MaterialTheme.colorScheme.surfaceVariant,
     shape = FormaMetrica,
     content = {
       Column(
@@ -44,8 +45,8 @@ fun MetricSubTile(
           tint = colorIcono,
           modifier = Modifier.size(18.dp)
         )
-        Text(text = valor, style = EstiloNumeroKpi.copy(fontSize = 17.sp))
-        Text(text = etiqueta.uppercase(), style = EstiloSubtituloKpi.copy(fontSize = 10.sp))
+        Text(text = valor, style = EstiloNumeroKpi.copy(fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface))
+        Text(text = etiqueta.uppercase(), style = EstiloSubtituloKpi.copy(fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
       }
     }
   )
@@ -61,8 +62,8 @@ fun SoftActionButton(
   Button(
     onClick = enClic,
     colors = ButtonDefaults.buttonColors(
-      containerColor = Colores.superficieTinted,
-      contentColor = Colores.primario
+      containerColor = MaterialTheme.colorScheme.surfaceVariant,
+      contentColor = MaterialTheme.colorScheme.primary
     ),
     shape = FormaMetrica,
     modifier = modifier.fillMaxWidth().height(44.dp)
@@ -75,10 +76,10 @@ fun SoftActionButton(
       Icon(
         icono,
         contentDescription = null,
-        tint = Colores.primario,
+        tint = MaterialTheme.colorScheme.primary,
         modifier = Modifier.size(18.dp)
       )
-      Text(text = texto.uppercase(), style = EstiloBotonSecundario.copy(fontSize = 13.sp))
+      Text(text = texto.uppercase(), style = EstiloBotonSecundario.copy(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface))
     }
   }
 }

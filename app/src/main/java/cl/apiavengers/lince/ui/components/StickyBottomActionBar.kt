@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -30,12 +31,12 @@ fun StickyBottomActionBar(
 ) {
   Surface(
     modifier = modifier.fillMaxWidth(),
-    color = Colores.card
+    color = MaterialTheme.colorScheme.surface
   ) {
     Column {
       Surface(
         modifier = Modifier.fillMaxWidth().height(1.dp),
-        color = Colores.bordeCard
+        color = MaterialTheme.colorScheme.outline
       ) {}
       Column(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -48,12 +49,12 @@ fun StickyBottomActionBar(
             Icon(
               if (esError) Icons.Default.Warning else Icons.Default.Info,
               contentDescription = null,
-              tint = if (esError) Colores.error else Colores.exitoTexto,
+              tint = if (esError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
               modifier = Modifier.size(16.dp)
             )
             Text(
               text = mensaje,
-              style = if (esError) EstiloAlerta else EstiloCuerpo.copy(color = Colores.exitoTexto)
+              style = if (esError) EstiloAlerta else EstiloCuerpo.copy(color = MaterialTheme.colorScheme.onSurface)
             )
           }
         }
@@ -80,7 +81,7 @@ private @Composable fun botonPrimario(
 ) {
   Button(
     onClick = accion,
-    colors = ButtonDefaults.buttonColors(containerColor = Colores.primario),
+    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
     shape = FormaBotonBajo,
     modifier = modifier.height(50.dp)
   ) {
@@ -95,10 +96,10 @@ private @Composable fun botonSecundario(
 ) {
   Button(
     onClick = accion,
-    colors = ButtonDefaults.buttonColors(containerColor = Colores.card),
+    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
     shape = FormaBotonBajo,
     modifier = modifier.height(50.dp)
   ) {
-    Text(text = texto.uppercase(), style = EstiloBotonSecundario)
+    Text(text = texto.uppercase(), style = EstiloBotonSecundario.copy(color = MaterialTheme.colorScheme.onSurface))
   }
 }

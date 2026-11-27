@@ -144,7 +144,7 @@ fun HistorialScreen(
 
             if (registros.isEmpty()) {
                 LinceCard(
-                    fondo = Colores.superficieNeutra,
+                    fondo = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     EstadoVacio(

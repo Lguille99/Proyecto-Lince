@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -49,8 +50,8 @@ private @Composable fun opcionBoton(
   Button(
     onClick = accion,
     colors = ButtonDefaults.buttonColors(
-      containerColor = if (seleccionada) Colores.exito else Colores.superficieNeutra,
-      contentColor = if (seleccionada) Colores.textoBlanco else Colores.iconoInactivo
+      containerColor = if (seleccionada) Colores.exito else MaterialTheme.colorScheme.surfaceVariant,
+      contentColor = if (seleccionada) Colores.textoBlanco else MaterialTheme.colorScheme.onSurfaceVariant
     ),
     shape = FormaToggle,
     modifier = Modifier.fillMaxWidth().height(48.dp)
@@ -63,13 +64,13 @@ private @Composable fun opcionBoton(
       Icon(
         icono,
         contentDescription = null,
-        tint = if (seleccionada) Colores.textoBlanco else Colores.iconoInactivo,
+        tint = if (seleccionada) Colores.textoBlanco else MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.size(18.dp)
       )
       Text(
         text = etiqueta.uppercase(),
         style = EstiloChip.copy(
-          color = if (seleccionada) Colores.textoBlanco else Colores.iconoInactivo
+          color = if (seleccionada) Colores.textoBlanco else MaterialTheme.colorScheme.onSurfaceVariant
         )
       )
     }

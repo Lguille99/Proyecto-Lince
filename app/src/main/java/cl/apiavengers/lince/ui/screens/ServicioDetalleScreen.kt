@@ -449,7 +449,7 @@ fun ServicioDetalleScreen(
 @Composable
 private fun Seccion(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
     LinceCard(
-        fondo = Colores.superficieNeutra,
+        fondo = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
