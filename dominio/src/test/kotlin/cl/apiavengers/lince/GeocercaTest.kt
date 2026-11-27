@@ -18,7 +18,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GeocercaTest {
-    private val reloj = Clock.fixed(Instant.parse("2026-10-19T12:00:00Z"), ZoneOffset.UTC)
+    private val reloj = Clock.fixed(Instant.parse("2026-10-19T07:30:00Z"), ZoneOffset.UTC)
 
     private fun repo() = RepositorioLince(AlmacenEstadoMemoria(), reloj)
 

@@ -186,7 +186,9 @@ fun EjecucionScreen(
         val puedeIniciar = servicio.estado == EstadoServicio.CONFIRMADA &&
             servicio.inicioEn == null &&
             !ahora.isBefore(inicioPermitido) &&
-            evaluacion?.dentro == true
+            evaluacion?.dentro == true &&
+            evaluacion?.tardanza == false &&
+            evaluacion?.precisionBaja == false
         val puedeTerminar = servicio.inicioEn != null && servicio.terminoEn == null
 
         Column(

@@ -373,7 +373,7 @@ object TextosEspanol : Textos {
     }
 
     override fun rol(rol: Rol): String = when (rol) {
-        Rol.CONDUCTOR -> "Conductor"
+        Rol.TRANSPORTISTA -> "Transportista"
         Rol.GUIA -> "Guía"
         Rol.COORDINADOR -> "Coordinador"
     }
@@ -696,7 +696,7 @@ object TextosIngles : Textos {
     }
 
     override fun rol(rol: Rol): String = when (rol) {
-        Rol.CONDUCTOR -> "Driver"
+        Rol.TRANSPORTISTA -> "Driver"
         Rol.GUIA -> "Guide"
         Rol.COORDINADOR -> "Coordinator"
     }

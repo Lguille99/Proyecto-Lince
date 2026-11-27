@@ -179,16 +179,18 @@ class RepositorioLinceTest {
     }
 
     @Test fun checkInSoloDesdeQuinceMinutosAntes() {
-        val repo = repo()
-        repo.iniciarSesion("conductor.demo", "Lince123")
+        val reloj = Clock.fixed(Instant.parse("2026-10-19T07:50:00Z"), ZoneOffset.UTC)
+        val repo = RepositorioLince(AlmacenEstadoMemoria(), reloj)
+        repo.iniciarSesion("guia.demo", "Lince123")
         val error = assertFailsWith<IllegalArgumentException> {
-            repo.registrarCheckIn("LIN-002", "Hotel Plaza")
+            repo.registrarCheckIn("LIN-009", "Hotel Plaza")
         }
         assertTrue(error.message!!.contains("15 minutos"))
     }
 
     @Test fun checkInYCheckOutMueveAlHistorial() {
-        val repo = repo()
+        val reloj = Clock.fixed(Instant.parse("2026-10-19T07:30:00Z"), ZoneOffset.UTC)
+        val repo = RepositorioLince(AlmacenEstadoMemoria(), reloj)
         repo.iniciarSesion("guia.demo", "Lince123")
         repo.registrarCheckIn("LIN-009", "Hotel Plaza", "Salida puntual")
         val enCurso = repo.obtenerServicioPorId("LIN-009")

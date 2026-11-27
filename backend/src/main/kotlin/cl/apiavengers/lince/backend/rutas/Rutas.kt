@@ -3,6 +3,9 @@ package cl.apiavengers.lince.backend.rutas
 import cl.apiavengers.lince.backend.dominio.Reglas
 import cl.apiavengers.lince.backend.modelo.ActualizarHitoRequest
 import cl.apiavengers.lince.backend.modelo.ActualizarIncidenciaRequest
+import cl.apiavengers.lince.backend.modelo.ActualizarUsuarioRequest
+import cl.apiavengers.lince.backend.modelo.CrearUsuarioRequest
+import cl.apiavengers.lince.backend.modelo.UsuarioDto
 import cl.apiavengers.lince.backend.modelo.CheckInRequest
 import cl.apiavengers.lince.backend.modelo.CheckOutRequest
 import cl.apiavengers.lince.backend.modelo.DisponibilidadRequest
@@ -11,8 +14,8 @@ import cl.apiavengers.lince.backend.modelo.HitoRequest
 import cl.apiavengers.lince.backend.modelo.IncidenciaRequest
 import cl.apiavengers.lince.backend.modelo.LoginRequest
 import cl.apiavengers.lince.backend.modelo.LoginResponse
-import cl.apiavengers.lince.backend.modelo.UsuarioDto
 import cl.apiavengers.lince.backend.repositorios.DisponibilidadRepo
+import cl.apiavengers.lince.backend.repositorios.aDtoUsuario
 import cl.apiavengers.lince.backend.repositorios.GeocercasRepo
 import cl.apiavengers.lince.backend.repositorios.HitosRepo
 import cl.apiavengers.lince.backend.repositorios.IncidenciasRepo
@@ -73,6 +76,7 @@ fun Route.rutasProtegidas() {
         rutaDisponibilidad()
         rutaIncidencias()
         rutaCoordinacion()
+        rutaUsuarios()
     }
 }
 
@@ -158,6 +162,9 @@ private fun Route.rutaHitos() {
         validarCoordenadas(request.lat, request.lng, true)
         val servicio = ServiciosRepo.buscar(request.servicioId)
             ?: throw ApiError(HttpStatusCode.NotFound, "SERVICIO_NO_ENCONTRADO", "Servicio no encontrado.")
+        if (!ServiciosRepo.estaAsignado(request.servicioId, principal.id)) {
+            throw ApiError(HttpStatusCode.Forbidden, "SIN_ASIGNACION", "No estás asignado a este servicio.")
+        }
         if (HitosRepo.existeTipo(request.servicioId, TipoHito.CHECK_IN.name)) {
             throw ApiError(HttpStatusCode.Conflict, "CHECK_IN_DUPLICADO", "El servicio ya tiene un check-in.")
         }
@@ -203,11 +210,26 @@ private fun Route.rutaHitos() {
         validarCoordenadas(request.lat, request.lng, true)
         val servicio = ServiciosRepo.buscar(request.servicioId)
             ?: throw ApiError(HttpStatusCode.NotFound, "SERVICIO_NO_ENCONTRADO", "Servicio no encontrado.")
+        if (!ServiciosRepo.estaAsignado(request.servicioId, principal.id)) {
+            throw ApiError(HttpStatusCode.Forbidden, "SIN_ASIGNACION", "No estás asignado a este servicio.")
+        }
         if (!HitosRepo.existeTipo(request.servicioId, TipoHito.CHECK_IN.name)) {
             throw ApiError(HttpStatusCode.Conflict, "SIN_CHECK_IN", "Primero debes registrar el check-in.")
         }
         if (HitosRepo.existeTipo(request.servicioId, TipoHito.CHECK_OUT.name)) {
             throw ApiError(HttpStatusCode.Conflict, "CHECK_OUT_DUPLICADO", "El servicio ya tiene un check-out.")
+        }
+        val geocercas = GeocercasRepo.listar(request.servicioId)
+        if (geocercas.isNotEmpty()) {
+            val dentro = geocercas.any { g ->
+                Reglas.distanciaMetros(request.lat, request.lng, g.lat, g.lng) <= g.radioM
+            }
+            if (!dentro) {
+                throw ApiError(
+                    HttpStatusCode.UnprocessableEntity, "FUERA_DE_GEOCERCA_DESTINO",
+                    "El check-out está fuera de la geocerca de destino configurada."
+                )
+            }
         }
         val hito = HitosRepo.crear(
             id = nuevoId(),
@@ -390,6 +412,57 @@ private fun Route.rutaIncidencias() {
         call.exigirRol(RolApi.COORDINACION)
         if (!IncidenciasRepo.borrar(call.idParametro())) {
             throw ApiError(HttpStatusCode.NotFound, "INCIDENCIA_NO_ENCONTRADA", "Incidencia no encontrada.")
+        }
+        call.respond(HttpStatusCode.NoContent)
+    }
+}
+
+private fun Route.rutaUsuarios() {
+    get("/usuarios") {
+        call.exigirRol(RolApi.COORDINACION)
+        call.respond(cl.apiavengers.lince.backend.repositorios.UsuariosRepo.listar().map { it.aDtoUsuario() })
+    }
+
+    get("/usuarios/{id}") {
+        call.exigirRol(RolApi.COORDINACION)
+        val usuario = cl.apiavengers.lince.backend.repositorios.UsuariosRepo.porId(call.idParametro())
+            ?: throw ApiError(HttpStatusCode.NotFound, "USUARIO_NO_ENCONTRADO", "Usuario no encontrado.")
+        call.respond(usuario.aDtoUsuario())
+    }
+
+    post("/usuarios") {
+        call.exigirRol(RolApi.COORDINACION)
+        val request = call.receive<CrearUsuarioRequest>()
+        if (request.email.isBlank() || request.password.isBlank() || request.nombre.isBlank()) {
+            throw ApiError(HttpStatusCode.UnprocessableEntity, "SOLICITUD_INVALIDA", "Email, nombre y contraseña son obligatorios.")
+        }
+        val rol = runCatching { RolApi.valueOf(request.rol.uppercase()) }.getOrElse {
+            throw ApiError(HttpStatusCode.UnprocessableEntity, "ROL_INVALIDO", "Rol inválido.")
+        }
+        val creado = cl.apiavengers.lince.backend.repositorios.UsuariosRepo.crear(
+            request.email, request.nombre, rol, request.password
+        )
+        call.respond(HttpStatusCode.Created, creado.aDtoUsuario())
+    }
+
+    put("/usuarios/{id}") {
+        call.exigirRol(RolApi.COORDINACION)
+        val id = call.idParametro()
+        val request = call.receive<ActualizarUsuarioRequest>()
+        val rol = request.rol?.let { runCatching { RolApi.valueOf(it.uppercase()) }.getOrNull() }
+        if (request.rol != null && rol == null) {
+            throw ApiError(HttpStatusCode.UnprocessableEntity, "ROL_INVALIDO", "Rol inválido.")
+        }
+        val actualizado = cl.apiavengers.lince.backend.repositorios.UsuariosRepo.actualizar(
+            id, request.email, request.nombre, rol, request.password
+        ) ?: throw ApiError(HttpStatusCode.NotFound, "USUARIO_NO_ENCONTRADO", "Usuario no encontrado.")
+        call.respond(actualizado.aDtoUsuario())
+    }
+
+    delete("/usuarios/{id}") {
+        call.exigirRol(RolApi.COORDINACION)
+        if (!cl.apiavengers.lince.backend.repositorios.UsuariosRepo.borrar(call.idParametro())) {
+            throw ApiError(HttpStatusCode.NotFound, "USUARIO_NO_ENCONTRADO", "Usuario no encontrado.")
         }
         call.respond(HttpStatusCode.NoContent)
     }

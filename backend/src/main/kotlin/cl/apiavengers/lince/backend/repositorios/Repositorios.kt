@@ -5,6 +5,7 @@ import cl.apiavengers.lince.backend.db.actualizar
 import cl.apiavengers.lince.backend.db.consultar
 import cl.apiavengers.lince.backend.db.consultarUno
 import cl.apiavengers.lince.backend.modelo.DisponibilidadDto
+import cl.apiavengers.lince.backend.modelo.UsuarioDto
 import cl.apiavengers.lince.backend.modelo.GeocercaDto
 import cl.apiavengers.lince.backend.modelo.HitoDto
 import cl.apiavengers.lince.backend.modelo.IncidenciaDto
@@ -62,6 +63,51 @@ object UsuariosRepo {
             )
         }
     }
+
+    fun listar(): List<UsuarioFila> = Db.usar { conexion ->
+        conexion.consultar(
+            "SELECT id, email, nombre, rol, password_hash FROM usuarios WHERE activo = 1 ORDER BY id"
+        ) { fila ->
+            UsuarioFila(
+                id = fila.getString("id"),
+                email = fila.getString("email"),
+                nombre = fila.getString("nombre"),
+                rol = RolApi.valueOf(fila.getString("rol")),
+                passwordHash = fila.getString("password_hash")
+            )
+        }
+    }
+
+    fun crear(email: String, nombre: String, rol: RolApi, password: String): UsuarioFila {
+        val id = "USR-" + java.util.UUID.randomUUID().toString().take(8).uppercase()
+        val hash = cl.apiavengers.lince.backend.seguridad.Password.hash(password)
+        Db.usar { conexion ->
+            conexion.actualizar(
+                "INSERT INTO usuarios (id, email, nombre, rol, password_hash, activo) VALUES (?, ?, ?, ?, ?, 1)",
+                id, email.lowercase(), nombre, rol.name, hash
+            )
+        }
+        return porId(id)!!
+    }
+
+    fun actualizar(id: String, email: String?, nombre: String?, rol: RolApi?, password: String?): UsuarioFila? {
+        val actual = porId(id) ?: return null
+        val nuevoEmail = email?.lowercase() ?: actual.email
+        val nuevoNombre = nombre ?: actual.nombre
+        val nuevoRol = rol ?: actual.rol
+        val nuevoHash = password?.let { cl.apiavengers.lince.backend.seguridad.Password.hash(it) } ?: actual.passwordHash
+        Db.usar { conexion ->
+            conexion.actualizar(
+                "UPDATE usuarios SET email = ?, nombre = ?, rol = ?, password_hash = ? WHERE id = ?",
+                nuevoEmail, nuevoNombre, nuevoRol.name, nuevoHash, id
+            )
+        }
+        return porId(id)
+    }
+
+    fun borrar(id: String): Boolean = Db.usar { conexion ->
+        conexion.actualizar("UPDATE usuarios SET activo = 0 WHERE id = ?", id) > 0
+    }
 }
 
 object ServiciosRepo {
@@ -84,6 +130,13 @@ object ServiciosRepo {
         conexion.consultar(
             "SELECT 1 FROM asignaciones_referencia WHERE usuario_id = ? AND fecha = ? LIMIT 1",
             usuarioId, fecha
+        ) { true }.isNotEmpty()
+    }
+
+    fun estaAsignado(servicioId: String, usuarioId: String): Boolean = Db.usar { conexion ->
+        conexion.consultar(
+            "SELECT 1 FROM asignaciones_referencia WHERE servicio_id = ? AND usuario_id = ? LIMIT 1",
+            servicioId, usuarioId
         ) { true }.isNotEmpty()
     }
 }
@@ -373,3 +426,6 @@ object IncidenciasRepo {
 }
 
 fun nuevoId(): String = UUID.randomUUID().toString()
+
+fun cl.apiavengers.lince.backend.repositorios.UsuarioFila.aDtoUsuario() =
+    cl.apiavengers.lince.backend.modelo.UsuarioDto(id, email, nombre, rol.name)

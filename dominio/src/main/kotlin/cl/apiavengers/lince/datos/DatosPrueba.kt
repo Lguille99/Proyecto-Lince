@@ -8,7 +8,7 @@ object DatosPrueba {
 
     val usuarios = listOf(
         Usuario(
-            "DRV-001", "Martín Conductor", "conductor.demo", "conductor@gmail.com", Rol.CONDUCTOR,
+            "DRV-001", "Martín Conductor", "conductor.demo", "conductor@gmail.com", Rol.TRANSPORTISTA,
             "+56 9 1234 5678", Disponibilidad.DISPONIBLE, "Santiago Centro",
             listOf(Idioma.ESPANOL, Idioma.INGLES)
         ),
@@ -23,7 +23,7 @@ object DatosPrueba {
             listOf(Idioma.ESPANOL, Idioma.INGLES)
         ),
         Usuario(
-            "DRV-002", "Diego Ruta", "conductor2.demo", "diego.ruta@gmail.com", Rol.CONDUCTOR,
+            "DRV-002", "Diego Ruta", "conductor2.demo", "diego.ruta@gmail.com", Rol.TRANSPORTISTA,
             "+56 9 3333 4444", Disponibilidad.NO_DISPONIBLE, "Maipú",
             listOf(Idioma.ESPANOL)
         )

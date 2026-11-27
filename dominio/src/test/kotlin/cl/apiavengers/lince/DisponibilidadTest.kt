@@ -23,7 +23,7 @@ class DisponibilidadTest {
         almacen,
         Clock.fixed(Instant.parse("2026-10-19T12:00:00Z"), ZoneOffset.UTC)
     )
-    private val conductor = DatosPrueba.usuarios.first { it.rol == Rol.CONDUCTOR }
+    private val conductor = DatosPrueba.usuarios.first { it.rol == Rol.TRANSPORTISTA }
     private val guia = DatosPrueba.usuarios.first { it.rol == Rol.GUIA }
 
     private fun servicio(fecha: LocalDate, estado: EstadoServicio = EstadoServicio.PENDIENTE) = Servicio(

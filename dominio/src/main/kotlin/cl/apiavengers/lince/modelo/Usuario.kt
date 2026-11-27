@@ -1,7 +1,7 @@
 package cl.apiavengers.lince.modelo
 
 enum class Rol(val etiqueta: String) {
-    CONDUCTOR("Conductor"), GUIA("Guía"), COORDINADOR("Coordinador")
+    TRANSPORTISTA("Transportista"), GUIA("Guía"), COORDINADOR("Coordinador")
 }
 
 enum class Disponibilidad(val etiqueta: String) {

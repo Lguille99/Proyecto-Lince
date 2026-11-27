@@ -89,7 +89,7 @@ data class Servicio(
         get() = modalidad == Modalidad.GUIDED_SERVICE
 
     val rolRequerido: Rol
-        get() = if (requiereGuia) Rol.GUIA else Rol.CONDUCTOR
+        get() = if (requiereGuia) Rol.GUIA else Rol.TRANSPORTISTA
 }
 
 data class ResumenCoordinador(

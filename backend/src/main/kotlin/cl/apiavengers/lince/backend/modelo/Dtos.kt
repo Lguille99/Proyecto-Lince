@@ -19,6 +19,22 @@ data class SaludRespuesta(
 data class LoginRequest(val email: String, val password: String)
 
 @Serializable
+data class CrearUsuarioRequest(
+    val email: String,
+    val nombre: String,
+    val rol: String,
+    val password: String
+)
+
+@Serializable
+data class ActualizarUsuarioRequest(
+    val email: String? = null,
+    val nombre: String? = null,
+    val rol: String? = null,
+    val password: String? = null
+)
+
+@Serializable
 data class UsuarioDto(
     val id: String,
     val email: String,

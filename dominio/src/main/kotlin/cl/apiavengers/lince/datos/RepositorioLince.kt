@@ -145,8 +145,8 @@ class RepositorioLince(
         require(lugar.isNotEmpty()) { "Indica la ubicación donde comienza el servicio." }
         val ahora = LocalDateTime.now(reloj).withNano(0)
         val limite = servicio.inicioProgramado.minusMinutes(15)
-        require(!ahora.isBefore(limite)) {
-            "El check-in se habilita 15 minutos antes de la hora asignada."
+        require(!ahora.isAfter(limite)) {
+            "El check-in debe registrarse al menos 15 minutos antes de la hora asignada."
         }
         val evaluacion = posicion?.let { ubicacionGps ->
             require(ubicacionGps.valida) { "La ubicación GPS recibida no es válida." }
@@ -156,6 +156,9 @@ class RepositorioLince(
             require(resultado.dentro) {
                 "Check-in fuera de la geocerca: estás a ${resultado.distanciaMetros.toInt()} m " +
                     "y el radio permitido es de ${resultado.radioMetros} m."
+            }
+            require(!resultado.precisionBaja) {
+                "La precisión del GPS es insuficiente (${resultado.precisionMetros?.toInt()} m)."
             }
             resultado
         }
