@@ -398,8 +398,8 @@ object TextosEspanol : Textos {
 
     override fun modalidad(valor: Modalidad): String = when (valor) {
         Modalidad.TRANSFER -> "Transfer"
-        Modalidad.MEDIO_DIA -> "Medio día"
-        Modalidad.DIA_COMPLETO -> "Día completo"
+        Modalidad.GUIDED_SERVICE -> "Servicio guiado"
+        Modalidad.EXCURSION -> "Excursión"
     }
 
     override val connectionOffline = "Sin Internet · consultando datos locales"
@@ -721,8 +721,8 @@ object TextosIngles : Textos {
 
     override fun modalidad(valor: Modalidad): String = when (valor) {
         Modalidad.TRANSFER -> "Transfer"
-        Modalidad.MEDIO_DIA -> "Half day"
-        Modalidad.DIA_COMPLETO -> "Full day"
+        Modalidad.GUIDED_SERVICE -> "Guided service"
+        Modalidad.EXCURSION -> "Excursion"
     }
 
     override val connectionOffline = "No Internet · viewing local data"

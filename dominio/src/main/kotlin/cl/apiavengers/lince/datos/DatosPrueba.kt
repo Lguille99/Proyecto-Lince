@@ -45,7 +45,7 @@ object DatosPrueba {
             Servicio(
                 "LIN-002", "Excursión al mirador", "Excursión", manana, "14:00",
                 "Hotel Plaza", "Mirador de prueba", "DRV-001", EstadoServicio.CONFIRMADA,
-                idiomaRequerido = Idioma.INGLES, modalidad = Modalidad.MEDIO_DIA,
+                idiomaRequerido = Idioma.INGLES, modalidad = Modalidad.GUIDED_SERVICE,
                 almuerzoIncluido = true, hotelRecogida = "Hotel Plaza", tarifa = 45_000,
                 pasajeros = 4, itinerario = listOf("Hotel Plaza", "Mirador de prueba", "Restaurante de prueba"),
                 resenaHistorica = "El mirador fue habilitado en 1998 y conserva senderos de la ruta original."
@@ -60,7 +60,7 @@ object DatosPrueba {
             Servicio(
                 "LIN-004", "Recorrido guiado", "Servicio guiado", manana, "09:00",
                 "Plaza de prueba", "Museo de prueba", "GUI-002", EstadoServicio.CONFIRMADA,
-                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.MEDIO_DIA,
+                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.GUIDED_SERVICE,
                 hotelRecogida = "Plaza de prueba", tarifa = 40_000, pasajeros = 3,
                 itinerario = listOf("Plaza de prueba", "Museo de prueba"),
                 resenaHistorica = "La plaza fue el centro cívico de la ciudad durante el siglo XIX."
@@ -68,7 +68,7 @@ object DatosPrueba {
             Servicio(
                 "LIN-005", "Visita cultural", "Servicio guiado", siguiente, "11:00",
                 "Museo de prueba", "Centro de prueba", "GUI-002", EstadoServicio.PENDIENTE,
-                idiomaRequerido = Idioma.INGLES, modalidad = Modalidad.MEDIO_DIA,
+                idiomaRequerido = Idioma.INGLES, modalidad = Modalidad.GUIDED_SERVICE,
                 hotelRecogida = "Museo de prueba", tarifa = 42_000, pasajeros = 5,
                 itinerario = listOf("Museo de prueba", "Centro de prueba"),
                 resenaHistorica = "El centro histórico conserva fachadas restauradas y murales del puerto."
@@ -83,7 +83,7 @@ object DatosPrueba {
             Servicio(
                 "LIN-007", "Tour viña y mar", "Excursión", siguiente, "10:30",
                 "Hotel Marina", "Viña de prueba", "GUI-002", EstadoServicio.CONFIRMADA,
-                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.DIA_COMPLETO,
+                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.EXCURSION,
                 almuerzoIncluido = true, hotelRecogida = "Hotel Marina", tarifa = 65_000,
                 pasajeros = 8, itinerario = listOf("Hotel Marina", "Viña de prueba", "Costa de prueba"),
                 resenaHistorica = "La viña familiar produce vinos costeros y mantiene tours desde 1952."
@@ -91,7 +91,7 @@ object DatosPrueba {
             Servicio(
                 "LIN-008", "City tour Valparaíso", "Servicio guiado", manana, "15:00",
                 "Plaza de prueba", "Cerro de prueba", "GUI-002", EstadoServicio.PENDIENTE,
-                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.MEDIO_DIA,
+                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.GUIDED_SERVICE,
                 hotelRecogida = "Plaza de prueba", tarifa = 38_000, pasajeros = 6,
                 itinerario = listOf("Plaza de prueba", "Cerro de prueba", "Mirador de prueba"),
                 resenaHistorica = "El cerro alberga ascensores patrimoniales declarados monumento nacional."
@@ -100,7 +100,7 @@ object DatosPrueba {
                 "LIN-009", "City tour día completo", "City tour", hoy.toString(), "08:00",
                 "Hotel Plaza", "Cerro de prueba", "GUI-002", EstadoServicio.CONFIRMADA,
                 acompananteId = "DRV-001", idiomaRequerido = Idioma.INGLES,
-                modalidad = Modalidad.DIA_COMPLETO, almuerzoIncluido = true,
+                modalidad = Modalidad.EXCURSION, almuerzoIncluido = true,
                 hotelRecogida = "Hotel Plaza", tarifa = 65_000, pasajeros = 10,
                 itinerario = listOf("Hotel Plaza", "Centro histórico", "Cerro de prueba", "Almuerzo", "Mirador"),
                 resenaHistorica = "Recorrido de día completo por el casco histórico y sus miradores."
@@ -130,7 +130,7 @@ object DatosPrueba {
             Servicio(
                 "LIN-102", "Tour monumento", "Servicio guiado", hoy.minusDays(3).toString(), "11:00",
                 "Plaza de prueba", "Monumento de prueba", "GUI-002", EstadoServicio.COMPLETADA,
-                idiomaRequerido = Idioma.INGLES, modalidad = Modalidad.MEDIO_DIA,
+                idiomaRequerido = Idioma.INGLES, modalidad = Modalidad.GUIDED_SERVICE,
                 hotelRecogida = "Plaza de prueba", tarifa = 40_000, pasajeros = 4,
                 respondidoPor = "GUI-002", respondidoEn = sello(hoy.minusDays(4), "10:00"),
                 inicioEn = sello(hoy.minusDays(3), "10:50"), terminoEn = sello(hoy.minusDays(3), "13:10"),
@@ -148,7 +148,7 @@ object DatosPrueba {
             Servicio(
                 "LIN-104", "Excursión costera", "Excursión", hoy.minusDays(4).toString(), "08:30",
                 "Centro de prueba", "Playa de prueba", "GUI-002", EstadoServicio.COMPLETADA,
-                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.DIA_COMPLETO,
+                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.EXCURSION,
                 almuerzoIncluido = true, hotelRecogida = "Centro de prueba", tarifa = 65_000, pasajeros = 9,
                 respondidoPor = "GUI-002", respondidoEn = sello(hoy.minusDays(5), "12:00"),
                 inicioEn = sello(hoy.minusDays(4), "08:20"), terminoEn = sello(hoy.minusDays(4), "17:30"),
@@ -158,7 +158,7 @@ object DatosPrueba {
             Servicio(
                 "LIN-105", "Visita museo", "Servicio guiado", hoy.minusDays(5).toString(), "10:00",
                 "Plaza de prueba", "Museo de prueba", "GUI-002", EstadoServicio.COMPLETADA,
-                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.MEDIO_DIA,
+                idiomaRequerido = Idioma.ESPANOL, modalidad = Modalidad.GUIDED_SERVICE,
                 hotelRecogida = "Plaza de prueba", tarifa = 38_000, pasajeros = 5,
                 respondidoPor = "GUI-002", respondidoEn = sello(hoy.minusDays(6), "09:00"),
                 inicioEn = sello(hoy.minusDays(5), "09:50"), terminoEn = sello(hoy.minusDays(5), "12:40"),

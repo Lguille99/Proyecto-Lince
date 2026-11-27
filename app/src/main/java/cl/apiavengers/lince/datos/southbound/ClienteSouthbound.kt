@@ -1,9 +1,10 @@
 package cl.apiavengers.lince.datos.southbound
 
+import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URI
 import java.net.URLEncoder
+import java.time.format.DateTimeParseException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONException
@@ -24,26 +25,9 @@ fun interface TransporteSouthbound {
 }
 
 class TransporteHttpsSouthbound : TransporteSouthbound {
+    // Delegado a Retrofit para mantener compatibilidad con el constructor por defecto.
     override fun consultar(ruta: String, clave: String): RespuestaHttp {
-        val conexion = URI("https://ws.southbound.travel/lince-api$ruta").toURL()
-            .openConnection() as HttpURLConnection
-        try {
-            conexion.requestMethod = "GET"
-            conexion.instanceFollowRedirects = false
-            conexion.connectTimeout = 15000
-            conexion.readTimeout = 15000
-            conexion.setRequestProperty("Accept", "application/json")
-            conexion.setRequestProperty("X-API-Key", clave)
-            val codigo = conexion.responseCode
-            val contenido = if (codigo in 200..299) {
-                conexion.inputStream.bufferedReader().use { it.readText() }
-            } else {
-                conexion.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            }
-            return RespuestaHttp(codigo, contenido)
-        } finally {
-            conexion.disconnect()
-        }
+        return TransporteRetrofit(RedSouthbound.api(clave)).consultar(ruta, clave)
     }
 }
 

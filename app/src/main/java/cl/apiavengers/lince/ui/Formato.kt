@@ -5,12 +5,14 @@ import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
 
 private val LOCALE_CL = Locale("es", "CL")
 private val LOCALE_EN = Locale("en", "US")
+private val ZONA_SANTIAGO = ZoneId.of("America/Santiago")
 
 private val FORMATO_LARGA_CL = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", LOCALE_CL)
 private val FORMATO_LARGA_EN = DateTimeFormatter.ofPattern("EEEE, MMMM d", LOCALE_EN)
@@ -25,7 +27,7 @@ private val FORMATO_HORA = DateTimeFormatter.ofPattern("HH:mm")
 private fun localeActual(): Locale =
     if (PreferenciaIdioma.idioma.value == IdiomaApp.INGLES) LOCALE_EN else LOCALE_CL
 
-fun fechaLargaHoy(): String = fechaLarga(LocalDate.now().toString())
+fun fechaLargaHoy(): String = fechaLarga(LocalDate.now(ZONA_SANTIAGO).toString())
 
 fun fechaLarga(iso: String): String = try {
     val locale = localeActual()
@@ -74,7 +76,7 @@ fun horaCorta(isoHora: String?): String = isoHora ?: "—"
 
 fun montoClp(valor: Int): String = "$" + "%,d".format(LOCALE_CL, valor).replace(',', '.')
 
-fun esFechaHoy(iso: String): Boolean = iso == LocalDate.now().toString()
+fun esFechaHoy(iso: String): Boolean = iso == LocalDate.now(ZONA_SANTIAGO).toString()
 
 fun inicioPermitido(servicio: cl.apiavengers.lince.modelo.Servicio): LocalDateTime =
     servicio.inicioProgramado.minusMinutes(15)

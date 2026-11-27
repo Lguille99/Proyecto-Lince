@@ -18,8 +18,8 @@ enum class Idioma(val etiqueta: String) {
 
 enum class Modalidad(val etiqueta: String) {
     TRANSFER("Transfer"),
-    MEDIO_DIA("Medio día"),
-    DIA_COMPLETO("Día completo")
+    GUIDED_SERVICE("Servicio guiado"),
+    EXCURSION("Excursión")
 }
 
 data class Servicio(
@@ -81,6 +81,15 @@ data class Servicio(
 
     val tieneGeocerca: Boolean
         get() = latitudRecogida != null && longitudRecogida != null && radioGeocercaMetros > 0
+
+    val requiereTransportista: Boolean
+        get() = modalidad == Modalidad.TRANSFER || modalidad == Modalidad.EXCURSION
+
+    val requiereGuia: Boolean
+        get() = modalidad == Modalidad.GUIDED_SERVICE
+
+    val rolRequerido: Rol
+        get() = if (requiereGuia) Rol.GUIA else Rol.CONDUCTOR
 }
 
 data class ResumenCoordinador(
