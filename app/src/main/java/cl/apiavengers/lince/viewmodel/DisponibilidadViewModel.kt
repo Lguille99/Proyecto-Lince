@@ -16,6 +16,7 @@ import cl.apiavengers.lince.modelo.Usuario
 import cl.apiavengers.lince.ui.idioma.PreferenciaIdioma
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,13 +26,15 @@ import kotlinx.coroutines.withContext
 
 class DisponibilidadViewModel(
     private val repositorio: RepositorioDisponibilidad,
-    private val cola: ColaSincronizacion
+    private val cola: ColaSincronizacion,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
     constructor(application: Application) : this(
         RepositorioDisponibilidad(
             AlmacenDisponibilidadRoom(LinceDatabase.obtener(application).disponibilidadDao(), ArchivoDisponibilidad(application))
         ),
-        ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao())
+        ColaSincronizacion(LinceDatabase.obtener(application).operacionPendienteDao()),
+        Dispatchers.IO
     )
     private val _uiState = MutableStateFlow(DisponibilidadUiState())
     val uiState = _uiState.asStateFlow()
@@ -44,7 +47,7 @@ class DisponibilidadViewModel(
         _uiState.value = DisponibilidadUiState()
         viewModelScope.launch {
             try {
-                val dias = withContext(Dispatchers.IO) { repositorio.consultar(usuario) }
+                val dias = withContext(ioDispatcher) { repositorio.consultar(usuario) }
                 _uiState.update { it.copy(diasBloqueados = dias, bloqueado = it.fecha in dias, cargando = false, cargado = true) }
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
@@ -71,10 +74,10 @@ class DisponibilidadViewModel(
         _uiState.update { it.copy(cargando = true, mensaje = null, esError = false) }
         viewModelScope.launch {
             try {
-                val dias = withContext(Dispatchers.IO) {
+                val dias = withContext(ioDispatcher) {
                     repositorio.guardar(usuario, actual.fecha, actual.bloqueado, serviciosAsignados)
                 }
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     val estadoDia = if (actual.bloqueado) "bloqueado" else "disponible"
                     cola.encolar(
                         OperacionPendiente(

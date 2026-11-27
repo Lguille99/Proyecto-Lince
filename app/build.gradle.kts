@@ -93,3 +93,4 @@ dependencies {
 }
 
 kapt { arguments { arg("room.schemaLocation", "$projectDir/schemas") } }
+
