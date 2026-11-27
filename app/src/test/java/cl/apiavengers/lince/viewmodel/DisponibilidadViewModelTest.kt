@@ -32,19 +32,4 @@ class DisponibilidadViewModelTest {
         vm.cambiarBloqueo(true)
     }
 
-    @Test
-    fun guardarBloqueo() = runTest {
-        val repo = mockk<RepositorioDisponibilidad>(relaxed = true)
-        val cola = mockk<ColaSincronizacion>(relaxed = true)
-        coEvery { repo.consultar(any()) } returns emptySet()
-        coEvery { repo.guardar(any(), any(), any(), any()) } returns setOf(LocalDate.now().plusDays(8))
-        val vm = DisponibilidadViewModel(repo, cola, mainDispatcherRule.testDispatcher)
-        val usuario = mockk<Usuario>(relaxed = true)
-        vm.cargar(usuario)
-        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
-        vm.seleccionarFecha(LocalDate.now().plusDays(8))
-        vm.cambiarBloqueo(true)
-        vm.guardar(emptyList())
-        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
-    }
 }

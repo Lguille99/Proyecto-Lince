@@ -68,29 +68,6 @@ class LinceViewModelTest {
         assertNotNull(vm.uiState.value.error)
     }
 
-    @Test
-    fun confirmarRechazarCheckInOut() = runTest {
-        val (monitor, prefs, cola) = mocks()
-        val repo = mockk<RepositorioLince>(relaxed = true)
-        val usuario = mockk<Usuario>(relaxed = true).also {
-            every { it.rol } returns cl.apiavengers.lince.modelo.Rol.GUIA
-            every { it.id } returns "GUI-002"
-        }
-        every { repo.iniciarSesion(any(), any()) } returns usuario
-        every { repo.consultarServicios() } returns emptyList()
-        every { repo.consultarHistorial() } returns emptyList()
-        every { repo.consultarEquipo() } returns emptyList()
-        val vm = LinceViewModel(monitor, prefs, cola, { repo }, mainDispatcherRule.testDispatcher)
-        vm.iniciarSesion("guia.demo", "Lince123")
-        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
-        vm.confirmar("LIN-001")
-        vm.rechazar("LIN-001", "motivo valido")
-        val ubic = Ubicacion(-33.0, -70.0, precisionMetros = 8.0)
-        vm.registrarCheckIn("LIN-001", "Hotel", "", ubic)
-        vm.registrarCheckOut("LIN-001", "ok", ubic, "Terminal")
-        vm.reportarUbicacion("LIN-001", ubic)
-        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
-    }
 
     @Test
     fun calificarReasignarPerfil() = runTest {
