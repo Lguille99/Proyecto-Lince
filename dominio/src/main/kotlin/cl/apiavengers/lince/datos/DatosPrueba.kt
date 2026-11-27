@@ -179,14 +179,14 @@ object DatosPrueba {
     }
 
     private val coordenadasRecogida = mapOf(
-        "Hotel Plaza" to (-33.4425 to -70.6540),
-        "Plaza de prueba" to (-33.4372 to -70.6506),
-        "Hotel de prueba" to (-33.4263 to -70.6166),
-        "Museo de prueba" to (-33.4379 to -70.6328),
-        "Hotel Marina" to (-33.0366 to -71.6260),
-        "Terminal de prueba" to (-33.4521 to -70.6790),
-        "Centro de prueba" to (-33.4410 to -70.6400),
-        "Aeropuerto de prueba" to (-33.3930 to -70.7858)
+        "Hotel Plaza" to (-41.4703 to -72.9258),
+        "Plaza de prueba" to (-41.4718 to -72.9396),
+        "Hotel de prueba" to (-41.4820 to -72.9450),
+        "Museo de prueba" to (-41.4710 to -72.9380),
+        "Hotel Marina" to (-41.4630 to -72.9120),
+        "Terminal de prueba" to (-41.4690 to -72.9330),
+        "Centro de prueba" to (-41.4725 to -72.9370),
+        "Aeropuerto de prueba" to (-41.4386 to -73.0939)
     )
 
     private fun conGeocerca(servicio: Servicio): Servicio {

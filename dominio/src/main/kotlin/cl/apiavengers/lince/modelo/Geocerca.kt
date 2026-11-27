@@ -58,6 +58,6 @@ fun evaluarLlegada(
         dentro = distancia <= radio,
         precisionMetros = ubicacion.precisionMetros,
         minutosAntes = minutosAntes,
-        tardanza = ahora.isAfter(servicio.inicioProgramado)
+        tardanza = ahora.isAfter(servicio.inicioProgramado.minusMinutes(15))
     )
 }

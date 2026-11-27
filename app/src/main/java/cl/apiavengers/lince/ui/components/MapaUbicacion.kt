@@ -33,7 +33,7 @@ fun MapaUbicacion(
     centroLongitud: Double? = null,
     radioMetros: Int? = null,
     marcadores: List<MarcaMapa> = emptyList(),
-    altura: Dp = 260.dp
+    altura: Dp = 360.dp
 ) {
     val centro = remember(centroLatitud, centroLongitud, marcadores) {
         when {
@@ -61,6 +61,14 @@ fun MapaUbicacion(
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
                 controller.setZoom(17.0)
+                setOnTouchListener { view, event ->
+                    when (event.actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN,
+                        android.view.MotionEvent.ACTION_MOVE,
+                        android.view.MotionEvent.ACTION_POINTER_DOWN -> view.parent?.requestDisallowInterceptTouchEvent(true)
+                    }
+                    false
+                }
             }
         },
         update = { mapView ->

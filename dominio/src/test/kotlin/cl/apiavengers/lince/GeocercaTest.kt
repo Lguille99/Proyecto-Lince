@@ -22,8 +22,8 @@ class GeocercaTest {
 
     private fun repo() = RepositorioLince(AlmacenEstadoMemoria(), reloj)
 
-    private val dentro = Ubicacion(-33.4425, -70.6540, precisionMetros = 8.0)
-    private val fuera = Ubicacion(-33.4000, -70.6000, precisionMetros = 12.0)
+    private val dentro = Ubicacion(-41.4703, -72.9258, precisionMetros = 8.0)
+    private val fuera = Ubicacion(-41.0000, -72.0000, precisionMetros = 12.0)
 
     @Test fun distanciaCeroEnElMismoPunto() {
         assertEquals(0.0, distanciaMetros(-33.4425, -70.6540, -33.4425, -70.6540), 0.01)
@@ -40,8 +40,8 @@ class GeocercaTest {
             destino = "Destino",
             asignadoA = "DRV-001",
             hotelRecogida = "Hotel",
-            latitudRecogida = -33.4425,
-            longitudRecogida = -70.6540,
+            latitudRecogida = -41.4703,
+            longitudRecogida = -72.9258,
             radioGeocercaMetros = 150
         )
         val ahora = java.time.LocalDateTime.of(2026, 10, 19, 12, 0)
@@ -49,7 +49,7 @@ class GeocercaTest {
         assertNotNull(llegada)
         assertTrue(llegada.dentro)
         assertEquals(10, llegada.minutosAntes)
-        assertTrue(!llegada.tardanza)
+        assertTrue(llegada.tardanza)
 
         val lejana = evaluarLlegada(servicio, fuera, ahora)
         assertNotNull(lejana)

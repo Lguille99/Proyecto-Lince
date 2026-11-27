@@ -519,7 +519,7 @@ private fun TarjetaUbicacion(
                     if (servicio.inicioEn == null) {
                         if (evaluacion.tardanza) {
                             Text(
-                                t.arrivalLateValue(abs(evaluacion.minutosAntes).toInt()),
+                                 t.arrivalLateValue((15 - evaluacion.minutosAntes).toInt().coerceAtLeast(0)),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.error
