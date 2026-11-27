@@ -24,6 +24,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         buildConfigField("String", "SOUTHBOUND_API_KEY", "\"${valorConfiguracion("SOUTHBOUND_API_KEY")}\"")
+        buildConfigField("String", "BACKEND_URL", "\"${valorConfiguracion("BACKEND_URL").ifBlank { "http://10.0.2.2:8080/" }}\"")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -73,9 +74,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.moshi:moshi:1.15.2")
-    kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.2")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.compose.ui:ui-test-junit4")

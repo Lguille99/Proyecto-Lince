@@ -20,7 +20,8 @@ data class OperacionPendienteEntity(
     val detalle: String,
     val creadoEn: String,
     val estado: String = EstadoOperacion.PENDIENTE.name,
-    val intentos: Int = 0
+    val intentos: Int = 0,
+    val idempotencyKey: String = ""
 )
 
 @Dao

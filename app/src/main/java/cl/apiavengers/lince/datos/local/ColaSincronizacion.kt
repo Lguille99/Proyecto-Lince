@@ -1,6 +1,7 @@
 package cl.apiavengers.lince.datos.local
 
 import java.time.LocalDateTime
+import java.util.UUID
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,7 +46,8 @@ class ColaSincronizacion(private val dao: OperacionPendienteDao) {
                 servicioId = operacion.servicioId,
                 detalle = operacion.detalle,
                 creadoEn = LocalDateTime.now().withNano(0).toString(),
-                estado = EstadoOperacion.PENDIENTE.name
+                estado = EstadoOperacion.PENDIENTE.name,
+                idempotencyKey = UUID.randomUUID().toString()
             )
         )
         actualizarPendientes()

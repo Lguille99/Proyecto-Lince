@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cl.apiavengers.lince.datos.backend.SincronizacionWorker
 import cl.apiavengers.lince.navigation.AppNavigation
 import cl.apiavengers.lince.ui.idioma.IdiomaApp
 import cl.apiavengers.lince.ui.idioma.LocalTextos
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        SincronizacionWorker.programar(this)
         setContent {
             val modo by PreferenciaTema.modo.collectAsStateWithLifecycle()
             val idioma by PreferenciaIdioma.idioma.collectAsStateWithLifecycle()

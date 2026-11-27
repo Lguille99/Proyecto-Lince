@@ -15,7 +15,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PerfilEntity::class,
         OperacionPendienteEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class LinceDatabase : RoomDatabase() {
@@ -97,6 +97,14 @@ abstract class LinceDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRACION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE operaciones_pendientes ADD COLUMN idempotencyKey TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+
         @Volatile private var instancia: LinceDatabase? = null
 
         fun obtener(context: Context): LinceDatabase = instancia ?: synchronized(this) {
@@ -104,7 +112,7 @@ abstract class LinceDatabase : RoomDatabase() {
                 context.applicationContext,
                 LinceDatabase::class.java,
                 "lince.db"
-            ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5)
+            ).addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6)
                 .build().also { instancia = it }
         }
     }
